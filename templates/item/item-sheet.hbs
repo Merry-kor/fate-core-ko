@@ -1,0 +1,53 @@
+<div class="fate-item-sheet">
+  <header class="fate-item-sheet__header">
+    <img class="fate-item-sheet__img" src="{{item.img}}" alt="{{item.name}}" data-edit="img">
+    <input class="fate-item-sheet__name" type="text" name="name" value="{{item.name}}">
+    <span class="fate-item-sheet__type">{{item.type}}</span>
+  </header>
+
+  <div class="fate-item-sheet__body">
+    {{!-- Skill-specific fields --}}
+    {{#if (eq item.type "skill")}}
+    <div class="fate-field">
+      <label class="fate-label">{{localize "FATE.Item.Skill.Rank"}}</label>
+      <input class="fate-input" type="number" name="system.rank" value="{{system.rank}}" min="-4" max="8">
+    </div>
+    {{/if}}
+
+    {{!-- Consequence-specific fields --}}
+    {{#if (eq item.type "consequence")}}
+    <div class="fate-field">
+      <label class="fate-label">{{localize "FATE.Item.Consequence.Severity"}}</label>
+      <input class="fate-input" type="number" name="system.severity" value="{{system.severity}}" min="2" step="2">
+    </div>
+    <div class="fate-field">
+      <label class="fate-label">{{localize "FATE.Item.Consequence.Value"}}</label>
+      <input class="fate-input" type="text" name="system.value" value="{{system.value}}">
+    </div>
+    {{/if}}
+
+    {{!-- Stress-specific fields --}}
+    {{#if (eq item.type "stress")}}
+    <div class="fate-field">
+      <label class="fate-label">{{localize "FATE.Item.Stress.Size"}}</label>
+      <input class="fate-input" type="number" name="system.size" value="{{system.size}}" min="1" max="8">
+    </div>
+    {{/if}}
+
+    {{!-- Stunt / Extra summary --}}
+    {{#if (or (eq item.type "stunt") (eq item.type "extra"))}}
+    <div class="fate-field">
+      <label class="fate-label">{{localize "FATE.Item.Stunt.Summary"}}</label>
+      <input class="fate-input" type="text" name="system.summary" value="{{system.summary}}">
+    </div>
+    {{/if}}
+
+    {{!-- Description (all types) --}}
+    <div class="fate-field fate-field--editor">
+      <label class="fate-label">{{localize "FATE.Sheet.Description"}}</label>
+      <div class="fate-editor">
+        {{editor system.description target="system.description" button=false editable=editable}}
+      </div>
+    </div>
+  </div>
+</div>

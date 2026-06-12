@@ -1,0 +1,91 @@
+{
+  "FATE": {
+    "System": "페이트 코어",
+    "Sheet": {
+      "Name": "이름",
+      "Description": "설명",
+      "Biography": "일대기",
+      "Notes": "메모",
+      "FatePoints": "운명점",
+      "Refresh": "재충전",
+      "Aspects": "면모",
+      "Skills": "기능",
+      "Stunts": "특기",
+      "StressTracks": "스트레스",
+      "Consequences": "타격",
+      "Extras": "특수항목",
+      "Tabs": {
+        "Main": "메인",
+        "Skills": "기능 & 특기",
+        "Extras": "특수항목",
+        "Bio": "일대기"
+      }
+    },
+    "Item": {
+      "Aspect": {
+        "Label": "면모",
+        "Invoke": "호출 횟수"
+      },
+      "Skill": {
+        "Label": "기능",
+        "Rank": "수준"
+      },
+      "Stunt": {
+        "Label": "특기",
+        "Summary": "요약"
+      },
+      "Stress": {
+        "Label": "스트레스",
+        "Size": "박스 수"
+      },
+      "Consequence": {
+        "Label": "타격",
+        "Severity": "심각도",
+        "Value": "내용"
+      },
+      "Extra": {
+        "Label": "특수항목",
+        "Summary": "요약"
+      }
+    },
+    "Ladder": {
+      "8": "전설적",
+      "7": "영웅적",
+      "6": "환상적",
+      "5": "엄청남",
+      "4": "대단함",
+      "3": "우수",
+      "2": "양호",
+      "1": "보통",
+      "0": "미약",
+      "-1": "부실",
+      "-2": "엉망",
+      "-3": "재앙적",
+      "-4": "끔찍함"
+    },
+    "Roll": {
+      "Result": "결과",
+      "Total": "합계",
+      "Dice": "주사위",
+      "Skill": "기능",
+      "Outcome": {
+        "SucceedWithStyle": "압도적 성공",
+        "Succeed": "성공",
+        "Tie": "동점",
+        "Fail": "실패"
+      }
+    },
+    "Actions": {
+      "Add": "추가",
+      "Delete": "삭제",
+      "Edit": "수정",
+      "Roll": "굴리기"
+    },
+    "Dialog": {
+      "Confirm": "확인",
+      "Cancel": "취소",
+      "DeleteItem": "삭제 확인",
+      "DeleteItemText": "이 항목을 영구적으로 삭제하시겠습니까?"
+    }
+  }
+}

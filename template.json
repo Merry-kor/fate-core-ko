@@ -1,0 +1,61 @@
+{
+  "Actor": {
+    "types": ["character", "npc"],
+    "templates": {},
+    "character": {
+      "biography": "",
+      "fatepoints": {
+        "current": 3,
+        "refresh": 3
+      },
+      "notes": ""
+    },
+    "npc": {
+      "biography": "",
+      "fatepoints": {
+        "current": 1,
+        "refresh": 1
+      },
+      "notes": ""
+    }
+  },
+  "Item": {
+    "types": ["aspect", "skill", "stunt", "stress", "consequence", "extra"],
+    "templates": {
+      "base": {
+        "description": "",
+        "disabled": false
+      }
+    },
+    "aspect": {
+      "templates": ["base"],
+      "label": "",
+      "invoke": 0
+    },
+    "skill": {
+      "templates": ["base"],
+      "rank": 0
+    },
+    "stunt": {
+      "templates": ["base"],
+      "summary": ""
+    },
+    "stress": {
+      "templates": ["base"],
+      "label": "",
+      "size": 2,
+      "checked": []
+    },
+    "consequence": {
+      "templates": ["base"],
+      "label": "",
+      "severity": 2,
+      "value": "",
+      "active": false
+    },
+    "extra": {
+      "templates": ["base"],
+      "summary": ""
+    }
+  }
+}

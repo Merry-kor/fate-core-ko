@@ -1,0 +1,33 @@
+{
+  "id": "fate-core-ko",
+  "title": "페이트 코어 한국어판",
+  "description": "페이트 코어 TTRPG 시스템 - 한국어 지원, 개선된 UI/UX",
+  "version": "0.1.0",
+  "authors": [
+    {
+      "name": "lunah"
+    }
+  ],
+  "esmodules": ["scripts/fate-core-ko.js"],
+  "styles": ["styles/fate-core-ko.css"],
+  "languages": [
+    {
+      "lang": "ko",
+      "name": "한국어",
+      "path": "lang/ko.json"
+    },
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json"
+    }
+  ],
+  "compatibility": {
+    "minimum": "13",
+    "verified": "13.351"
+  },
+  "socket": false,
+  "url": "https://github.com/lunah/fate-core-ko",
+  "manifest": "https://raw.githubusercontent.com/lunah/fate-core-ko/main/system.json",
+  "download": "https://github.com/lunah/fate-core-ko/releases/latest/download/fate-core-ko.zip"
+}
