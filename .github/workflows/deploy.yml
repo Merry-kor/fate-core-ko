@@ -1,0 +1,17 @@
+name: Deploy to FVTT Server
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH Deploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: 138.2.118.109
+          username: ubuntu
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: /home/ubuntu/deploy-fate.sh
