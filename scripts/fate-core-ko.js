@@ -52,6 +52,19 @@ class FateCharacterSheet extends foundry.applications.api.HandlebarsApplicationM
     sheet: { template: "systems/fate-core-ko/templates/actor/character-sheet.hbs" },
   };
 
+  _onRender(context, options) {
+    super._onRender?.(context, options);
+    this.element.querySelectorAll(".fate-tabs__tab").forEach(tab => {
+      tab.addEventListener("click", e => {
+        const target = e.currentTarget.dataset.tab;
+        this.element.querySelectorAll(".fate-tabs__tab").forEach(t => t.classList.remove("active"));
+        this.element.querySelectorAll(".fate-tab-content").forEach(c => c.classList.remove("active"));
+        e.currentTarget.classList.add("active");
+        this.element.querySelector(`.fate-tab-content[data-tab="${target}"]`)?.classList.add("active");
+      });
+    });
+  }
+
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
     const actor = this.actor;

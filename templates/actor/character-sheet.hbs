@@ -223,18 +223,3 @@
   </div>
 </div>
 
-<script>
-  (function() {
-    const sheet = document.currentScript.closest(".fate-sheet") || document.querySelector(".fate-sheet");
-    if (!sheet) return;
-    sheet.querySelectorAll(".fate-tabs__tab").forEach(tab => {
-      tab.addEventListener("click", e => {
-        const target = e.currentTarget.dataset.tab;
-        sheet.querySelectorAll(".fate-tabs__tab").forEach(t => t.classList.remove("active"));
-        sheet.querySelectorAll(".fate-tab-content").forEach(c => c.classList.remove("active"));
-        e.currentTarget.classList.add("active");
-        sheet.querySelector(`.fate-tab-content[data-tab="${target}"]`)?.classList.add("active");
-      });
-    });
-  })();
-</script>
