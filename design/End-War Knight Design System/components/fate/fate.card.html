@@ -1,0 +1,66 @@
+<!-- @dsCard group="Components" viewport="700x480" name="Fate · 주사위, 면모, 결과, 운명점" subtitle="RollCard · AspectChip · StressTrack · FateDie · LadderBadge · FatePoints" -->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  body{margin:0;background:var(--surface-app);color:var(--text-body);padding:18px;font-family:var(--font-sans);}
+  .row{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:16px;}
+  .lbl{font-size:var(--fs-2xs);letter-spacing:var(--ls-label);text-transform:uppercase;color:var(--text-faint);width:100%;margin-bottom:-4px;}
+  .col{display:flex;flex-direction:column;gap:8px;min-width:0;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const NS = window.EndWarKnightDesignSystem_000168;
+const { FateDie, LadderBadge, AspectChip, StressTrack, RollCard, FatePoints } = NS;
+function Demo() {
+  return (
+    <div>
+      <div className="row">
+        <span className="lbl">Fate Dice</span>
+        <FateDie value={1}/><FateDie value={1}/><FateDie value={0}/><FateDie value={-1}/>
+      </div>
+      <div className="row">
+        <span className="lbl">Ladder badges</span>
+        <LadderBadge rank={4}/><LadderBadge rank={2} size="sm"/><LadderBadge rank={0}/><LadderBadge rank={-2}/>
+      </div>
+      <div className="row">
+        <span className="lbl">FatePoints</span>
+        <FatePoints current={3} refresh={3}/>
+      </div>
+      <div className="row">
+        <span className="lbl">AspectChip — 면모 타입별</span>
+        <div className="col" style={{flex:1}}>
+          <AspectChip type="identity" label="고철을 부리는 스피어헤드의 뒷골목 이단아"/>
+          <AspectChip type="trouble" label="뒷골목의 거물 '외눈의 한스'에게 진 막대한 빚"/>
+          <AspectChip type="situation" label="굳게 닫힌 방폭문" tag="#단기" invokes={2}/>
+          <AspectChip type="longterm" label="아르님의 비밀 장부를 손에 넣었다" tag="#장기"/>
+          <AspectChip type="stack" label="쌓이는 증거들" stack={{filled:2,total:4}}/>
+        </div>
+      </div>
+      <div className="row">
+        <span className="lbl">StressTrack</span>
+        <div style={{flex:1}}>
+          <StressTrack label="스트레스" size={4} checked={[true,true,false,false]}/>
+        </div>
+      </div>
+      <div className="row">
+        <span className="lbl">RollCard</span>
+        <div style={{flex:1}}>
+          <RollCard actor="이반 이바노비치" skill="강하게" action="극복" dice={[1,1,0,-1]} modifier={4} difficulty={3}/>
+        </div>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo/>);
+</script>
+</body>
+</html>

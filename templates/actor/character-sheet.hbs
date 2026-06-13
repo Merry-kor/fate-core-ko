@@ -1,72 +1,87 @@
 <div class="fate-sheet">
 
-  {{!-- Header --}}
+  {{!-- 헤더 --}}
   <header class="fate-sheet__header">
     <div class="fate-header__portrait">
       <img class="fate-header__img" src="{{actor.img}}" alt="{{actor.name}}" data-edit="img">
     </div>
     <div class="fate-header__info">
-      <input class="fate-header__name" type="text" name="name" value="{{actor.name}}" placeholder="{{localize 'FATE.Sheet.Name'}}">
+      <input class="fate-header__name" type="text" name="name" value="{{actor.name}}"
+        placeholder="{{localize 'FATE.Sheet.Name'}}">
       <div class="fate-header__fatepoints">
         <div class="fate-fp__group">
           <label class="fate-fp__label">{{localize "FATE.Sheet.FatePoints"}}</label>
           <div class="fate-fp__controls">
-            <button class="fate-fp__btn fate-fp__btn--minus" type="button" data-action="adjustFP" data-delta="-1">−</button>
-            <input class="fate-fp__value" type="number" name="system.fatepoints.current" value="{{system.fatepoints.current}}" min="0">
-            <button class="fate-fp__btn fate-fp__btn--plus" type="button" data-action="adjustFP" data-delta="1">+</button>
+            <button class="fate-fp__btn" type="button" data-action="adjustFP" data-delta="-1">−</button>
+            <input class="fate-fp__value" type="number" name="system.fatepoints.current"
+              value="{{system.fatepoints.current}}" min="0">
+            <button class="fate-fp__btn" type="button" data-action="adjustFP" data-delta="1">+</button>
           </div>
         </div>
         <div class="fate-fp__group">
           <label class="fate-fp__label">{{localize "FATE.Sheet.Refresh"}}</label>
-          <input class="fate-fp__refresh" type="number" name="system.fatepoints.refresh" value="{{system.fatepoints.refresh}}" min="1">
+          <input class="fate-fp__refresh" type="number" name="system.fatepoints.refresh"
+            value="{{system.fatepoints.refresh}}" min="1">
         </div>
       </div>
     </div>
   </header>
 
-  {{!-- Main Body --}}
+  {{!-- 바디 --}}
   <div class="fate-sheet__body">
 
-    {{!-- Left Column --}}
+    {{!-- 왼쪽 열 --}}
     <div class="fate-sheet__left">
 
-      {{!-- Aspects --}}
+      {{!-- 면모 --}}
       <section class="fate-section">
         <div class="fate-section__header">
           <h2 class="fate-section__title">{{localize "FATE.Sheet.Aspects"}}</h2>
-          <button class="fate-section__add" type="button" data-action="addItem" data-type="aspect" title="{{localize 'FATE.Actions.Add'}}">+</button>
+          <button class="fate-section__add" type="button" data-action="addItem" data-type="aspect"
+            title="{{localize 'FATE.Actions.Add'}}">+</button>
         </div>
         <ul class="fate-list fate-aspects">
           {{#each aspects as |aspect|}}
           <li class="fate-list__item fate-aspect" data-item-id="{{aspect.id}}">
-            <input class="fate-aspect__value" type="text" name="items.{{aspect.id}}.system.label"
-              value="{{aspect.system.label}}" placeholder="{{localize 'FATE.Item.Aspect.Label'}}">
+            <input class="fate-aspect__value" type="text"
+              name="items.{{aspect.id}}.system.label"
+              value="{{aspect.system.label}}"
+              placeholder="{{localize 'FATE.Item.Aspect.Label'}}">
             <div class="fate-item__actions">
-              <button class="fate-btn fate-btn--icon" type="button" data-action="editItem" title="수정"><i class="fa fa-cog"></i></button>
-              <button class="fate-btn fate-btn--icon fate-btn--danger" type="button" data-action="deleteItem" title="삭제"><i class="fa fa-trash"></i></button>
+              <button class="fate-btn fate-btn--icon" type="button" data-action="editItem"
+                title="{{localize 'FATE.Actions.Edit'}}"><i class="fa fa-cog"></i></button>
+              <button class="fate-btn fate-btn--icon fate-btn--danger" type="button" data-action="deleteItem"
+                title="{{localize 'FATE.Actions.Delete'}}"><i class="fa fa-trash"></i></button>
             </div>
           </li>
           {{/each}}
         </ul>
       </section>
 
-      {{!-- Stress --}}
+      {{!-- 스트레스 --}}
       <section class="fate-section">
         <div class="fate-section__header">
           <h2 class="fate-section__title">{{localize "FATE.Sheet.StressTracks"}}</h2>
-          <button class="fate-section__add" type="button" data-action="addItem" data-type="stress" title="추가">+</button>
+          <button class="fate-section__add" type="button" data-action="addItem" data-type="stress"
+            title="{{localize 'FATE.Actions.Add'}}">+</button>
         </div>
         {{#each stressTracks as |track|}}
         <div class="fate-stress" data-item-id="{{track.id}}">
           <div class="fate-stress__header">
             <span class="fate-stress__label">{{track.name}}</span>
-            <button class="fate-btn fate-btn--icon" type="button" data-action="editItem" title="수정"><i class="fa fa-cog"></i></button>
-            <button class="fate-btn fate-btn--icon fate-btn--danger" type="button" data-action="deleteItem" title="삭제"><i class="fa fa-trash"></i></button>
+            <div class="fate-item__actions">
+              <button class="fate-btn fate-btn--icon" type="button" data-action="editItem"
+                title="{{localize 'FATE.Actions.Edit'}}"><i class="fa fa-cog"></i></button>
+              <button class="fate-btn fate-btn--icon fate-btn--danger" type="button" data-action="deleteItem"
+                title="{{localize 'FATE.Actions.Delete'}}"><i class="fa fa-trash"></i></button>
+            </div>
           </div>
           <div class="fate-stress__boxes">
             {{#each_times track.system.size as |i|}}
             <label class="fate-stress__box">
-              <input type="checkbox" name="items.{{track.id}}.system.checked.{{i}}" {{checked (lookup ../track.system.checked i)}}>
+              <input type="checkbox"
+                name="items.{{../track.id}}.system.checked.{{i}}"
+                {{checked (lookup ../track.system.checked i)}}>
               <span class="fate-stress__pip"></span>
             </label>
             {{/each_times}}
@@ -75,21 +90,26 @@
         {{/each}}
       </section>
 
-      {{!-- Consequences --}}
+      {{!-- 타격 --}}
       <section class="fate-section">
         <div class="fate-section__header">
           <h2 class="fate-section__title">{{localize "FATE.Sheet.Consequences"}}</h2>
-          <button class="fate-section__add" type="button" data-action="addItem" data-type="consequence" title="추가">+</button>
+          <button class="fate-section__add" type="button" data-action="addItem" data-type="consequence"
+            title="{{localize 'FATE.Actions.Add'}}">+</button>
         </div>
         <ul class="fate-list fate-consequences">
           {{#each consequences as |con|}}
           <li class="fate-list__item fate-consequence" data-item-id="{{con.id}}">
             <span class="fate-consequence__severity">{{con.system.severity}}</span>
-            <input class="fate-consequence__value" type="text" name="items.{{con.id}}.system.value"
-              value="{{con.system.value}}" placeholder="{{con.name}}">
+            <input class="fate-consequence__value" type="text"
+              name="items.{{con.id}}.system.value"
+              value="{{con.system.value}}"
+              placeholder="{{con.name}}">
             <div class="fate-item__actions">
-              <button class="fate-btn fate-btn--icon" type="button" data-action="editItem" title="수정"><i class="fa fa-cog"></i></button>
-              <button class="fate-btn fate-btn--icon fate-btn--danger" type="button" data-action="deleteItem" title="삭제"><i class="fa fa-trash"></i></button>
+              <button class="fate-btn fate-btn--icon" type="button" data-action="editItem"
+                title="{{localize 'FATE.Actions.Edit'}}"><i class="fa fa-cog"></i></button>
+              <button class="fate-btn fate-btn--icon fate-btn--danger" type="button" data-action="deleteItem"
+                title="{{localize 'FATE.Actions.Delete'}}"><i class="fa fa-trash"></i></button>
             </div>
           </li>
           {{/each}}
@@ -98,7 +118,7 @@
 
     </div>
 
-    {{!-- Right Column (Tabs) --}}
+    {{!-- 오른쪽 열 (탭) --}}
     <div class="fate-sheet__right">
       <nav class="fate-tabs">
         <a class="fate-tabs__tab active" data-tab="skills">{{localize "FATE.Sheet.Tabs.Skills"}}</a>
@@ -106,26 +126,27 @@
         <a class="fate-tabs__tab" data-tab="bio">{{localize "FATE.Sheet.Tabs.Bio"}}</a>
       </nav>
 
-      {{!-- Skills & Stunts Tab --}}
+      {{!-- 기능 & 특기 탭 --}}
       <div class="fate-tab-content active" data-tab="skills">
+
         <section class="fate-section">
           <div class="fate-section__header">
             <h3 class="fate-section__title">{{localize "FATE.Sheet.Skills"}}</h3>
-            <button class="fate-section__add" type="button" data-action="addItem" data-type="skill" title="추가">+</button>
+            <button class="fate-section__add" type="button" data-action="addItem" data-type="skill"
+              title="{{localize 'FATE.Actions.Add'}}">+</button>
           </div>
           <ul class="fate-skill-ladder">
             {{#each skills as |skill|}}
             <li class="fate-skill" data-item-id="{{skill.id}}">
-              <span class="fate-skill__rank fate-ladder fate-ladder--{{skill.system.rank}}">
-                {{lookup ../ladder skill.system.rank}}
-              </span>
+              <span class="fate-skill__rank">{{lookup ../ladder skill.system.rank}}</span>
               <span class="fate-skill__name">{{skill.name}}</span>
               <div class="fate-item__actions">
-                <button class="fate-btn fate-btn--roll" type="button" data-action="rollSkill" title="굴리기">
-                  <i class="fa fa-dice"></i>
-                </button>
-                <button class="fate-btn fate-btn--icon" type="button" data-action="editItem" title="수정"><i class="fa fa-cog"></i></button>
-                <button class="fate-btn fate-btn--icon fate-btn--danger" type="button" data-action="deleteItem" title="삭제"><i class="fa fa-trash"></i></button>
+                <button class="fate-btn fate-btn--roll" type="button" data-action="rollSkill"
+                  title="{{localize 'FATE.Actions.Roll'}}">굴리기</button>
+                <button class="fate-btn fate-btn--icon" type="button" data-action="editItem"
+                  title="{{localize 'FATE.Actions.Edit'}}"><i class="fa fa-cog"></i></button>
+                <button class="fate-btn fate-btn--icon fate-btn--danger" type="button" data-action="deleteItem"
+                  title="{{localize 'FATE.Actions.Delete'}}"><i class="fa fa-trash"></i></button>
               </div>
             </li>
             {{/each}}
@@ -135,7 +156,8 @@
         <section class="fate-section">
           <div class="fate-section__header">
             <h3 class="fate-section__title">{{localize "FATE.Sheet.Stunts"}}</h3>
-            <button class="fate-section__add" type="button" data-action="addItem" data-type="stunt" title="추가">+</button>
+            <button class="fate-section__add" type="button" data-action="addItem" data-type="stunt"
+              title="{{localize 'FATE.Actions.Add'}}">+</button>
           </div>
           <ul class="fate-list fate-stunts">
             {{#each stunts as |stunt|}}
@@ -143,8 +165,10 @@
               <div class="fate-stunt__header">
                 <span class="fate-stunt__name">{{stunt.name}}</span>
                 <div class="fate-item__actions">
-                  <button class="fate-btn fate-btn--icon" type="button" data-action="editItem" title="수정"><i class="fa fa-cog"></i></button>
-                  <button class="fate-btn fate-btn--icon fate-btn--danger" type="button" data-action="deleteItem" title="삭제"><i class="fa fa-trash"></i></button>
+                  <button class="fate-btn fate-btn--icon" type="button" data-action="editItem"
+                    title="{{localize 'FATE.Actions.Edit'}}"><i class="fa fa-cog"></i></button>
+                  <button class="fate-btn fate-btn--icon fate-btn--danger" type="button" data-action="deleteItem"
+                    title="{{localize 'FATE.Actions.Delete'}}"><i class="fa fa-trash"></i></button>
                 </div>
               </div>
               {{#if stunt.system.summary}}
@@ -154,22 +178,26 @@
             {{/each}}
           </ul>
         </section>
+
       </div>
 
-      {{!-- Extras Tab --}}
+      {{!-- 특수항목 탭 --}}
       <div class="fate-tab-content" data-tab="extras">
         <section class="fate-section">
           <div class="fate-section__header">
             <h3 class="fate-section__title">{{localize "FATE.Sheet.Extras"}}</h3>
-            <button class="fate-section__add" type="button" data-action="addItem" data-type="extra" title="추가">+</button>
+            <button class="fate-section__add" type="button" data-action="addItem" data-type="extra"
+              title="{{localize 'FATE.Actions.Add'}}">+</button>
           </div>
           <ul class="fate-list">
             {{#each extras as |extra|}}
             <li class="fate-list__item fate-extra" data-item-id="{{extra.id}}">
               <span class="fate-extra__name">{{extra.name}}</span>
               <div class="fate-item__actions">
-                <button class="fate-btn fate-btn--icon" type="button" data-action="editItem" title="수정"><i class="fa fa-cog"></i></button>
-                <button class="fate-btn fate-btn--icon fate-btn--danger" type="button" data-action="deleteItem" title="삭제"><i class="fa fa-trash"></i></button>
+                <button class="fate-btn fate-btn--icon" type="button" data-action="editItem"
+                  title="{{localize 'FATE.Actions.Edit'}}"><i class="fa fa-cog"></i></button>
+                <button class="fate-btn fate-btn--icon fate-btn--danger" type="button" data-action="deleteItem"
+                  title="{{localize 'FATE.Actions.Delete'}}"><i class="fa fa-trash"></i></button>
               </div>
             </li>
             {{/each}}
@@ -177,7 +205,7 @@
         </section>
       </div>
 
-      {{!-- Bio Tab --}}
+      {{!-- 일대기 탭 --}}
       <div class="fate-tab-content" data-tab="bio">
         <section class="fate-section fate-section--bio">
           <label class="fate-label">{{localize "FATE.Sheet.Biography"}}</label>
@@ -196,14 +224,17 @@
 </div>
 
 <script>
-  // Tab switching
-  document.querySelectorAll(".fate-tabs__tab").forEach(tab => {
-    tab.addEventListener("click", e => {
-      const target = e.currentTarget.dataset.tab;
-      document.querySelectorAll(".fate-tabs__tab").forEach(t => t.classList.remove("active"));
-      document.querySelectorAll(".fate-tab-content").forEach(c => c.classList.remove("active"));
-      e.currentTarget.classList.add("active");
-      document.querySelector(`.fate-tab-content[data-tab="${target}"]`).classList.add("active");
+  (function() {
+    const sheet = document.currentScript.closest(".fate-sheet") || document.querySelector(".fate-sheet");
+    if (!sheet) return;
+    sheet.querySelectorAll(".fate-tabs__tab").forEach(tab => {
+      tab.addEventListener("click", e => {
+        const target = e.currentTarget.dataset.tab;
+        sheet.querySelectorAll(".fate-tabs__tab").forEach(t => t.classList.remove("active"));
+        sheet.querySelectorAll(".fate-tab-content").forEach(c => c.classList.remove("active"));
+        e.currentTarget.classList.add("active");
+        sheet.querySelector(`.fate-tab-content[data-tab="${target}"]`)?.classList.add("active");
+      });
     });
-  });
+  })();
 </script>

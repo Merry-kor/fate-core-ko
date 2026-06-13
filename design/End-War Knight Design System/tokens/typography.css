@@ -1,0 +1,50 @@
+/* =====================================================
+   종전의 기사 — Typography Tokens
+   Noto Serif KR for display & prose (the printed book),
+   Noto Sans KR for UI chrome.
+   ===================================================== */
+
+:root {
+  /* ── Families ── */
+  --font-serif: 'Noto Serif KR', 'Nanum Myeongjo', Georgia, serif;
+  --font-sans: 'Noto Sans KR', 'Pretendard', system-ui, -apple-system, sans-serif;
+  --font-display: 'Noto Serif KR', 'Nanum Myeongjo', Georgia, serif;
+  --font-mono: 'IBM Plex Mono', 'D2Coding', ui-monospace, monospace;
+
+  /* ── Type scale (UI, rem) ── */
+  --fs-2xs: 0.6875rem; /* 11px — tags, timestamps */
+  --fs-xs: 0.75rem;    /* 12px — labels, captions */
+  --fs-sm: 0.8125rem;  /* 13px — secondary UI */
+  --fs-base: 0.9375rem;/* 15px — body UI */
+  --fs-md: 1.0625rem;  /* 17px — emphasized */
+  --fs-lg: 1.25rem;    /* 20px — card titles */
+  --fs-xl: 1.5rem;     /* 24px — sheet name */
+  --fs-2xl: 2rem;      /* 32px — section display */
+  --fs-3xl: 2.75rem;   /* 44px — hero / roll total */
+  --fs-4xl: 3.75rem;   /* 60px — chapter title */
+
+  /* ── Reading scale (prose / log, optimized for B5 print) ── */
+  --fs-prose: 1.0625rem;   /* 17px screen reading */
+  --fs-prose-print: 10.5pt; /* @kind font */
+  --fs-speaker: 0.9375rem; /* speaker name */
+
+  /* ── Weights ── */
+  --fw-regular: 400; /* @kind font */
+  --fw-medium: 500; /* @kind font */
+  --fw-semibold: 600; /* @kind font */
+  --fw-bold: 700; /* @kind font */
+  --fw-black: 900; /* @kind font */
+
+  /* ── Line heights ── */
+  --lh-tight: 1.15; /* @kind font */
+  --lh-snug: 1.35; /* @kind font */
+  --lh-normal: 1.55; /* @kind font */
+  --lh-prose: 1.85; /* @kind font */
+
+  /* ── Letter spacing ── */
+  --ls-tight: -0.01em; /* @kind font */
+  --ls-normal: 0; /* @kind font */
+  --ls-wide: 0.04em; /* @kind font */
+  --ls-label: 0.12em; /* @kind font */
+  --ls-display: 0.18em; /* @kind font */
+}

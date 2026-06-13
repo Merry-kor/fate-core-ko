@@ -1,0 +1,16 @@
+<!-- @dsCard group="Colors" viewport="700x130" name="Roll Outcome semantics" subtitle="압도적 성공 / 성공 / 동점 / 실패" -->
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8"><link rel="stylesheet" href="../styles.css">
+<style>
+ body{margin:0;background:var(--surface-app);font-family:var(--font-sans);padding:18px;}
+ .row{display:flex;gap:12px;}
+ .pill{flex:1;text-align:center;padding:14px 8px;border-radius:var(--radius-md);font-weight:700;letter-spacing:var(--ls-wide);border:1px solid;}
+ .hx{display:block;font-family:var(--font-mono);font-size:10px;opacity:.7;margin-top:5px;font-weight:400;}
+</style></head><body>
+<div class="row">
+ <div class="pill" style="color:var(--ewk-outcome-style);background:color-mix(in srgb,var(--ewk-outcome-style) 14%,transparent);border-color:color-mix(in srgb,var(--ewk-outcome-style) 40%,transparent)">압도적 성공<span class="hx">+3 이상</span></div>
+ <div class="pill" style="color:var(--ewk-outcome-succeed);background:color-mix(in srgb,var(--ewk-outcome-succeed) 14%,transparent);border-color:color-mix(in srgb,var(--ewk-outcome-succeed) 40%,transparent)">성공<span class="hx">+1~+2</span></div>
+ <div class="pill" style="color:var(--ewk-outcome-tie);background:color-mix(in srgb,var(--ewk-outcome-tie) 14%,transparent);border-color:color-mix(in srgb,var(--ewk-outcome-tie) 40%,transparent)">동점<span class="hx">±0</span></div>
+ <div class="pill" style="color:var(--ewk-outcome-fail);background:color-mix(in srgb,var(--ewk-outcome-fail) 14%,transparent);border-color:color-mix(in srgb,var(--ewk-outcome-fail) 40%,transparent)">실패<span class="hx">-1 이하</span></div>
+</div>
+</body></html>

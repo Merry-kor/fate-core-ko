@@ -1,0 +1,54 @@
+<!-- @dsCard group="Components" viewport="700x400" name="Stage · 채팅, 액터HUD, 장면카드" subtitle="ChatLine · ActorHUD · SceneCard" -->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  body{margin:0;background:var(--surface-app);color:var(--text-body);padding:18px;font-family:var(--font-sans);}
+  .row{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:16px;}
+  .lbl{font-size:var(--fs-2xs);letter-spacing:var(--ls-label);text-transform:uppercase;color:var(--text-faint);width:100%;margin-bottom:-4px;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const NS = window.EndWarKnightDesignSystem_000168;
+const { ChatLine, ActorHUD, SceneCard } = NS;
+const P = '../../assets/portraits/';
+const S = '../../assets/scenes/';
+function Demo() {
+  return (
+    <div>
+      <div className="row">
+        <span className="lbl">ChatLine variants — 소설 양식 채팅</span>
+        <div style={{flex:1,background:'var(--ewk-ink-800)',padding:16,borderRadius:8}}>
+          <ChatLine variant="narration">칠흑 같은 밤. 여러분은 달리는 야간 화물열차 위에 올라 있습니다.</ChatLine>
+          <ChatLine variant="dialogue" speaker="이반 이바노비치" portrait={P+'ivan.png'} accent="var(--ewk-gold-400)">"총을 소환하고 방폭문을 날려버리겠습니다."</ChatLine>
+          <ChatLine variant="narrator">"우리의 시간은 아주아주 기니까, 돌아오기 전까지 기다릴게."</ChatLine>
+          <ChatLine variant="system">키워드 [종전의 기사] 획득</ChatLine>
+        </div>
+      </div>
+      <div className="row">
+        <span className="lbl">ActorHUD — 무대 제어 카드</span>
+        <ActorHUD name="안야 슈탈" portrait={P+'anya.png'} division="소위 · 특임 위관조" fatePoints={3} onStage active/>
+        <ActorHUD name="이반 이바노비치" portrait={P+'ivan.png'} division="상사 · 스피어헤드" fatePoints={2} onStage/>
+        <ActorHUD name="루" portrait={P+'lou.png'} division="소위 · 수달 기사" fatePoints={3}/>
+      </div>
+      <div className="row">
+        <span className="lbl">SceneCard — 장면 썸네일</span>
+        <SceneCard chapter="제2장" name="야간 화물열차" thumbnail={S+'train.jpg'} active/>
+        <SceneCard chapter="제1장" name="눈먼자들의 도시" thumbnail={S+'city.jpg'}/>
+        <SceneCard chapter="프롤로그" name="레스타 광장" thumbnail={S+'square.jpg'}/>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo/>);
+</script>
+</body>
+</html>

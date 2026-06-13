@@ -1,0 +1,93 @@
+/* =====================================================
+   종전의 기사 — Color Tokens
+   The Lesta Empire: ink & gunmetal, the Sun's gold,
+   the eagle-banner crimson, and warm printed parchment.
+   ===================================================== */
+
+:root {
+  /* ── Ink / black surfaces (the dark imperial UI) ── */
+  --ewk-ink-900: #0a0b0f;   /* deepest void — stage letterbox */
+  --ewk-ink-850: #0f1117;
+  --ewk-ink-800: #14161e;   /* app background */
+  --ewk-ink-750: #191c26;
+  --ewk-ink-700: #1f2330;   /* raised card */
+  --ewk-ink-650: #262b3a;
+  --ewk-ink-600: #2f3546;   /* input wells, borders-strong */
+
+  /* ── Steel / gunmetal neutrals ── */
+  --ewk-steel-500: #3c4459; /* hairline borders */
+  --ewk-steel-400: #525c75;
+  --ewk-steel-300: #6f7a95; /* muted text */
+  --ewk-steel-200: #97a1b8;
+  --ewk-steel-100: #c3cad9; /* body text on dark */
+  --ewk-steel-050: #e6e9f1; /* high-contrast text */
+
+  /* ── Imperial gold (the Sun on the Knight's back) ── */
+  --ewk-gold-700: #6b5310;
+  --ewk-gold-600: #97761b;
+  --ewk-gold-500: #c9a227;  /* primary gold */
+  --ewk-gold-400: #e0bc46;
+  --ewk-gold-300: #f0d271;  /* bright highlight */
+  --ewk-gold-glow: rgba(201, 162, 39, 0.30);
+
+  /* ── Crimson (black-eagle-on-red banner / empire blood) ── */
+  --ewk-crimson-800: #5e0f1c;
+  --ewk-crimson-700: #8a162a;
+  --ewk-crimson-600: #b01f33; /* primary crimson */
+  --ewk-crimson-500: #d23148;
+  --ewk-crimson-400: #e3556a; /* hover / bright */
+  --ewk-crimson-glow: rgba(176, 31, 51, 0.32);
+
+  /* ── Parchment (printed play-script / novel page) ── */
+  --ewk-parch-100: #f6efdd; /* page */
+  --ewk-parch-200: #efe5cc; /* sunken panel */
+  --ewk-parch-300: #e3d4af; /* rule lines, edges */
+  --ewk-parch-400: #cbb588; /* deco borders */
+  --ewk-parch-ink: #2a2317; /* prose ink */
+  --ewk-parch-ink-soft: #5b4e38;
+  --ewk-parch-ink-faint: #8a7a5c;
+
+  /* ── Fate roll outcome semantics ── */
+  --ewk-outcome-style: #f0d271;  /* 압도적 성공 — gold */
+  --ewk-outcome-succeed: #4fae6b; /* 성공 — green */
+  --ewk-outcome-tie: #d98a2b;     /* 동점 — amber */
+  --ewk-outcome-fail: #d23148;    /* 실패 — crimson */
+
+  /* ── Aspect-type semantics (면모 종류) ── */
+  --ewk-aspect-identity: #c9a227; /* 정체성 — gold */
+  --ewk-aspect-trouble: #b01f33;  /* 고민 — crimson */
+  --ewk-aspect-general: #6f7a95;  /* 일반 — steel */
+  --ewk-aspect-situation: #3f7fae;/* 상황 — cold blue */
+  --ewk-aspect-longterm: #8a5cc0; /* 장기 #장기 — violet */
+  --ewk-aspect-stack: #3f9e9e;    /* 스택 — teal */
+
+  /* ===================================================
+     Semantic aliases — reference THESE in components
+     =================================================== */
+  --surface-app: var(--ewk-ink-800);
+  --surface-card: var(--ewk-ink-700);
+  --surface-raised: var(--ewk-ink-650);
+  --surface-well: var(--ewk-ink-850);
+  --surface-input: var(--ewk-ink-750);
+
+  --text-strong: var(--ewk-steel-050);
+  --text-body: var(--ewk-steel-100);
+  --text-muted: var(--ewk-steel-300);
+  --text-faint: var(--ewk-steel-400);
+
+  --border-hairline: var(--ewk-steel-500);
+  --border-strong: var(--ewk-ink-600);
+
+  --accent-gold: var(--ewk-gold-500);
+  --accent-gold-bright: var(--ewk-gold-300);
+  --accent-crimson: var(--ewk-crimson-600);
+  --accent-crimson-bright: var(--ewk-crimson-400);
+
+  /* Parchment surfaces for the script/log theme */
+  --paper-page: var(--ewk-parch-100);
+  --paper-panel: var(--ewk-parch-200);
+  --paper-rule: var(--ewk-parch-300);
+  --paper-text: var(--ewk-parch-ink);
+  --paper-text-soft: var(--ewk-parch-ink-soft);
+  --paper-text-faint: var(--ewk-parch-ink-faint);
+}

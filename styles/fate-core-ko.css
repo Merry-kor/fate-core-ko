@@ -1,107 +1,193 @@
 /* =====================================================
-   fate-core-ko - Main Stylesheet
+   fate-core-ko — Main Stylesheet
+   End-War Knight Design System 적용
    ===================================================== */
 
-/* ── Design Tokens ── */
-:root {
-  --fate-bg: #1a1a2e;
-  --fate-bg-card: #16213e;
-  --fate-bg-input: #0f3460;
-  --fate-accent: #e94560;
-  --fate-accent-hover: #c73652;
-  --fate-gold: #f0a500;
-  --fate-text: #e0e0e0;
-  --fate-text-muted: #8892a4;
-  --fate-border: #2d3561;
-  --fate-radius: 8px;
-  --fate-radius-sm: 4px;
-  --fate-shadow: 0 4px 20px rgba(0,0,0,0.4);
-  --fate-font: 'Noto Sans KR', 'Pretendard', system-ui, sans-serif;
+/* ── Web Fonts ── */
+@font-face { font-family: 'Noto Sans KR'; font-weight: 100 900; font-style: normal;
+  src: url('../design/End-War Knight Design System/assets/fonts/NotoSansKR-Variable.ttf') format('truetype'); }
+@font-face { font-family: 'Noto Serif KR'; font-weight: 400; font-style: normal;
+  src: url('../design/End-War Knight Design System/assets/fonts/NotoSerifKR-Regular.ttf') format('truetype'); }
+@font-face { font-family: 'Noto Serif KR'; font-weight: 500; font-style: normal;
+  src: url('../design/End-War Knight Design System/assets/fonts/NotoSerifKR-Medium.ttf') format('truetype'); }
+@font-face { font-family: 'Noto Serif KR'; font-weight: 600; font-style: normal;
+  src: url('../design/End-War Knight Design System/assets/fonts/NotoSerifKR-SemiBold.ttf') format('truetype'); }
+@font-face { font-family: 'Noto Serif KR'; font-weight: 700; font-style: normal;
+  src: url('../design/End-War Knight Design System/assets/fonts/NotoSerifKR-Bold.ttf') format('truetype'); }
+@font-face { font-family: 'Noto Serif KR'; font-weight: 900; font-style: normal;
+  src: url('../design/End-War Knight Design System/assets/fonts/NotoSerifKR-Black.ttf') format('truetype'); }
+@font-face { font-family: 'IBM Plex Mono'; font-weight: 400; font-style: normal;
+  src: url('../design/End-War Knight Design System/assets/fonts/IBMPlexMono-Regular.ttf') format('truetype'); }
+@font-face { font-family: 'IBM Plex Mono'; font-weight: 700; font-style: normal;
+  src: url('../design/End-War Knight Design System/assets/fonts/IBMPlexMono-Bold.ttf') format('truetype'); }
 
-  --outcome-success-style: #ffd700;
-  --outcome-success: #4caf50;
-  --outcome-tie: #ff9800;
-  --outcome-fail: #f44336;
+/* ── Design Tokens ── */
+.fate-core-ko {
+  /* Surfaces */
+  --surface-app:    #14161e;
+  --surface-card:   #1f2330;
+  --surface-raised: #262b3a;
+  --surface-well:   #0f1117;
+  --surface-input:  #191c26;
+
+  /* Text */
+  --text-strong: #e6e9f1;
+  --text-body:   #c3cad9;
+  --text-muted:  #6f7a95;
+  --text-faint:  #525c75;
+
+  /* Borders */
+  --border-hairline: #3c4459;
+  --border-strong:   #2f3546;
+
+  /* Accent */
+  --accent-gold:         #c9a227;
+  --accent-gold-bright:  #f0d271;
+  --accent-gold-glow:    rgba(201, 162, 39, 0.30);
+  --accent-crimson:      #b01f33;
+  --accent-crimson-bright: #e3556a;
+  --accent-crimson-glow: rgba(176, 31, 51, 0.32);
+
+  /* Roll outcomes */
+  --outcome-style:   #f0d271;
+  --outcome-succeed: #4fae6b;
+  --outcome-tie:     #d98a2b;
+  --outcome-fail:    #d23148;
+
+  /* Aspect type colors */
+  --aspect-identity: #c9a227;
+  --aspect-trouble:  #b01f33;
+  --aspect-general:  #6f7a95;
+  --aspect-situation:#3f7fae;
+  --aspect-longterm: #8a5cc0;
+  --aspect-stack:    #3f9e9e;
+
+  /* Typography */
+  --font-serif: 'Noto Serif KR', 'Nanum Myeongjo', Georgia, serif;
+  --font-sans:  'Noto Sans KR', 'Pretendard', system-ui, sans-serif;
+  --font-mono:  'IBM Plex Mono', 'D2Coding', monospace;
+
+  /* Spacing */
+  --sp-1: 0.25rem; --sp-2: 0.5rem; --sp-3: 0.75rem; --sp-4: 1rem;
+  --sp-5: 1.5rem;  --sp-6: 2rem;   --sp-7: 3rem;    --sp-8: 4rem;
+
+  /* Radius — 제국은 각진 모서리를 선호 */
+  --radius-xs: 2px; --radius-sm: 4px; --radius-md: 6px;
+  --radius-lg: 10px; --radius-pill: 999px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.4);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.45);
+  --shadow-gold: 0 0 0 1px #97761b, 0 0 18px var(--accent-gold-glow);
+  --shadow-crimson: 0 0 0 1px #8a162a, 0 0 18px var(--accent-crimson-glow);
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-fast: 0.12s; --dur-base: 0.2s; --dur-slow: 0.35s;
 }
 
-/* ── Reset / Base ── */
+/* ── Reset ── */
 .fate-core-ko * { box-sizing: border-box; margin: 0; padding: 0; }
-.fate-core-ko { font-family: var(--fate-font); color: var(--fate-text); }
+.fate-core-ko {
+  font-family: var(--font-sans);
+  font-size: 0.9375rem;
+  color: var(--text-body);
+  line-height: 1.55;
+}
+.fate-core-ko input, .fate-core-ko textarea, .fate-core-ko select {
+  font-family: var(--font-sans);
+}
 
-/* ── Sheet Layout ── */
+/* =====================================================
+   캐릭터 시트 레이아웃
+   ===================================================== */
+
 .fate-sheet {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: var(--fate-bg);
-  border-radius: var(--fate-radius);
+  background: var(--surface-app);
   overflow: hidden;
 }
 
-/* ── Header ── */
+/* ── 헤더 ── */
 .fate-sheet__header {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 16px 20px;
-  background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
-  border-bottom: 2px solid var(--fate-accent);
+  gap: var(--sp-4);
+  padding: var(--sp-4) var(--sp-5);
+  background: linear-gradient(135deg, #191c26 0%, #14161e 100%);
+  border-bottom: 2px solid var(--accent-gold);
+  flex-shrink: 0;
 }
 
 .fate-header__portrait { flex-shrink: 0; }
 .fate-header__img {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  border: 3px solid var(--fate-accent);
+  width: 72px; height: 72px;
+  border: 2px solid var(--accent-gold);
+  border-radius: var(--radius-sm);
   object-fit: cover;
   cursor: pointer;
-  transition: border-color 0.2s;
+  transition: box-shadow var(--dur-base) var(--ease-out);
 }
-.fate-header__img:hover { border-color: var(--fate-gold); }
+.fate-header__img:hover { box-shadow: var(--shadow-gold); }
 
-.fate-header__info { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+.fate-header__info { flex: 1; display: flex; flex-direction: column; gap: var(--sp-2); min-width: 0; }
+
 .fate-header__name {
-  font-size: 1.5rem;
+  font-family: var(--font-serif);
+  font-size: 1.375rem;
   font-weight: 700;
   background: transparent;
   border: none;
-  border-bottom: 1px solid var(--fate-border);
-  color: var(--fate-text);
+  border-bottom: 1px solid var(--border-hairline);
+  color: var(--text-strong);
   width: 100%;
   padding: 2px 0;
+  letter-spacing: -0.01em;
+  transition: border-color var(--dur-fast);
 }
-.fate-header__name:focus { outline: none; border-bottom-color: var(--fate-accent); }
+.fate-header__name:focus { outline: none; border-bottom-color: var(--accent-gold); }
 
-.fate-header__fatepoints { display: flex; gap: 24px; align-items: center; }
-.fate-fp__group { display: flex; align-items: center; gap: 8px; }
-.fate-fp__label { font-size: 0.75rem; color: var(--fate-text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.fate-header__fatepoints { display: flex; gap: var(--sp-5); align-items: center; flex-wrap: wrap; }
 
-.fate-fp__controls { display: flex; align-items: center; gap: 4px; }
+.fate-fp__group { display: flex; align-items: center; gap: var(--sp-2); }
+.fate-fp__label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+.fate-fp__controls { display: flex; align-items: center; gap: var(--sp-1); }
+
 .fate-fp__btn {
-  width: 24px; height: 24px;
-  border-radius: 50%;
-  border: 1px solid var(--fate-accent);
+  width: 22px; height: 22px;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--accent-gold);
   background: transparent;
-  color: var(--fate-accent);
+  color: var(--accent-gold);
   cursor: pointer;
   font-size: 1rem;
   line-height: 1;
-  transition: background 0.15s;
+  transition: background var(--dur-fast), color var(--dur-fast);
+  display: flex; align-items: center; justify-content: center;
 }
-.fate-fp__btn:hover { background: var(--fate-accent); color: white; }
+.fate-fp__btn:hover { background: var(--accent-gold); color: var(--surface-app); }
+
 .fate-fp__value, .fate-fp__refresh {
-  width: 40px;
-  text-align: center;
-  background: var(--fate-bg-input);
-  border: 1px solid var(--fate-border);
-  border-radius: var(--fate-radius-sm);
-  color: var(--fate-text);
-  font-size: 1rem;
+  width: 38px; text-align: center;
+  background: var(--surface-input);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-xs);
+  color: var(--text-strong);
+  font-family: var(--font-mono);
+  font-size: 0.9375rem;
   padding: 2px 4px;
 }
+.fate-fp__value:focus, .fate-fp__refresh:focus { outline: none; border-color: var(--accent-gold); }
 
-/* ── Body ── */
+/* ── 바디 ── */
 .fate-sheet__body {
   display: flex;
   flex: 1;
@@ -109,14 +195,14 @@
 }
 
 .fate-sheet__left {
-  width: 280px;
+  width: 272px;
   flex-shrink: 0;
   overflow-y: auto;
-  padding: 14px;
-  border-right: 1px solid var(--fate-border);
+  padding: var(--sp-3) var(--sp-3);
+  border-right: 1px solid var(--border-hairline);
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--sp-3);
 }
 
 .fate-sheet__right {
@@ -126,306 +212,511 @@
   overflow: hidden;
 }
 
-/* ── Sections ── */
-.fate-section { display: flex; flex-direction: column; gap: 6px; }
+/* ── 섹션 ── */
+.fate-section { display: flex; flex-direction: column; gap: var(--sp-2); }
+
 .fate-section__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-bottom: 4px;
-  border-bottom: 1px solid var(--fate-border);
+  padding-bottom: var(--sp-1);
+  border-bottom: 1px solid var(--border-hairline);
+  margin-bottom: var(--sp-1);
 }
-.fate-section__title {
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: var(--fate-gold);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-.fate-section__add {
-  width: 20px; height: 20px;
-  border-radius: 50%;
-  border: 1px solid var(--fate-gold);
-  background: transparent;
-  color: var(--fate-gold);
-  cursor: pointer;
-  font-size: 0.9rem;
-  line-height: 1;
-}
-.fate-section__add:hover { background: var(--fate-gold); color: var(--fate-bg); }
 
-/* ── Aspects ── */
-.fate-aspects { list-style: none; display: flex; flex-direction: column; gap: 4px; }
+.fate-section__title {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--accent-gold);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.fate-section__add {
+  width: 18px; height: 18px;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--border-hairline);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.875rem;
+  line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  transition: border-color var(--dur-fast), color var(--dur-fast);
+}
+.fate-section__add:hover { border-color: var(--accent-gold); color: var(--accent-gold); }
+
+/* ── 면모 (Aspects) ── */
+.fate-aspects { list-style: none; display: flex; flex-direction: column; gap: 3px; }
+
 .fate-aspect {
   display: flex;
   align-items: center;
-  gap: 4px;
-  background: var(--fate-bg-card);
-  border: 1px solid var(--fate-border);
-  border-radius: var(--fate-radius-sm);
-  padding: 4px 8px;
-  transition: border-color 0.15s;
+  gap: var(--sp-2);
+  background: var(--surface-card);
+  border: 1px solid var(--border-hairline);
+  border-left: 3px solid var(--aspect-identity);
+  border-radius: var(--radius-xs);
+  padding: var(--sp-1) var(--sp-2);
+  transition: border-color var(--dur-fast);
 }
-.fate-aspect:hover { border-color: var(--fate-accent); }
+.fate-aspect:hover { border-color: var(--border-strong); border-left-color: var(--accent-gold-bright); }
+.fate-aspect[data-aspect-type="trouble"] { border-left-color: var(--aspect-trouble); }
+.fate-aspect[data-aspect-type="general"]  { border-left-color: var(--aspect-general); }
+.fate-aspect[data-aspect-type="situation"]{ border-left-color: var(--aspect-situation); }
+.fate-aspect[data-aspect-type="longterm"] { border-left-color: var(--aspect-longterm); }
+.fate-aspect[data-aspect-type="stack"]    { border-left-color: var(--aspect-stack); }
+
 .fate-aspect__value {
   flex: 1;
   background: transparent;
   border: none;
-  color: var(--fate-text);
-  font-size: 0.875rem;
+  color: var(--text-body);
+  font-family: var(--font-serif);
   font-style: italic;
+  font-size: 0.875rem;
 }
-.fate-aspect__value:focus { outline: none; }
+.fate-aspect__value:focus { outline: none; color: var(--text-strong); }
+.fate-aspect__value::placeholder { color: var(--text-faint); font-style: italic; }
 
-/* ── Stress ── */
+/* ── 스트레스 ── */
 .fate-stress {
-  background: var(--fate-bg-card);
-  border: 1px solid var(--fate-border);
-  border-radius: var(--fate-radius-sm);
-  padding: 6px 8px;
+  background: var(--surface-card);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-xs);
+  padding: var(--sp-2) var(--sp-2);
 }
 .fate-stress__header {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-bottom: 6px;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-2);
 }
-.fate-stress__label { flex: 1; font-size: 0.8rem; color: var(--fate-text-muted); }
-.fate-stress__boxes { display: flex; gap: 6px; flex-wrap: wrap; }
+.fate-stress__label { flex: 1; font-size: 0.75rem; color: var(--text-muted); font-weight: 600; }
+.fate-stress__boxes { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
 .fate-stress__box { cursor: pointer; }
 .fate-stress__box input { display: none; }
 .fate-stress__pip {
-  display: block;
-  width: 20px; height: 20px;
-  border-radius: 50%;
-  border: 2px solid var(--fate-accent);
+  display: flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--accent-crimson);
   background: transparent;
-  transition: background 0.15s;
+  transition: background var(--dur-fast), box-shadow var(--dur-fast);
+  font-size: 0;
 }
 .fate-stress__box input:checked + .fate-stress__pip {
-  background: var(--fate-accent);
+  background: var(--accent-crimson);
+  box-shadow: var(--shadow-crimson);
 }
 
-/* ── Consequences ── */
-.fate-consequences { list-style: none; display: flex; flex-direction: column; gap: 4px; }
+/* ── 타격 (Consequences) ── */
+.fate-consequences { list-style: none; display: flex; flex-direction: column; gap: 3px; }
+
 .fate-consequence {
   display: flex;
   align-items: center;
-  gap: 6px;
-  background: var(--fate-bg-card);
-  border: 1px solid var(--fate-border);
-  border-radius: var(--fate-radius-sm);
-  padding: 4px 8px;
+  gap: var(--sp-2);
+  background: var(--surface-card);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-xs);
+  padding: var(--sp-1) var(--sp-2);
+  transition: border-color var(--dur-fast);
 }
+.fate-consequence:hover { border-color: var(--accent-crimson); }
+
 .fate-consequence__severity {
-  width: 22px; height: 22px;
-  border-radius: 50%;
-  background: var(--fate-accent);
+  width: 20px; height: 20px;
+  border-radius: var(--radius-xs);
+  background: var(--accent-crimson);
   color: white;
-  font-size: 0.7rem;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
   font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
 .fate-consequence__value {
   flex: 1;
   background: transparent;
   border: none;
-  color: var(--fate-text);
-  font-size: 0.875rem;
+  color: var(--text-body);
+  font-size: 0.8125rem;
 }
-.fate-consequence__value:focus { outline: none; }
+.fate-consequence__value:focus { outline: none; color: var(--text-strong); }
+.fate-consequence__value::placeholder { color: var(--text-faint); }
 
-/* ── Buttons ── */
+/* ── 공통 버튼 ── */
 .fate-btn {
   border: none;
   background: transparent;
   cursor: pointer;
   padding: 2px 4px;
-  border-radius: var(--fate-radius-sm);
+  border-radius: var(--radius-xs);
   font-size: 0.75rem;
-  color: var(--fate-text-muted);
-  transition: color 0.15s, background 0.15s;
+  color: var(--text-faint);
+  transition: color var(--dur-fast), background var(--dur-fast);
+  line-height: 1;
 }
-.fate-btn:hover { color: var(--fate-text); background: rgba(255,255,255,0.08); }
-.fate-btn--danger:hover { color: var(--fate-accent); }
-.fate-btn--roll {
-  color: var(--fate-gold);
-  border: 1px solid var(--fate-gold);
-  padding: 2px 6px;
-}
-.fate-btn--roll:hover { background: var(--fate-gold); color: var(--fate-bg); }
+.fate-btn:hover { color: var(--text-body); background: rgba(255,255,255,0.06); }
+.fate-btn--danger:hover { color: var(--accent-crimson-bright); }
 
-.fate-item__actions { display: flex; gap: 2px; opacity: 0; transition: opacity 0.15s; }
+.fate-btn--roll {
+  color: var(--accent-gold);
+  border: 1px solid var(--accent-gold);
+  padding: 2px 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  border-radius: var(--radius-xs);
+  transition: background var(--dur-fast), color var(--dur-fast), box-shadow var(--dur-fast);
+}
+.fate-btn--roll:hover { background: var(--accent-gold); color: var(--surface-app); box-shadow: var(--shadow-gold); }
+
+.fate-item__actions { display: flex; gap: 2px; opacity: 0; transition: opacity var(--dur-fast); }
 .fate-list__item:hover .fate-item__actions,
 .fate-skill:hover .fate-item__actions,
-.fate-stress:hover .fate-item__actions { opacity: 1; }
+.fate-stress:hover .fate-item__actions,
+.fate-stunt:hover .fate-item__actions { opacity: 1; }
 
-/* ── Tabs ── */
+/* ── 탭 ── */
 .fate-tabs {
   display: flex;
-  gap: 0;
-  border-bottom: 2px solid var(--fate-border);
-  padding: 0 14px;
-  background: var(--fate-bg-card);
+  border-bottom: 1px solid var(--border-hairline);
+  padding: 0 var(--sp-3);
+  background: var(--surface-card);
+  flex-shrink: 0;
 }
+
 .fate-tabs__tab {
-  padding: 10px 16px;
-  font-size: 0.8rem;
-  font-weight: 600;
+  padding: var(--sp-2) var(--sp-4);
+  font-size: 0.6875rem;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--fate-text-muted);
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
   cursor: pointer;
   border-bottom: 2px solid transparent;
-  margin-bottom: -2px;
-  transition: color 0.15s, border-color 0.15s;
+  margin-bottom: -1px;
+  transition: color var(--dur-fast), border-color var(--dur-fast);
+  user-select: none;
 }
-.fate-tabs__tab:hover { color: var(--fate-text); }
-.fate-tabs__tab.active { color: var(--fate-accent); border-bottom-color: var(--fate-accent); }
+.fate-tabs__tab:hover { color: var(--text-body); }
+.fate-tabs__tab.active { color: var(--accent-gold); border-bottom-color: var(--accent-gold); }
 
-.fate-tab-content { display: none; flex: 1; overflow-y: auto; padding: 14px; }
-.fate-tab-content.active { display: flex; flex-direction: column; gap: 14px; }
+.fate-tab-content { display: none; flex: 1; overflow-y: auto; padding: var(--sp-3); }
+.fate-tab-content.active { display: flex; flex-direction: column; gap: var(--sp-3); }
 
-/* ── Skills ── */
-.fate-skill-ladder { list-style: none; display: flex; flex-direction: column; gap: 3px; }
+/* ── 기능 사다리 ── */
+.fate-skill-ladder { list-style: none; display: flex; flex-direction: column; gap: 2px; }
+
 .fate-skill {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 5px 8px;
-  background: var(--fate-bg-card);
-  border: 1px solid var(--fate-border);
-  border-radius: var(--fate-radius-sm);
+  gap: var(--sp-2);
+  padding: var(--sp-1) var(--sp-2);
+  background: var(--surface-card);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-xs);
+  transition: border-color var(--dur-fast);
 }
+.fate-skill:hover { border-color: var(--border-strong); }
+
 .fate-skill__rank {
-  min-width: 64px;
-  font-size: 0.75rem;
+  min-width: 56px;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
   font-weight: 700;
-  color: var(--fate-gold);
+  color: var(--accent-gold);
   text-align: center;
-  padding: 2px 6px;
-  background: rgba(240, 165, 0, 0.1);
-  border-radius: 3px;
+  padding: 2px var(--sp-2);
+  background: rgba(201, 162, 39, 0.1);
+  border: 1px solid rgba(201, 162, 39, 0.2);
+  border-radius: var(--radius-xs);
+  letter-spacing: 0.04em;
 }
-.fate-skill__name { flex: 1; font-size: 0.875rem; }
+.fate-skill__name { flex: 1; font-size: 0.875rem; color: var(--text-body); }
 
-/* ── Stunts ── */
-.fate-stunts { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+/* ── 특기 (Stunts) ── */
+.fate-stunts { list-style: none; display: flex; flex-direction: column; gap: var(--sp-2); }
+
 .fate-stunt {
-  background: var(--fate-bg-card);
-  border: 1px solid var(--fate-border);
-  border-radius: var(--fate-radius-sm);
-  padding: 8px 10px;
+  background: var(--surface-card);
+  border: 1px solid var(--border-hairline);
+  border-left: 2px solid var(--border-strong);
+  border-radius: var(--radius-xs);
+  padding: var(--sp-2) var(--sp-3);
+  transition: border-left-color var(--dur-fast);
 }
-.fate-stunt__header { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
-.fate-stunt__name { flex: 1; font-weight: 600; font-size: 0.875rem; }
-.fate-stunt__summary { font-size: 0.8rem; color: var(--fate-text-muted); line-height: 1.4; }
+.fate-stunt:hover { border-left-color: var(--accent-gold); }
+.fate-stunt__header { display: flex; align-items: center; gap: var(--sp-2); margin-bottom: 2px; }
+.fate-stunt__name { flex: 1; font-weight: 600; font-size: 0.875rem; color: var(--text-strong); }
+.fate-stunt__summary { font-size: 0.8125rem; color: var(--text-muted); line-height: 1.5; }
 
-/* ── Bio ── */
+/* ── 특수항목 (Extras) ── */
+.fate-extra {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-2);
+  background: var(--surface-card);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-xs);
+}
+.fate-extra__name { flex: 1; font-size: 0.875rem; color: var(--text-body); }
+
+/* ── 일대기 탭 ── */
 .fate-section--bio { flex: 1; }
-.fate-label { font-size: 0.75rem; font-weight: 600; color: var(--fate-text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; display: block; }
-.fate-editor { min-height: 120px; background: var(--fate-bg-input); border: 1px solid var(--fate-border); border-radius: var(--fate-radius-sm); padding: 8px; }
+.fate-label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: var(--sp-1);
+  display: block;
+}
+.fate-editor {
+  min-height: 120px;
+  background: var(--surface-well);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-xs);
+  padding: var(--sp-2);
+}
 .fate-textarea {
   width: 100%;
-  background: var(--fate-bg-input);
-  border: 1px solid var(--fate-border);
-  border-radius: var(--fate-radius-sm);
-  color: var(--fate-text);
-  padding: 8px;
+  background: var(--surface-well);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-xs);
+  color: var(--text-body);
+  padding: var(--sp-2) var(--sp-3);
   resize: vertical;
-  font-family: var(--fate-font);
   font-size: 0.875rem;
+  line-height: 1.6;
 }
-.fate-textarea:focus { outline: none; border-color: var(--fate-accent); }
+.fate-textarea:focus { outline: none; border-color: var(--accent-gold); }
 
-/* ── Item Sheet ── */
+/* =====================================================
+   아이템 시트
+   ===================================================== */
+
 .fate-item-sheet {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: var(--fate-bg);
-  font-family: var(--fate-font);
-  color: var(--fate-text);
+  background: var(--surface-app);
+  color: var(--text-body);
+  font-family: var(--font-sans);
 }
+
 .fate-item-sheet__header {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  background: var(--fate-bg-card);
-  border-bottom: 2px solid var(--fate-accent);
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--surface-card);
+  border-bottom: 2px solid var(--accent-gold);
 }
-.fate-item-sheet__img { width: 48px; height: 48px; border-radius: var(--fate-radius-sm); border: 2px solid var(--fate-border); object-fit: cover; cursor: pointer; }
-.fate-item-sheet__name { flex: 1; background: transparent; border: none; border-bottom: 1px solid var(--fate-border); color: var(--fate-text); font-size: 1.1rem; font-weight: 600; }
-.fate-item-sheet__name:focus { outline: none; border-bottom-color: var(--fate-accent); }
-.fate-item-sheet__type { font-size: 0.7rem; color: var(--fate-text-muted); text-transform: uppercase; background: var(--fate-bg-input); padding: 2px 8px; border-radius: 20px; }
-.fate-item-sheet__body { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.fate-item-sheet__img {
+  width: 44px; height: 44px;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--border-hairline);
+  object-fit: cover;
+  cursor: pointer;
+}
+.fate-item-sheet__name {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border-hairline);
+  color: var(--text-strong);
+  font-family: var(--font-serif);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  padding: 2px 0;
+}
+.fate-item-sheet__name:focus { outline: none; border-bottom-color: var(--accent-gold); }
 
-.fate-field { display: flex; flex-direction: column; gap: 4px; }
+.fate-item-sheet__type {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  background: var(--surface-raised);
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-hairline);
+}
+
+.fate-item-sheet__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.fate-field { display: flex; flex-direction: column; gap: var(--sp-1); }
 .fate-field--editor { flex: 1; }
+
 .fate-input {
-  background: var(--fate-bg-input);
-  border: 1px solid var(--fate-border);
-  border-radius: var(--fate-radius-sm);
-  color: var(--fate-text);
-  padding: 6px 10px;
+  background: var(--surface-input);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-xs);
+  color: var(--text-body);
+  padding: var(--sp-2) var(--sp-3);
   font-size: 0.875rem;
+  transition: border-color var(--dur-fast);
 }
-.fate-input:focus { outline: none; border-color: var(--fate-accent); }
+.fate-input:focus { outline: none; border-color: var(--accent-gold); color: var(--text-strong); }
 
-/* ── Roll Card ── */
+/* =====================================================
+   롤 카드 (채팅)
+   ===================================================== */
+
 .fate-roll-card {
-  background: var(--fate-bg-card);
-  border: 1px solid var(--fate-border);
-  border-radius: var(--fate-radius);
-  padding: 12px 16px;
-  font-family: var(--fate-font);
+  background: var(--surface-card);
+  border: 1px solid var(--border-hairline);
+  border-top: 2px solid var(--accent-gold);
+  border-radius: var(--radius-sm);
+  padding: var(--sp-3) var(--sp-4);
+  font-family: var(--font-sans);
+  box-shadow: var(--shadow-md);
 }
-.fate-roll-card__header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
-.fate-roll-card__actor { font-weight: 700; color: var(--fate-text); }
-.fate-roll-card__skill { font-size: 0.8rem; color: var(--fate-gold); background: rgba(240,165,0,0.1); padding: 2px 8px; border-radius: 20px; }
 
-.fate-roll-card__dice { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+.fate-roll-card__header {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-3);
+}
+.fate-roll-card__actor {
+  font-family: var(--font-serif);
+  font-weight: 700;
+  color: var(--text-strong);
+  font-size: 0.9375rem;
+}
+.fate-roll-card__skill {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--accent-gold);
+  background: rgba(201, 162, 39, 0.1);
+  border: 1px solid rgba(201, 162, 39, 0.25);
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* 4개 페이트 주사위 */
+.fate-roll-card__dice {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-3);
+  flex-wrap: wrap;
+}
+
 .fate-die {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px; height: 32px;
-  border-radius: 6px;
-  font-size: 1.2rem;
-  font-weight: 900;
-  border: 2px solid;
+  width: 34px; height: 34px;
+  border-radius: var(--radius-xs);
+  font-family: var(--font-mono);
+  font-size: 1.125rem;
+  font-weight: 700;
+  border: 1px solid;
+  transition: box-shadow var(--dur-fast);
 }
-.fate-die--plus { border-color: #4caf50; color: #4caf50; background: rgba(76,175,80,0.1); }
-.fate-die--minus { border-color: #f44336; color: #f44336; background: rgba(244,67,54,0.1); }
-.fate-die--blank { border-color: var(--fate-border); color: var(--fate-text-muted); }
-.fate-roll-card__modifier { font-size: 1rem; font-weight: 700; color: var(--fate-text-muted); margin-left: 4px; }
+.fate-die--plus  { border-color: #4fae6b; color: #4fae6b; background: rgba(79,174,107,0.1); }
+.fate-die--minus { border-color: #d23148; color: #d23148; background: rgba(210,49,72,0.1); }
+.fate-die--blank { border-color: var(--border-strong); color: var(--text-faint); background: var(--surface-raised); }
 
-.fate-roll-card__result { display: flex; align-items: baseline; gap: 8px; margin-bottom: 6px; }
-.fate-roll-card__total { font-size: 2rem; font-weight: 900; color: var(--fate-text); }
-.fate-roll-card__ladder { font-size: 1rem; color: var(--fate-gold); font-style: italic; }
+.fate-roll-card__modifier {
+  font-family: var(--font-mono);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin-left: var(--sp-1);
+}
 
+/* 결과 */
+.fate-roll-card__result {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-2);
+}
+.fate-roll-card__total {
+  font-family: var(--font-mono);
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: var(--text-strong);
+  line-height: 1;
+}
+.fate-roll-card__ladder {
+  font-family: var(--font-serif);
+  font-size: 1.0625rem;
+  font-style: italic;
+  color: var(--accent-gold);
+}
+
+/* 결과 필 */
 .fate-roll-card__outcome {
-  font-size: 0.9rem;
+  display: inline-block;
+  font-size: 0.6875rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  padding: 4px 12px;
-  border-radius: 20px;
-  display: inline-block;
+  letter-spacing: 0.12em;
+  padding: 3px 12px;
+  border-radius: var(--radius-xs);
 }
-.fate-outcome--succeedwithstyle { background: rgba(255,215,0,0.15); color: var(--outcome-success-style); }
-.fate-outcome--succeed { background: rgba(76,175,80,0.15); color: var(--outcome-success); }
-.fate-outcome--tie { background: rgba(255,152,0,0.15); color: var(--outcome-tie); }
-.fate-outcome--fail { background: rgba(244,67,54,0.15); color: var(--outcome-fail); }
+.fate-outcome--succeedwithstyle {
+  background: rgba(240,210,113,0.12);
+  color: var(--outcome-style);
+  border: 1px solid rgba(240,210,113,0.3);
+}
+.fate-outcome--succeed {
+  background: rgba(79,174,107,0.12);
+  color: var(--outcome-succeed);
+  border: 1px solid rgba(79,174,107,0.3);
+}
+.fate-outcome--tie {
+  background: rgba(217,138,43,0.12);
+  color: var(--outcome-tie);
+  border: 1px solid rgba(217,138,43,0.3);
+}
+.fate-outcome--fail {
+  background: rgba(210,49,72,0.12);
+  color: var(--outcome-fail);
+  border: 1px solid rgba(210,49,72,0.3);
+}
 
-/* ── Scrollbar ── */
+/* ── 스크롤바 ── */
 .fate-sheet__left::-webkit-scrollbar,
-.fate-tab-content::-webkit-scrollbar { width: 4px; }
+.fate-tab-content::-webkit-scrollbar,
+.fate-item-sheet__body::-webkit-scrollbar { width: 3px; }
 .fate-sheet__left::-webkit-scrollbar-track,
-.fate-tab-content::-webkit-scrollbar-track { background: transparent; }
+.fate-tab-content::-webkit-scrollbar-track,
+.fate-item-sheet__body::-webkit-scrollbar-track { background: transparent; }
 .fate-sheet__left::-webkit-scrollbar-thumb,
-.fate-tab-content::-webkit-scrollbar-thumb { background: var(--fate-border); border-radius: 2px; }
+.fate-tab-content::-webkit-scrollbar-thumb,
+.fate-item-sheet__body::-webkit-scrollbar-thumb {
+  background: var(--border-hairline);
+  border-radius: 2px;
+}
+
+/* ── 리스트 공통 ── */
+.fate-list { list-style: none; display: flex; flex-direction: column; gap: 3px; }
+.fate-list__item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-1) var(--sp-2);
+  background: var(--surface-card);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-xs);
+}

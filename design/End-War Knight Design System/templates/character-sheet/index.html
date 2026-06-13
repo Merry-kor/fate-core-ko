@@ -1,0 +1,413 @@
+<!-- @template name="캐릭터 시트" description="Fate Core 캐릭터 시트 — 안야 슈탈 데이터 포함, 편집 가능한 순수 HTML/CSS" -->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>안야 슈탈 — 페이트 코어 시트</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<script src="./ds-base.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;}
+body{background:#0a0b0f;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;font-family:var(--font-sans);}
+
+.fate-sheet{width:900px;min-height:680px;display:flex;flex-direction:column;background:var(--surface-app);color:var(--text-body);border:1px solid var(--border-strong);border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-lg);}
+
+/* ── Header ── */
+.sheet-header{display:flex;align-items:center;gap:var(--sp-5);padding:16px 20px;background:linear-gradient(135deg,var(--ewk-ink-850) 0%,var(--ewk-ink-800) 100%);border-bottom:2px solid var(--ewk-gold-600);}
+.sheet-portrait{width:80px;height:80px;flex-shrink:0;border-radius:var(--radius-sm);border:3px solid var(--ewk-gold-500);overflow:hidden;box-shadow:var(--shadow-gold);}
+.sheet-portrait img{width:100%;height:100%;object-fit:cover;object-position:top center;display:block;}
+.sheet-info{flex:1;display:flex;flex-direction:column;gap:var(--sp-2);}
+.sheet-name{font-family:var(--font-serif);font-size:var(--fs-xl);font-weight:var(--fw-black);color:var(--text-strong);border:none;background:transparent;padding:0;width:100%;}
+.sheet-name:focus{outline:none;border-bottom:1px solid var(--ewk-gold-500);}
+.sheet-division{font-size:var(--fs-xs);font-weight:var(--fw-semibold);color:var(--ewk-crimson-400);letter-spacing:var(--ls-wide);text-transform:uppercase;}
+.sheet-fp{display:flex;align-items:center;gap:var(--sp-6);}
+.fp-grp{display:flex;align-items:center;gap:var(--sp-2);}
+.fp-lbl{font-size:var(--fs-2xs);font-weight:var(--fw-semibold);letter-spacing:var(--ls-label);text-transform:uppercase;color:var(--text-muted);}
+.fp-ctrl{display:flex;align-items:center;gap:0;border:1px solid var(--ewk-gold-600);border-radius:var(--radius-md);background:rgba(201,162,39,0.04);}
+.fp-btn{width:32px;height:36px;flex-shrink:0;border:none;background:rgba(201,162,39,0.08);color:var(--ewk-gold-400);cursor:pointer;font-size:20px;font-weight:700;line-height:1;display:flex;align-items:center;justify-content:center;transition:background var(--dur-fast),color var(--dur-fast);user-select:none;-webkit-user-select:none;}
+.fp-btn:first-child{border-radius:calc(var(--radius-md) - 1px) 0 0 calc(var(--radius-md) - 1px);border-right:1px solid var(--ewk-gold-700);}
+.fp-btn:last-child{border-radius:0 calc(var(--radius-md) - 1px) calc(var(--radius-md) - 1px) 0;border-left:1px solid var(--ewk-gold-700);}
+.fp-btn:hover{background:var(--ewk-gold-500);color:var(--ewk-ink-900);}
+.fp-btn:active{filter:brightness(.85);}
+.fp-val{font-family:var(--font-serif);font-size:var(--fs-2xl);font-weight:var(--fw-black);color:var(--ewk-gold-300);text-shadow:0 0 14px var(--ewk-gold-glow);width:48px;text-align:center;background:transparent;border:none;font-variant-numeric:tabular-nums;padding:2px 0;pointer-events:none;}
+.fp-val:focus{outline:none;background:rgba(201,162,39,0.05);}
+.fp-ref{font-family:var(--font-serif);font-size:var(--fs-lg);font-weight:var(--fw-bold);color:var(--text-body);min-width:28px;text-align:center;background:transparent;border:none;font-variant-numeric:tabular-nums;}
+
+/* ── Body ── */
+.sheet-body{display:flex;flex:1;min-height:0;overflow:hidden;}
+.sheet-left{width:280px;flex-shrink:0;overflow-y:auto;padding:var(--sp-4);border-right:1px solid var(--border-strong);display:flex;flex-direction:column;gap:var(--sp-4);}
+.sheet-right{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0;}
+
+/* ── Sections ── */
+.sec{display:flex;flex-direction:column;gap:var(--sp-2);}
+.sec-hdr{display:flex;align-items:center;justify-content:space-between;padding-bottom:var(--sp-1);border-bottom:1px solid var(--border-strong);}
+.sec-ttl{font-size:var(--fs-2xs);font-weight:var(--fw-bold);color:var(--ewk-gold-400);text-transform:uppercase;letter-spacing:var(--ls-label);}
+.sec-add{width:18px;height:18px;border-radius:50%;border:1px solid var(--ewk-gold-600);background:transparent;color:var(--ewk-gold-400);cursor:pointer;font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center;}
+.sec-add:hover{background:var(--ewk-gold-500);color:var(--ewk-ink-900);}
+
+/* ── Aspects ── */
+.asp-list{list-style:none;display:flex;flex-direction:column;gap:4px;}
+.asp-item{display:flex;align-items:center;gap:var(--sp-2);padding:6px 9px;background:var(--surface-card);border:1px solid var(--border-strong);border-left-width:3px;border-radius:var(--radius-sm);transition:border-color var(--dur-fast);}
+.asp-item:hover{border-right-color:var(--ewk-steel-400);}
+.asp-item:hover .ia{opacity:1;}
+.asp-item.identity{border-left-color:var(--ewk-aspect-identity);}
+.asp-item.trouble{border-left-color:var(--ewk-aspect-trouble);}
+.asp-item.general{border-left-color:var(--ewk-aspect-general);}
+.asp-badge{font-size:9px;font-weight:var(--fw-bold);letter-spacing:var(--ls-wide);text-transform:uppercase;flex-shrink:0;width:26px;line-height:1;}
+.asp-item.identity .asp-badge{color:var(--ewk-aspect-identity);}
+.asp-item.trouble .asp-badge{color:var(--ewk-aspect-trouble);}
+.asp-item.general .asp-badge{color:var(--ewk-aspect-general);}
+.asp-val{flex:1;background:transparent;border:none;color:var(--text-strong);font-family:var(--font-serif);font-style:italic;font-size:var(--fs-sm);line-height:var(--lh-snug);}
+.asp-val:focus{outline:none;}
+
+/* ── Stress ── */
+.stress-track{background:var(--surface-card);border:1px solid var(--border-strong);border-radius:var(--radius-sm);padding:7px 9px;}
+.stress-hdr{display:flex;align-items:center;gap:var(--sp-2);margin-bottom:7px;}
+.stress-nm{flex:1;font-size:var(--fs-xs);font-weight:var(--fw-semibold);color:var(--text-muted);letter-spacing:var(--ls-wide);}
+.stress-boxes{display:flex;gap:6px;flex-wrap:wrap;}
+.sbox{cursor:pointer;}
+.sbox input{display:none;}
+.sbox .pip{display:flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:var(--radius-xs);border:2px solid var(--ewk-crimson-600);background:transparent;color:transparent;font-family:var(--font-sans);font-size:var(--fs-2xs);font-weight:var(--fw-bold);transition:background var(--dur-fast),box-shadow var(--dur-fast),color var(--dur-fast);user-select:none;}
+.sbox input:checked + .pip{background:var(--ewk-crimson-600);box-shadow:0 0 8px var(--ewk-crimson-glow);color:#fff;}
+
+/* ── Consequences ── */
+.con-list{list-style:none;display:flex;flex-direction:column;gap:4px;}
+.con-item{display:flex;align-items:center;gap:var(--sp-2);background:var(--surface-card);border:1px solid var(--border-strong);border-radius:var(--radius-sm);padding:5px 8px;}
+.con-item:hover .ia{opacity:1;}
+.con-sev{width:24px;height:24px;border-radius:50%;background:var(--ewk-crimson-700);color:#fff;font-size:9px;font-weight:var(--fw-black);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.con-val{flex:1;background:transparent;border:none;color:var(--text-body);font-size:var(--fs-sm);font-style:italic;}
+.con-val:focus{outline:none;}
+.con-val::placeholder{color:var(--text-faint);font-style:italic;}
+
+/* ── Item actions ── */
+.ia{display:flex;gap:2px;opacity:0;transition:opacity var(--dur-fast);}
+.ibtn{width:22px;height:22px;background:transparent;border:none;cursor:pointer;border-radius:var(--radius-xs);color:var(--text-faint);font-size:var(--fs-xs);display:flex;align-items:center;justify-content:center;transition:color var(--dur-fast),background var(--dur-fast);}
+.ibtn:hover{color:var(--text-body);background:rgba(255,255,255,0.06);}
+.ibtn.d:hover{color:var(--ewk-crimson-400);}
+
+/* ── CSS-only Tabs ── */
+.tab-radio{display:none;}
+.fate-tabs{display:flex;border-bottom:2px solid var(--border-strong);background:var(--surface-card);padding-inline:var(--sp-3);flex-shrink:0;}
+.fate-tabs label{padding:10px 15px;font-family:var(--font-sans);font-size:var(--fs-sm);font-weight:var(--fw-bold);letter-spacing:var(--ls-wide);color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:color var(--dur-fast),border-color var(--dur-fast);}
+.fate-tabs label:hover{color:var(--text-body);}
+#t-skills:checked ~ .fate-tabs label[for="t-skills"],
+#t-extras:checked ~ .fate-tabs label[for="t-extras"],
+#t-bio:checked ~ .fate-tabs label[for="t-bio"]{color:var(--ewk-gold-400);border-bottom-color:var(--ewk-gold-500);}
+.tab-panels{flex:1;overflow:hidden;min-height:0;}
+.tab-panel{display:none;height:100%;overflow-y:auto;padding:var(--sp-4);flex-direction:column;gap:var(--sp-4);}
+#t-skills:checked ~ .tab-panels .p-skills{display:flex;}
+#t-extras:checked ~ .tab-panels .p-extras{display:flex;}
+#t-bio:checked ~ .tab-panels .p-bio{display:flex;}
+
+/* ── Skills ── */
+.skill-ladder{list-style:none;display:flex;flex-direction:column;gap:3px;}
+.ski{display:flex;align-items:center;gap:var(--sp-3);padding:5px 9px;background:var(--surface-card);border:1px solid var(--border-strong);border-radius:var(--radius-sm);}
+.ski:hover .ia{opacity:1;}
+.ski-rank{min-width:88px;text-align:center;font-size:var(--fs-xs);font-weight:var(--fw-bold);padding:2px 9px;border-radius:var(--radius-sm);font-variant-numeric:tabular-nums;letter-spacing:var(--ls-wide);}
+.rpos{color:var(--ewk-gold-300);background:color-mix(in srgb,var(--ewk-gold-500) 14%,transparent);border:1px solid var(--ewk-gold-600);}
+.rzero{color:var(--text-muted);background:rgba(255,255,255,0.04);border:1px solid var(--border-strong);}
+.ski-nm{flex:1;font-size:var(--fs-base);color:var(--text-body);}
+.roll-btn{font-size:var(--fs-2xs);font-weight:var(--fw-bold);letter-spacing:var(--ls-wide);color:var(--ewk-gold-400);background:transparent;border:1px solid var(--ewk-gold-600);border-radius:var(--radius-sm);padding:2px 9px;cursor:pointer;}
+.roll-btn:hover{background:var(--ewk-gold-500);color:var(--ewk-ink-900);}
+
+/* ── Stunts ── */
+.stunt-list{list-style:none;display:flex;flex-direction:column;gap:var(--sp-2);}
+.stunt{background:var(--surface-card);border:1px solid var(--border-strong);border-top:2px solid var(--ewk-gold-600);border-radius:var(--radius-sm);padding:8px 10px;}
+.stunt:hover .ia{opacity:1;}
+.stunt-hdr{display:flex;align-items:center;gap:var(--sp-2);margin-bottom:4px;}
+.stunt-nm{flex:1;font-size:var(--fs-base);font-weight:var(--fw-bold);color:var(--text-strong);}
+.stunt-tag{font-size:var(--fs-2xs);font-weight:var(--fw-semibold);color:var(--ewk-gold-400);background:color-mix(in srgb,var(--ewk-gold-500) 12%,transparent);border:1px solid var(--ewk-gold-600);border-radius:var(--radius-pill);padding:1px 8px;}
+.stunt-sum{font-size:var(--fs-sm);color:var(--text-muted);line-height:var(--lh-normal);}
+
+/* ── Bio ── */
+.bio-lbl{font-size:var(--fs-xs);font-weight:var(--fw-semibold);letter-spacing:var(--ls-label);text-transform:uppercase;color:var(--text-muted);margin-bottom:var(--sp-2);display:block;}
+.bio-ta{flex:1;background:var(--surface-well);border:1px solid var(--border-strong);border-radius:var(--radius-sm);padding:var(--sp-3);font-family:var(--font-serif);font-size:var(--fs-sm);line-height:var(--lh-prose);color:var(--text-body);resize:vertical;width:100%;min-height:120px;}
+.bio-ta:focus{outline:none;border-color:var(--ewk-gold-600);}
+
+/* ── Scrollbar ── */
+.sheet-left::-webkit-scrollbar,.tab-panel::-webkit-scrollbar{width:4px;}
+.sheet-left::-webkit-scrollbar-track,.tab-panel::-webkit-scrollbar-track{background:transparent;}
+.sheet-left::-webkit-scrollbar-thumb,.tab-panel::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:2px;}
+</style>
+</head>
+<body>
+<div class="fate-sheet">
+
+  <!-- ── Header ── -->
+  <header class="sheet-header">
+    <div class="sheet-portrait">
+      <img src="../../assets/portraits/anya.png" alt="안야 슈탈">
+    </div>
+    <div class="sheet-info">
+      <input class="sheet-name" type="text" value="안야 슈탈 (Anya Stahl)">
+      <div class="sheet-division">소위 · 제1사단 스피어헤드 특임 위관조</div>
+      <div class="sheet-fp">
+        <div class="fp-grp">
+          <span class="fp-lbl">운명점</span>
+          <div class="fp-ctrl">
+            <button class="fp-btn" type="button">−</button>
+            <input class="fp-val" type="number" value="3" min="0">
+            <button class="fp-btn" type="button">+</button>
+          </div>
+        </div>
+        <div class="fp-grp">
+          <span class="fp-lbl">재충전</span>
+          <input class="fp-ref" type="number" value="3" min="1">
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── Body ── -->
+  <div class="sheet-body">
+
+    <!-- Left column -->
+    <aside class="sheet-left">
+
+      <!-- Aspects -->
+      <section class="sec">
+        <div class="sec-hdr">
+          <h2 class="sec-ttl">면모</h2>
+          <button class="sec-add" type="button">+</button>
+        </div>
+        <ul class="asp-list">
+          <li class="asp-item identity">
+            <span class="asp-badge">정체성</span>
+            <input class="asp-val" type="text" value="고철을 부리는 스피어헤드의 뒷골목 이단아">
+            <div class="ia"><button class="ibtn" type="button"><i class="fa fa-cog"></i></button><button class="ibtn d" type="button"><i class="fa fa-trash"></i></button></div>
+          </li>
+          <li class="asp-item trouble">
+            <span class="asp-badge">고민</span>
+            <input class="asp-val" type="text" value="뒷골목의 거물 '외눈의 한스'에게 진 막대한 빚">
+            <div class="ia"><button class="ibtn" type="button"><i class="fa fa-cog"></i></button><button class="ibtn d" type="button"><i class="fa fa-trash"></i></button></div>
+          </li>
+          <li class="asp-item general">
+            <span class="asp-badge">일반</span>
+            <input class="asp-val" type="text" value="이 세상에 정말로 쓸모없는 건 없어">
+            <div class="ia"><button class="ibtn" type="button"><i class="fa fa-cog"></i></button><button class="ibtn d" type="button"><i class="fa fa-trash"></i></button></div>
+          </li>
+          <li class="asp-item general">
+            <span class="asp-badge">일반</span>
+            <input class="asp-val" type="text" value="스승이 남긴 이단의 유작, 마그눔 오푸스">
+            <div class="ia"><button class="ibtn" type="button"><i class="fa fa-cog"></i></button><button class="ibtn d" type="button"><i class="fa fa-trash"></i></button></div>
+          </li>
+          <li class="asp-item general">
+            <span class="asp-badge">일반</span>
+            <input class="asp-val" type="text" value="산전수전 다 겪은 사고뭉치 알바생">
+            <div class="ia"><button class="ibtn" type="button"><i class="fa fa-cog"></i></button><button class="ibtn d" type="button"><i class="fa fa-trash"></i></button></div>
+          </li>
+        </ul>
+      </section>
+
+      <!-- Stress -->
+      <section class="sec">
+        <div class="sec-hdr">
+          <h2 class="sec-ttl">스트레스</h2>
+          <button class="sec-add" type="button">+</button>
+        </div>
+        <div class="stress-track">
+          <div class="stress-hdr"><span class="stress-nm">스트레스</span></div>
+          <div class="stress-boxes">
+            <label class="sbox"><input type="checkbox"><span class="pip">1</span></label>
+            <label class="sbox"><input type="checkbox"><span class="pip">2</span></label>
+            <label class="sbox"><input type="checkbox"><span class="pip">3</span></label>
+            <label class="sbox"><input type="checkbox"><span class="pip">4</span></label>
+          </div>
+        </div>
+      </section>
+
+      <!-- Consequences / Ta격 -->
+      <section class="sec">
+        <div class="sec-hdr">
+          <h2 class="sec-ttl">타격</h2>
+          <button class="sec-add" type="button">+</button>
+        </div>
+        <ul class="con-list">
+          <li class="con-item"><span class="con-sev">−2</span><input class="con-val" type="text" placeholder="경미한 타격"><div class="ia"><button class="ibtn d" type="button"><i class="fa fa-trash"></i></button></div></li>
+          <li class="con-item"><span class="con-sev">−4</span><input class="con-val" type="text" placeholder="보통 타격"><div class="ia"><button class="ibtn d" type="button"><i class="fa fa-trash"></i></button></div></li>
+          <li class="con-item"><span class="con-sev">−6</span><input class="con-val" type="text" placeholder="심각한 타격"><div class="ia"><button class="ibtn d" type="button"><i class="fa fa-trash"></i></button></div></li>
+        </ul>
+      </section>
+
+    </aside>
+
+    <!-- Right column — CSS-only tabs -->
+    <div class="sheet-right">
+      <!-- Radio inputs MUST precede tabs and panels in DOM (~ sibling selector) -->
+      <input type="radio" id="t-skills" name="st" class="tab-radio" checked>
+      <input type="radio" id="t-extras" name="st" class="tab-radio">
+      <input type="radio" id="t-bio" name="st" class="tab-radio">
+
+      <nav class="fate-tabs">
+        <label for="t-skills">기능 &amp; 특기</label>
+        <label for="t-extras">특수항목</label>
+        <label for="t-bio">일대기</label>
+      </nav>
+
+      <div class="tab-panels">
+
+        <!-- Skills & Stunts -->
+        <div class="tab-panel p-skills">
+          <section class="sec">
+            <div class="sec-hdr"><h3 class="sec-ttl">기능 (스킬 사다리)</h3><button class="sec-add" type="button">+</button></div>
+            <ul class="skill-ladder">
+              <li class="ski"><span class="ski-rank rpos">+4 대단함</span><span class="ski-nm">세심하게</span><button class="roll-btn" type="button">4dF</button><div class="ia"><button class="ibtn" type="button"><i class="fa fa-cog"></i></button><button class="ibtn d" type="button"><i class="fa fa-trash"></i></button></div></li>
+              <li class="ski"><span class="ski-rank rpos">+3 우수</span><span class="ski-nm">강하게</span><button class="roll-btn" type="button">4dF</button><div class="ia"><button class="ibtn" type="button"><i class="fa fa-cog"></i></button><button class="ibtn d" type="button"><i class="fa fa-trash"></i></button></div></li>
+              <li class="ski"><span class="ski-rank rpos">+2 양호</span><span class="ski-nm">똑똑하게</span><button class="roll-btn" type="button">4dF</button><div class="ia"><button class="ibtn" type="button"><i class="fa fa-cog"></i></button><button class="ibtn d" type="button"><i class="fa fa-trash"></i></button></div></li>
+              <li class="ski"><span class="ski-rank rpos">+2 양호</span><span class="ski-nm">은근하게</span><button class="roll-btn" type="button">4dF</button><div class="ia"><button class="ibtn" type="button"><i class="fa fa-cog"></i></button><button class="ibtn d" type="button"><i class="fa fa-trash"></i></button></div></li>
+              <li class="ski"><span class="ski-rank rpos">+1 보통</span><span class="ski-nm">현란하게</span><button class="roll-btn" type="button">4dF</button><div class="ia"><button class="ibtn" type="button"><i class="fa fa-cog"></i></button><button class="ibtn d" type="button"><i class="fa fa-trash"></i></button></div></li>
+              <li class="ski"><span class="ski-rank rzero">+0 미약</span><span class="ski-nm">재빠르게</span><button class="roll-btn" type="button">4dF</button><div class="ia"><button class="ibtn" type="button"><i class="fa fa-cog"></i></button><button class="ibtn d" type="button"><i class="fa fa-trash"></i></button></div></li>
+            </ul>
+          </section>
+          <section class="sec">
+            <div class="sec-hdr"><h3 class="sec-ttl">특기</h3><button class="sec-add" type="button">+</button></div>
+            <ul class="stunt-list">
+              <li class="stunt">
+                <div class="stunt-hdr"><span class="stunt-nm">고철의 전령</span><span class="stunt-tag">세심하게</span><div class="ia"><button class="ibtn" type="button"><i class="fa fa-cog"></i></button><button class="ibtn d" type="button"><i class="fa fa-trash"></i></button></div></div>
+                <p class="stunt-sum">작은 부품이나 기계를 이용해 잠입하거나 정찰할 때 「은근하게」 대신 「세심하게」를 사용하여 극복할 수 있다.</p>
+              </li>
+              <li class="stunt">
+                <div class="stunt-hdr"><span class="stunt-nm">야수의 포효</span><span class="stunt-tag">강하게</span><div class="ia"><button class="ibtn" type="button"><i class="fa fa-cog"></i></button><button class="ibtn d" type="button"><i class="fa fa-trash"></i></button></div></div>
+                <p class="stunt-sum">기계 야수를 앞세워 적의 기세를 꺾거나 진형을 무너뜨리기 위해 「강하게」 기회를 만들 때 +2 보너스를 받는다.</p>
+              </li>
+              <li class="stunt">
+                <div class="stunt-hdr"><span class="stunt-nm">즉석 마개조</span><span class="stunt-tag">세심하게</span><div class="ia"><button class="ibtn" type="button"><i class="fa fa-cog"></i></button><button class="ibtn d" type="button"><i class="fa fa-trash"></i></button></div></div>
+                <p class="stunt-sum">고철과 부품을 이용해 아군의 장비를 일시적으로 강화하기 위해 「세심하게」 기회를 만들 때 +2 보너스를 받는다.</p>
+              </li>
+            </ul>
+          </section>
+        </div>
+
+        <!-- Extras -->
+        <div class="tab-panel p-extras">
+          <section class="sec">
+            <div class="sec-hdr"><h3 class="sec-ttl">특수항목</h3><button class="sec-add" type="button">+</button></div>
+            <p style="color:var(--text-faint);font-size:var(--fs-sm);text-align:center;padding:var(--sp-7) 0;">특수항목이 없습니다.</p>
+          </section>
+        </div>
+
+        <!-- Bio -->
+        <div class="tab-panel p-bio" style="flex-direction:column;gap:var(--sp-4);">
+          <section class="sec" style="flex:1;">
+            <label class="bio-lbl">일대기</label>
+            <textarea class="bio-ta">루어스 공업지대의 매연이 가라앉지 않는 빈민가 골목, 고아들이 모여 사는 허름한 「새벽 까마귀의 쉼터」는 안야 슈탈의 유일한 세상이자 가족이었다. 그 보육원을 운영하던 늙고 괴팍한 고물상, 구스타프 풍케는 안야에게 아버지나 다름없는 존재였다.
+
+그는 죽어가며 안야의 손을 잡고 신비를 전승시키고 유언을 남겼다.
+"이 힘으로 「마그눔 오푸스」를 반드시 완성해야 한다. 절대 제국에 빼앗겨서는 안 돼."</textarea>
+          </section>
+          <section class="sec">
+            <label class="bio-lbl">메모</label>
+            <textarea class="bio-ta" rows="3" placeholder="메모를 입력하세요..."></textarea>
+          </section>
+        </div>
+
+      </div><!-- .tab-panels -->
+    </div><!-- .sheet-right -->
+
+  </div><!-- .sheet-body -->
+</div><!-- .fate-sheet -->
+<script>
+// ── Fate points ± buttons ──────────────────────────
+function fpChange(btn, delta) {
+  const ctrl = btn.closest('.fp-ctrl');
+  const inp = ctrl.querySelector('.fp-val');
+  if (!inp) return;
+  const cur = parseInt(inp.value) || 0;
+  const mn  = parseInt(inp.min)  || 0;
+  const nv  = cur + delta;
+  if (nv < mn) return;
+  inp.value = nv;
+  // flash
+  inp.style.transform = 'scale(1.3)';
+  inp.style.transition = 'transform .1s';
+  setTimeout(()=>{ inp.style.transform = ''; }, 120);
+}
+document.querySelectorAll('.fp-ctrl').forEach(ctrl => {
+  const [minus, plus] = ctrl.querySelectorAll('.fp-btn');
+  const inp = ctrl.querySelector('.fp-val');
+  if (!inp) return;
+  // pointer-events re-enabled explicitly for the buttons
+  minus.style.pointerEvents = 'all';
+  plus.style.pointerEvents  = 'all';
+  minus.addEventListener('click', () => fpChange(minus, -1));
+  plus.addEventListener('click',  () => fpChange(plus,   1));
+});
+
+// ── Portrait click-to-change ──────────────────────
+document.querySelector('.sheet-portrait').addEventListener('click', () => {
+  const url = prompt('초상화 이미지 URL 또는 파일명을 입력하세요:', document.querySelector('.sheet-portrait img').src);
+  if (url) document.querySelector('.sheet-portrait img').src = url;
+});
+document.querySelector('.sheet-portrait').style.cursor = 'pointer';
+document.querySelector('.sheet-portrait').title = '클릭하여 초상화 변경';
+
+// ── Aspect add ────────────────────────────────────
+document.querySelector('.asp-list').closest('.sec').querySelector('.sec-add').onclick = () => {
+  const list = document.querySelector('.asp-list');
+  const li = document.createElement('li');
+  li.className = 'asp-item general';
+  li.innerHTML = `<span class="asp-badge">일반</span>
+    <input class="asp-val" type="text" placeholder="면소를 입력하세요...">
+    <div class="ia">
+      <button class="ibtn" type="button"><i class="fa fa-cog"></i></button>
+      <button class="ibtn d" type="button"><i class="fa fa-trash"></i></button>
+    </div>`;
+  li.querySelector('.ibtn.d').onclick = () => li.remove();
+  list.appendChild(li);
+  li.querySelector('.asp-val').focus();
+};
+
+// ── Skill add ─────────────────────────────────────
+document.querySelector('.skill-ladder').closest('.sec').querySelector('.sec-add').onclick = () => {
+  const list = document.querySelector('.skill-ladder');
+  const li = document.createElement('li');
+  li.className = 'ski';
+  li.innerHTML = `<span class="ski-rank rzero" contenteditable="true">+0 미약</span>
+    <input class="ski-nm" type="text" placeholder="기능 이름..." style="flex:1;background:transparent;border:none;color:var(--text-body);font-size:var(--fs-base);outline:none;">
+    <button class="roll-btn" type="button">4dF</button>
+    <div class="ia">
+      <button class="ibtn" type="button"><i class="fa fa-cog"></i></button>
+      <button class="ibtn d" type="button"><i class="fa fa-trash"></i></button>
+    </div>`;
+  li.querySelector('.ibtn.d').onclick = () => li.remove();
+  list.appendChild(li);
+  li.querySelector('.ski-nm').focus();
+};
+
+// ── Stunt add ─────────────────────────────────────
+document.querySelector('.stunt-list').closest('.sec').querySelector('.sec-add').onclick = () => {
+  const list = document.querySelector('.stunt-list');
+  const li = document.createElement('li');
+  li.className = 'stunt';
+  li.innerHTML = `<div class="stunt-hdr">
+      <input type="text" placeholder="특기 이름..." style="flex:1;background:transparent;border:none;color:var(--text-strong);font-size:var(--fs-base);font-weight:var(--fw-bold);outline:none;border-bottom:1px solid var(--ewk-gold-600);">
+      <div class="ia" style="opacity:1;">
+        <button class="ibtn d" type="button"><i class="fa fa-trash"></i></button>
+      </div>
+    </div>
+    <textarea placeholder="특기 효과 설명..." style="width:100%;background:transparent;border:none;color:var(--text-muted);font-size:var(--fs-sm);font-family:var(--font-serif);resize:vertical;outline:none;margin-top:4px;"></textarea>`;
+  li.querySelector('.ibtn.d').onclick = () => li.remove();
+  list.appendChild(li);
+  li.querySelector('input').focus();
+};
+
+// ── Delete buttons ────────────────────────────────
+document.querySelectorAll('.ibtn.d').forEach(btn => {
+  btn.onclick = () => btn.closest('li, .stunt').remove();
+});
+
+// ── Roll buttons ──────────────────────────────────
+document.querySelectorAll('.roll-btn').forEach(btn => {
+  btn.onclick = () => {
+    const dice = [0,0,0,0].map(() => [-1,-1,0,0,1,1][Math.floor(Math.random()*6)]);
+    const total = dice.reduce((s,d)=>s+d, 0);
+    const ladder = {4:'대단함',3:'우수',2:'양호',1:'보통',0:'미약','-1':'부실','-2':'엉망','-3':'끔찍함'};
+    const sym = dice.map(d=>d>0?'[+]':d<0?'[−]':'[ ]').join(' ');
+    const ski = btn.closest('.ski')?.querySelector('.ski-nm')?.textContent || '';
+    alert(`${ski ? ski+' ' : ''}굴림: ${sym}\n합계: ${total>=0?'+'+total:total} (${ladder[total]||total})`);
+  };
+});
+</script>
+</body>
+</html>

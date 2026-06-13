@@ -6,7 +6,8 @@
   </header>
 
   <div class="fate-item-sheet__body">
-    {{!-- Skill-specific fields --}}
+
+    {{!-- 기능: 수준 --}}
     {{#if (eq item.type "skill")}}
     <div class="fate-field">
       <label class="fate-label">{{localize "FATE.Item.Skill.Rank"}}</label>
@@ -14,7 +15,7 @@
     </div>
     {{/if}}
 
-    {{!-- Consequence-specific fields --}}
+    {{!-- 타격: 심각도 + 내용 --}}
     {{#if (eq item.type "consequence")}}
     <div class="fate-field">
       <label class="fate-label">{{localize "FATE.Item.Consequence.Severity"}}</label>
@@ -26,7 +27,7 @@
     </div>
     {{/if}}
 
-    {{!-- Stress-specific fields --}}
+    {{!-- 스트레스: 박스 수 --}}
     {{#if (eq item.type "stress")}}
     <div class="fate-field">
       <label class="fate-label">{{localize "FATE.Item.Stress.Size"}}</label>
@@ -34,20 +35,27 @@
     </div>
     {{/if}}
 
-    {{!-- Stunt / Extra summary --}}
-    {{#if (or (eq item.type "stunt") (eq item.type "extra"))}}
+    {{!-- 특기 / 특수항목: 요약 --}}
+    {{#if (eq item.type "stunt")}}
+    <div class="fate-field">
+      <label class="fate-label">{{localize "FATE.Item.Stunt.Summary"}}</label>
+      <input class="fate-input" type="text" name="system.summary" value="{{system.summary}}">
+    </div>
+    {{/if}}
+    {{#if (eq item.type "extra")}}
     <div class="fate-field">
       <label class="fate-label">{{localize "FATE.Item.Stunt.Summary"}}</label>
       <input class="fate-input" type="text" name="system.summary" value="{{system.summary}}">
     </div>
     {{/if}}
 
-    {{!-- Description (all types) --}}
+    {{!-- 설명 (전 타입 공통) --}}
     <div class="fate-field fate-field--editor">
       <label class="fate-label">{{localize "FATE.Sheet.Description"}}</label>
       <div class="fate-editor">
         {{editor system.description target="system.description" button=false editable=editable}}
       </div>
     </div>
+
   </div>
 </div>

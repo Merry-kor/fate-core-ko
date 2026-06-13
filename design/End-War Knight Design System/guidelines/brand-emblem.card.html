@@ -1,0 +1,39 @@
+<!-- @dsCard group="Brand" viewport="700x260" name="Emblem & wordmark" subtitle="The steel wing & sun — 종전의 기사 시스템" -->
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8"><link rel="stylesheet" href="../styles.css">
+<style>
+ body{margin:0;background:
+   radial-gradient(120% 90% at 50% -10%, #1a0c10 0%, var(--ewk-ink-900) 60%);
+   font-family:var(--font-serif);padding:0;height:100vh;display:flex;align-items:center;justify-content:center;}
+ .lockup{display:flex;flex-direction:column;align-items:center;gap:16px;}
+ .emblem{position:relative;width:118px;height:118px;display:flex;align-items:center;justify-content:center;}
+ /* sun rays */
+ .emblem::before{content:"";position:absolute;inset:-6px;border-radius:50%;
+   background:repeating-conic-gradient(from 0deg, rgba(201,162,39,.55) 0deg 2deg, transparent 2deg 15deg);
+   -webkit-mask:radial-gradient(circle, transparent 38px, #000 39px, #000 54px, transparent 56px);
+           mask:radial-gradient(circle, transparent 38px, #000 39px, #000 54px, transparent 56px);}
+ /* steel wings */
+ .wing{position:absolute;top:50%;width:74px;height:13px;background:linear-gradient(90deg,var(--ewk-steel-300),var(--ewk-steel-500));
+   transform-origin:0 50%;box-shadow:0 1px 2px rgba(0,0,0,.6);}
+ .wing.l{right:50%;transform-origin:100% 50%;transform:translateY(-50%) rotate(8deg);border-radius:8px 2px 2px 8px;}
+ .wing.r{left:50%;transform-origin:0 50%;transform:translateY(-50%) rotate(-8deg);border-radius:2px 8px 8px 2px;background:linear-gradient(270deg,var(--ewk-steel-300),var(--ewk-steel-500));}
+ .disc{position:relative;width:62px;height:62px;border-radius:50%;
+   background:radial-gradient(circle at 38% 32%, var(--ewk-gold-300), var(--ewk-gold-500) 55%, var(--ewk-gold-700));
+   box-shadow:0 0 26px var(--ewk-gold-glow), inset 0 -4px 8px rgba(0,0,0,.35);
+   display:flex;align-items:center;justify-content:center;color:#1a0c05;font-weight:900;font-size:26px;
+   border:2px solid var(--ewk-gold-600);z-index:2;}
+ .word{text-align:center;}
+ .kr{font-size:34px;font-weight:900;color:var(--ewk-steel-050);letter-spacing:.14em;text-shadow:0 2px 10px rgba(0,0,0,.6);}
+ .en{font-family:var(--font-sans);font-size:11px;letter-spacing:.42em;color:var(--ewk-gold-400);text-transform:uppercase;margin-top:8px;}
+</style></head><body>
+ <div class="lockup">
+   <div class="emblem">
+     <span class="wing l"></span><span class="wing r"></span>
+     <span class="disc">終</span>
+   </div>
+   <div class="word">
+     <div class="kr">종전의 기사</div>
+     <div class="en">The End-War Knight System</div>
+   </div>
+ </div>
+</body></html>

@@ -1,0 +1,17 @@
+<!-- @dsCard group="Spacing" viewport="700x150" name="Radii & borders" subtitle="Hard-edged empire — restrained rounding" -->
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8"><link rel="stylesheet" href="../styles.css">
+<style>
+ body{margin:0;background:var(--surface-app);font-family:var(--font-sans);padding:20px;display:flex;gap:18px;flex-wrap:wrap;}
+ .b{width:96px;height:70px;background:var(--surface-card);border:1px solid var(--border-hairline);display:flex;align-items:flex-end;justify-content:center;padding-bottom:6px;}
+ .l{font-family:var(--font-mono);font-size:10px;color:var(--text-muted);}
+ .hr{width:96px;}
+ .hr .ln{height:0;border-top-style:solid;border-color:var(--ewk-gold-500);margin-bottom:8px;}
+</style></head><body>
+ <div><div class="b" style="border-radius:var(--radius-xs)"><span class="l">xs · 2</span></div></div>
+ <div><div class="b" style="border-radius:var(--radius-sm)"><span class="l">sm · 4</span></div></div>
+ <div><div class="b" style="border-radius:var(--radius-md)"><span class="l">md · 6</span></div></div>
+ <div><div class="b" style="border-radius:var(--radius-lg)"><span class="l">lg · 10</span></div></div>
+ <div><div class="b" style="border-radius:var(--radius-pill)"><span class="l">pill</span></div></div>
+ <div class="hr"><div class="ln" style="border-top-width:var(--bw-hair)"></div><div class="ln" style="border-top-width:var(--bw-rule)"></div><div class="ln" style="border-top-width:var(--bw-heavy)"></div><span class="l">hair · rule · heavy</span></div>
+</body></html>

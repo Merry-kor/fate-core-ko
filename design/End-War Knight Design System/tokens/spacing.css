@@ -1,0 +1,54 @@
+/* =====================================================
+   종전의 기사 — Spacing, Radius, Shadow, Motion Tokens
+   ===================================================== */
+
+:root {
+  /* ── Spacing scale (4px base) ── */
+  --sp-1: 0.25rem;  /* 4 */
+  --sp-2: 0.5rem;   /* 8 */
+  --sp-3: 0.75rem;  /* 12 */
+  --sp-4: 1rem;     /* 16 */
+  --sp-5: 1.5rem;   /* 24 */
+  --sp-6: 2rem;     /* 32 */
+  --sp-7: 3rem;     /* 48 */
+  --sp-8: 4rem;     /* 64 */
+
+  /* ── Radii — restrained; the empire favours hard edges ── */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-pill: 999px;
+  --radius-circle: 50%;
+
+  /* ── Borders ── */
+  --bw-hair: 1px;
+  --bw-rule: 2px;   /* section under-rule */
+  --bw-heavy: 3px;  /* portrait frame, banner edge */
+
+  /* ── Shadows (dark UI — deep, low-key) ── */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.4);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.45);
+  --shadow-lg: 0 12px 40px rgba(0,0,0,0.55);
+  --shadow-stage: 0 24px 80px rgba(0,0,0,0.7);
+  --shadow-gold: 0 0 0 1px var(--ewk-gold-600), 0 0 18px var(--ewk-gold-glow);
+  --shadow-crimson: 0 0 0 1px var(--ewk-crimson-700), 0 0 18px var(--ewk-crimson-glow);
+  --inset-well: inset 0 1px 3px rgba(0,0,0,0.5);
+
+  /* ── Paper shadow (parchment theme) ── */
+  --shadow-paper: 0 2px 8px rgba(42,35,23,0.18);
+
+  /* ── Motion ── */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1); /* @kind other */
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1); /* @kind other */
+  --dur-fast: 0.12s; /* @kind other */
+  --dur-base: 0.2s; /* @kind other */
+  --dur-slow: 0.35s; /* @kind other */
+  --dur-stage: 0.5s; /* @kind other */
+
+  /* ── Layout ── */
+  --hud-height: 132px; /* @kind spacing */
+  --chat-width-min: 360px; /* @kind spacing */
+  --chat-width-max: 720px; /* @kind spacing */
+  --aspect-widget-w: 300px; /* @kind spacing */
+}

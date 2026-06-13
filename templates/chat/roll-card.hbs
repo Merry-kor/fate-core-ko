@@ -5,16 +5,19 @@
     <span class="fate-roll-card__skill">{{skillName}}</span>
     {{/if}}
   </div>
+
   <div class="fate-roll-card__dice">
     {{{diceHtml}}}
     {{#if rank}}
     <span class="fate-roll-card__modifier">{{#if (gte rank 0)}}+{{/if}}{{rank}}</span>
     {{/if}}
   </div>
+
   <div class="fate-roll-card__result">
-    <span class="fate-roll-card__total">{{total}}</span>
+    <span class="fate-roll-card__total">{{#if (gte total 0)}}+{{/if}}{{total}}</span>
     <span class="fate-roll-card__ladder">{{ladderLabel}}</span>
   </div>
+
   <div class="fate-roll-card__outcome fate-outcome--{{outcomeClass}}">
     {{outcome}}
   </div>
