@@ -8,10 +8,32 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: SSH Deploy
+      - uses: actions/checkout@v4
+
+      - name: Copy system files to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: 138.2.118.109
+          username: ubuntu
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "scripts/,styles/,templates/,lang/,system.json,template.json"
+          target: /tmp/fate-core-ko-deploy/
+          strip_components: 0
+
+      - name: Move files and restart FVTT
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: 138.2.118.109
           username: ubuntu
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: /home/ubuntu/deploy-fate.sh
+          script: |
+            DEST=/home/ubuntu/FoundryServer/foundrydata/Data/systems/fate-core-ko
+            sudo cp -r /tmp/fate-core-ko-deploy/scripts $DEST/
+            sudo cp -r /tmp/fate-core-ko-deploy/styles $DEST/
+            sudo cp -r /tmp/fate-core-ko-deploy/templates $DEST/
+            sudo cp -r /tmp/fate-core-ko-deploy/lang $DEST/
+            sudo cp /tmp/fate-core-ko-deploy/system.json $DEST/
+            sudo cp /tmp/fate-core-ko-deploy/template.json $DEST/
+            rm -rf /tmp/fate-core-ko-deploy
+            cd /home/ubuntu/FoundryServer && sudo docker compose restart foundryvtt
+            echo '[deploy] 완료'
