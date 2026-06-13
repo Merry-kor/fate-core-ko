@@ -27,7 +27,7 @@
     "verified": "13.351"
   },
   "socket": false,
-  "url": "https://github.com/lunah/fate-core-ko",
-  "manifest": "https://raw.githubusercontent.com/lunah/fate-core-ko/main/system.json",
-  "download": "https://github.com/lunah/fate-core-ko/releases/latest/download/fate-core-ko.zip"
+  "url": "https://github.com/Merry-kor/fate-core-ko",
+  "manifest": "https://raw.githubusercontent.com/Merry-kor/fate-core-ko/master/system.json",
+  "download": "https://github.com/Merry-kor/fate-core-ko/archive/refs/heads/master.zip"
 }
