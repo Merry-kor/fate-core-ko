@@ -35,7 +35,7 @@ class FateDie extends Die {
 
 // ─── Actor Sheet ───────────────────────────────────────────────────────────
 
-class FateCharacterSheet extends foundry.appv2.sheets.ActorSheetV2 {
+class FateCharacterSheet extends foundry.applications.sheets.ActorSheetV2 {
   static DEFAULT_OPTIONS = {
     classes: ["fate-core-ko", "sheet", "actor", "character"],
     position: { width: 800, height: 700 },
@@ -110,7 +110,7 @@ class FateCharacterSheet extends foundry.appv2.sheets.ActorSheetV2 {
 
 // ─── Item Sheet ────────────────────────────────────────────────────────────
 
-class FateItemSheet extends foundry.appv2.sheets.ItemSheetV2 {
+class FateItemSheet extends foundry.applications.sheets.ItemSheetV2 {
   static DEFAULT_OPTIONS = {
     classes: ["fate-core-ko", "sheet", "item"],
     position: { width: 480, height: 380 },
