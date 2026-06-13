@@ -5,7 +5,7 @@
 
 // ─── FateDie ──────────────────────────────────────────────────────────────
 
-class FateDie extends Die {
+class FateDie extends foundry.dice.terms.Die {
   constructor(termData) {
     super({ ...termData, faces: 3 });
   }
@@ -196,14 +196,21 @@ Hooks.once("init", () => {
     },
   };
 
-  // each_times Handlebars 헬퍼 — {{#each_times N as |i|}} (0-based)
+  // each_times Handlebars 헬퍼 — {{#each_times N}} {{@index}} {{/each_times}} (0-based)
   Handlebars.registerHelper("each_times", function(n, options) {
     let result = "";
-    for (let i = 0; i < n; i++) result += options.fn(i);
+    for (let i = 0; i < n; i++) {
+      result += options.fn(this, { data: options.data, blockParams: [i] });
+    }
     return result;
   });
 
-  // 시트 등록
+  // 시트 등록 (v13 네임스페이스)
+  const Actors = foundry.documents.collections.Actors;
+  const Items  = foundry.documents.collections.Items;
+  const ActorSheet = foundry.appv1.sheets.ActorSheet;
+  const ItemSheet  = foundry.appv1.sheets.ItemSheet;
+
   Actors.unregisterSheet("core", ActorSheet);
   Actors.registerSheet("fate-core-ko", FateCharacterSheet, {
     types: ["character", "npc"],

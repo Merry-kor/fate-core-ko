@@ -77,11 +77,11 @@
             </div>
           </div>
           <div class="fate-stress__boxes">
-            {{#each_times track.system.size as |i|}}
+            {{#each_times track.system.size}}
             <label class="fate-stress__box">
               <input type="checkbox"
-                name="items.{{../track.id}}.system.checked.{{i}}"
-                {{checked (lookup ../track.system.checked i)}}>
+                name="items.{{../track.id}}.system.checked.{{@index}}"
+                {{checked (lookup ../track.system.checked @index)}}>
               <span class="fate-stress__pip"></span>
             </label>
             {{/each_times}}
