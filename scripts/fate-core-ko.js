@@ -1607,11 +1607,15 @@ const FateSceneRail = {
 
 const FateStageBar = {
   _el:  null,
-  _gen: 0,  // 렌더 세대 카운터 — 오래된 비동기 렌더가 최신 결과를 덮어쓰는 것을 방지
+  _dbt: null,  // debounce timer
 
-  async render() {
-    const myGen = ++this._gen;
+  // render()는 30ms 디바운스 — updateActor 훅이 연속 발생해도 실제 렌더는 한 번만
+  render() {
+    clearTimeout(this._dbt);
+    this._dbt = setTimeout(() => this._exec(), 30);
+  },
 
+  async _exec() {
     if (!this._el) {
       this._el = document.createElement("div");
       this._el.id = "fate-stage-bar";
@@ -1639,15 +1643,10 @@ const FateStageBar = {
         };
       });
 
-    const html = await foundry.applications.handlebars.renderTemplate(
+    this._el.innerHTML = await foundry.applications.handlebars.renderTemplate(
       "systems/fate-core-ko/templates/stage/stage-bar.hbs",
       { actors }
     );
-
-    // await 사이에 더 새로운 렌더가 시작됐으면 이 결과를 버림
-    if (myGen !== this._gen) return;
-
-    this._el.innerHTML = html;
 
     // 발언권 상태 DOM 직접 적용 (Handlebars 이중화)
     const curSpeaker = localStorage.getItem(`ewk-speaker-${game.userId}`);
@@ -1662,7 +1661,6 @@ const FateStageBar = {
   },
 
   _bindEvents() {
-    // pointer-events:all 인 inner에 직접 바인딩
     const inner = this._el?.querySelector(".ewk-hud__inner");
     const el    = this._el;
     if (!inner || !el) return;
@@ -1680,14 +1678,14 @@ const FateStageBar = {
         localStorage.getItem(key) === id
           ? localStorage.removeItem(key)
           : localStorage.setItem(key, id);
-        // 즉시 DOM 반영 (렌더 완료 전 체감 반응성)
+        // 즉시 DOM 반영 (체감 반응성)
         const cur = localStorage.getItem(key);
         el.querySelectorAll("[data-actor-id]").forEach(c => {
           const on = c.dataset.actorId === cur;
           c.classList.toggle("ewk-hud__card--active", on);
           c.querySelector("[data-stage-action='speak']")?.classList.toggle("ewk-hud__btn--on", on);
         });
-        await this.render();
+        this.render();
         EWKQuickDock.render();
         return;
       }
