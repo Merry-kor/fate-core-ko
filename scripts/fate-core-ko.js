@@ -981,9 +981,11 @@ const EWKSidebar = {
         if (!contentEl) return;
         if (contentEl.querySelector(".ewk-msg-ed")) return; // 이미 편집 중
         const origHtml = contentEl.innerHTML;
-        const rawText  = msg.content.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        const tmpDiv = document.createElement("div");
+        tmpDiv.innerHTML = msg.content;
+        const plainText = (tmpDiv.textContent ?? tmpDiv.innerText ?? "").trim();
         contentEl.innerHTML = `<div class="ewk-msg-ed">
-          <textarea class="ewk-msg-ed-ta">${rawText}</textarea>
+          <textarea class="ewk-msg-ed-ta">${plainText.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</textarea>
           <div class="ewk-msg-ed-bar">
             <span class="ewk-msg-ed-hint">Ctrl+Enter 저장 · Esc 취소</span>
             <button class="ewk-msg-ed-cancel">취소</button>
@@ -1422,8 +1424,12 @@ const EWKAspectWidget = {
     const save = async () => {
       const val = inp.value.trim();
       if (!val) return;
+      const oldLabel = a.label ?? "";
       list[idx].label = val;
       await sc.setFlag("fate-core-ko", "sceneAspects", list);
+      if (oldLabel !== val) {
+        ChatMessage.create({ content: `<div class="ewk-scene-change-msg"><span class="ewk-scm-label">면모 수정</span><em>${val}</em></div>` });
+      }
     };
     ok.addEventListener("click", save);
     cx.addEventListener("click", () => this.render());
@@ -1511,7 +1517,7 @@ const FateSceneRail = {
         const thumb = e.target.closest("[data-scene-id]");
         if (!thumb) return;
         const scene = game.scenes?.get(thumb.dataset.sceneId);
-        if (scene) await scene.activate();
+        if (scene) await scene.activate().catch(() => {});
       });
     }
 
@@ -1885,7 +1891,8 @@ Hooks.once("ready", () => {
     });
   };
 
-  let _prevSceneId = game.scenes?.active?.id ?? null;
+  // canvasReady: 전환 애니메이션 + UI 갱신 (리소스 로드 완료 후 실행)
+  let _prevCanvasSceneId = game.scenes?.active?.id ?? null;
 
   const refreshActors = () => {
     FateStageBar.render();
@@ -1900,38 +1907,38 @@ Hooks.once("ready", () => {
   Hooks.on("createFolder", refreshFolders);
   Hooks.on("updateFolder", refreshFolders);
   Hooks.on("deleteFolder", refreshFolders);
-  Hooks.on("canvasReady", async () => {
-    const scene    = game.scenes?.active;
-    const sceneId  = scene?.id ?? null;
-    const isChange = _prevSceneId !== null && _prevSceneId !== sceneId;
-    _prevSceneId = sceneId;
 
+  Hooks.on("canvasReady", () => {
+    const sceneId  = game.scenes?.active?.id ?? null;
+    const isChange = _prevCanvasSceneId !== null && _prevCanvasSceneId !== sceneId;
+    _prevCanvasSceneId = sceneId;
+    if (isChange) doSceneTransition();
     updateBg();
     FateSceneRail.render();
     EWKSidebar.updateSceneBadge();
     EWKAspectWidget.render();
-
-    if (isChange) {
-      doSceneTransition();
-      if (game.user?.isGM && scene) {
-        const bgSrc = scene.background?.src ?? "";
-        await ChatMessage.create({
-          content: `<div class="ewk-scene-change-msg" data-bg="${bgSrc}">
-            <span class="ewk-scm-label">장면 전환</span>
-            <span class="ewk-scm-name">${scene.name}</span>
-          </div>`,
-          speaker: { alias: "내레이터" },
-        });
-      }
-    }
   });
-  Hooks.on("updateScene", (scene) => {
+
+  // updateScene: 장면 활성화 감지 → 채팅 메시지 (canvas 로딩 전에 실행되므로 FVTT 로딩 가드에 영향받지 않음)
+  Hooks.on("updateScene", async (scene, changes) => {
     updateBg();
     FateSceneRail.render();
     EWKSidebar.updateSceneBadge();
     EWKAspectWidget.render();
     foundry.applications.instances.get("fate-scene-panel")?.render();
+
+    if (changes.active === true && game.user?.isGM) {
+      const bgSrc = scene.background?.src ?? "";
+      await ChatMessage.create({
+        content: `<div class="ewk-scene-change-msg" data-bg="${bgSrc}">
+          <span class="ewk-scm-label">장면 전환</span>
+          <span class="ewk-scm-name">${scene.name}</span>
+        </div>`,
+        speaker: { alias: "내레이터" },
+      });
+    }
   });
+
   Hooks.on("createScene", () => FateSceneRail.render());
   Hooks.on("deleteScene", () => FateSceneRail.render());
 });
