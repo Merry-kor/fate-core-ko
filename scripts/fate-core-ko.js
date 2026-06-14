@@ -429,17 +429,15 @@ const EWKSidebar = {
   _currentWrap: null,
   _textStyles: { bold: false, italic: false, center: false },
   _messageBuffer: [],   // 사이드바 생성 전 수신된 메시지 임시 보관
+  _pendingUpdates: {},  // msgId → 교체 대상 DOM 요소 (수정 시 제자리 갱신)
 
   TABS: [
-    { key: "chat",       icon: "💬", label: "채팅" },
-    { key: "combat",     icon: "⚔️", label: "전투" },
-    { key: "scenes",     icon: "🎭", label: "장면" },
-    { key: "actors",     icon: "👤", label: "액터" },
-    { key: "journal",    icon: "📖", label: "저널" },
-    { key: "tables",     icon: "🎲", label: "테이블" },
-    { key: "playlists",  icon: "🎵", label: "음악" },
-    { key: "compendium", icon: "📚", label: "컴펜" },
-    { key: "settings",   icon: "⚙️", label: "설정" },
+    { key: "chat",      icon: "💬", label: "채팅" },
+    { key: "scenes",    icon: "🎭", label: "장면" },
+    { key: "actors",    icon: "👤", label: "액터" },
+    { key: "journal",   icon: "📖", label: "저널" },
+    { key: "playlists", icon: "🎵", label: "음악" },
+    { key: "settings",  icon: "⚙️", label: "설정" },
   ],
 
   build() {
@@ -626,7 +624,7 @@ const EWKSidebar = {
       const fpHtml = fp
         ? `<div class="ewk-acard-fp"><span class="ewk-acard-fp-n">${fp.current}</span><span class="ewk-acard-fp-sep">/</span><span class="ewk-acard-fp-r">${fp.refresh}</span><span class="ewk-acard-fp-l">운명점</span></div>`
         : "";
-      return `<div class="ewk-acard" data-actor-id="${a.id}">
+      return `<div class="ewk-acard" data-actor-id="${a.id}" draggable="true" title="하단 무대 바로 드래그하여 무대 등장">
   <img class="ewk-acard-port" src="${a.img}" alt="">
   <div class="ewk-acard-body">
     <div class="ewk-acard-name">${a.name}${stage ? ' <span class="ewk-on-air">ON</span>' : ""}</div>
@@ -780,6 +778,13 @@ const EWKSidebar = {
         if (e.target.closest(".ewk-acard-btn")) return;
         game.actors.get(el.dataset.actorId)?.sheet?.render(true);
       });
+      // 드래그 → 하단 무대 바에 드롭하여 무대 등장
+      el.addEventListener("dragstart", e => {
+        e.dataTransfer.setData("ewk-actor-id", el.dataset.actorId);
+        e.dataTransfer.effectAllowed = "copy";
+        el.classList.add("ewk-acard--dragging");
+      });
+      el.addEventListener("dragend", () => el.classList.remove("ewk-acard--dragging"));
     });
   },
 
@@ -871,8 +876,15 @@ const EWKSidebar = {
   addMessage(el) {
     const log = document.getElementById("ewk-chat-log");
     const msgId = el.dataset?.messageId;
+
+    // 수정된 메시지: 기존 위치에서 교체
+    if (msgId && this._pendingUpdates[msgId]) {
+      const oldEl = this._pendingUpdates[msgId];
+      delete this._pendingUpdates[msgId];
+      if (oldEl.parentNode) { oldEl.replaceWith(el.cloneNode(true)); return; }
+    }
+
     if (!log) {
-      // 사이드바 생성 전 → 버퍼에 보관 (중복 방지)
       if (msgId && this._messageBuffer.some(e => e.dataset?.messageId === msgId)) return;
       this._messageBuffer.push(el.cloneNode(true));
       return;
@@ -1576,6 +1588,8 @@ const FateStageBar = {
       document.getElementById("interface")?.appendChild(this._el);
     }
 
+    const mySpeakerId = localStorage.getItem(`ewk-speaker-${game.userId}`) ?? null;
+
     const actors = (game.actors?.contents ?? [])
       .filter(a => a.getFlag("fate-core-ko", "onStage"))
       .map(a => ({
@@ -1583,7 +1597,7 @@ const FateStageBar = {
         name: a.name,
         img: a.img,
         fp: a.system?.fatepoints ?? { current: 0, refresh: 3 },
-        isSpeaker: a.getFlag("fate-core-ko", "isSpeaker") ?? false,
+        isSpeaker: a.id === mySpeakerId,
         role: a.getFlag("fate-core-ko", "role") || "",
         color: a.getFlag("fate-core-ko", "color") || "var(--accent-gold)",
         aspects: a.items.filter(i => i.type === "aspect").slice(0, 2),
@@ -1606,21 +1620,37 @@ const FateStageBar = {
         const actor = game.actors.get(id);
         if (!actor) return;
         await actor.unsetFlag("fate-core-ko", "onStage");
-        await actor.unsetFlag("fate-core-ko", "isSpeaker");
+        // 내 발언 액터였으면 해제
+        if (localStorage.getItem(`ewk-speaker-${game.userId}`) === id)
+          localStorage.removeItem(`ewk-speaker-${game.userId}`);
         this.render();
       });
     });
 
+    // 발언 버튼: 클라이언트 로컬 선택 (토글)
     el.querySelectorAll("[data-stage-action='speak']").forEach(btn => {
-      btn.addEventListener("click", async e => {
+      btn.addEventListener("click", e => {
         const id = e.currentTarget.closest("[data-actor-id]")?.dataset.actorId;
-        for (const a of game.actors.contents) {
-          if (a.getFlag("fate-core-ko", "isSpeaker")) await a.unsetFlag("fate-core-ko", "isSpeaker");
+        const key = `ewk-speaker-${game.userId}`;
+        if (localStorage.getItem(key) === id) {
+          localStorage.removeItem(key); // 이미 선택된 경우 해제
+        } else {
+          localStorage.setItem(key, id);
         }
-        const actor = game.actors.get(id);
-        if (actor) await actor.setFlag("fate-core-ko", "isSpeaker", true);
         this.render();
       });
+    });
+
+    // 스테이지 바 드롭 영역 (액터 패널에서 드래그 → 무대 등장)
+    el.addEventListener("dragover", e => { e.preventDefault(); el.classList.add("ewk-hud--dragover"); });
+    el.addEventListener("dragleave", () => el.classList.remove("ewk-hud--dragover"));
+    el.addEventListener("drop", async e => {
+      e.preventDefault();
+      el.classList.remove("ewk-hud--dragover");
+      const actorId = e.dataTransfer?.getData("ewk-actor-id");
+      if (!actorId) return;
+      const actor = game.actors?.get(actorId);
+      if (actor) await actor.setFlag("fate-core-ko", "onStage", true);
     });
 
     el.querySelectorAll("[data-stage-action='fp-minus']").forEach(btn => {
@@ -1741,12 +1771,14 @@ async function rollFate(actor, skillItem) {
   const diceHtml = roll.dice[0].results.map(r => {
     if (r.result === 3) return '<span class="fate-die fate-die--plus">+</span>';
     if (r.result === 1) return '<span class="fate-die fate-die--minus">−</span>';
-    return '<span class="fate-die fate-die--blank">□</span>';
+    return '<span class="fate-die fate-die--blank"></span>';
   }).join("");
 
   const clampedTotal = Math.max(-4, Math.min(8, total));
   const ladderKey    = CONFIG.FATE.ladder[clampedTotal] ?? CONFIG.FATE.ladder[0];
   const ladderLabel  = game.i18n.localize(ladderKey);
+
+  const OUTCOME_KO = { SucceedWithStyle: "멋지게 성공", Succeed: "성공", Tie: "비김", Fail: "실패" };
 
   const content = await foundry.applications.handlebars.renderTemplate(
     "systems/fate-core-ko/templates/chat/roll-card.hbs",
@@ -1758,7 +1790,7 @@ async function rollFate(actor, skillItem) {
       diceTotal: roll.total,
       total,
       ladderLabel,
-      outcome: game.i18n.localize(`FATE.Roll.Outcome.${outcome}`),
+      outcome: OUTCOME_KO[outcome] ?? outcome,
       outcomeClass: outcome.toLowerCase(),
     }
   );
@@ -1860,9 +1892,10 @@ Hooks.once("ready", () => {
     document.querySelector(`#ewk-chat-log [data-message-id="${message.id}"]`)?.remove();
   });
 
-  // 메시지 수정 시 우리 로그도 갱신 (renderChatMessageHTML 이 새 버전 추가)
+  // 메시지 수정 시: DOM 참조를 저장해두고 addMessage 에서 제자리 교체
   Hooks.on("updateChatMessage", (message) => {
-    document.querySelector(`#ewk-chat-log [data-message-id="${message.id}"]`)?.remove();
+    const existing = document.querySelector(`#ewk-chat-log [data-message-id="${message.id}"]`);
+    if (existing) EWKSidebar._pendingUpdates[message.id] = existing;
   });
 
   // 배경 이미지 업데이트
@@ -1974,9 +2007,10 @@ Hooks.on("getSceneControlButtons", controls => {
 
 Hooks.on("preCreateChatMessage", (message, data, options, userId) => {
   if (userId !== game.userId) return;
-  // Roll messages already have the correct speaker set by rollFate()
   if (message.rolls?.length > 0) return;
-  const speakerActor = game.actors?.contents.find(a => a.getFlag("fate-core-ko", "isSpeaker"));
+  const speakerId = localStorage.getItem(`ewk-speaker-${game.userId}`);
+  if (!speakerId) return;
+  const speakerActor = game.actors?.get(speakerId);
   if (!speakerActor) return;
   const speaker = ChatMessage.getSpeaker({ actor: speakerActor });
   speaker.alias = speakerActor.name;

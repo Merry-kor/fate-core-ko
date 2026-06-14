@@ -1175,15 +1175,17 @@
 }
 .srl__chapter {
   flex-shrink: 0;
+  max-width: 120px;
   background: rgba(10,11,15,.85);
   border: 1px solid var(--accent-gold);
   border-radius: var(--radius-sm);
   color: var(--accent-gold);
   font-family: var(--font-sans); font-size: 0.75rem; font-weight: 700;
   padding: 3px 7px; cursor: pointer; outline: none;
+  overflow: hidden; text-overflow: ellipsis;
 }
 .srl__chapter option { background: #14161e; }
-.srl__thumbs { display: flex; gap: 7px; overflow-x: auto; flex: 1; }
+.srl__thumbs { display: flex; gap: 7px; overflow-x: auto; flex: 1; min-width: 0; }
 .srl__thumbs::-webkit-scrollbar { height: 3px; }
 .srl__thumbs::-webkit-scrollbar-thumb { background: var(--accent-gold); border-radius: 2px; }
 .srl__thumb {
@@ -1270,7 +1272,7 @@
   background: transparent; /* 배경이미지 가리지 않도록 */
 }
 .ewk-hud__inner {
-  height: 112px;
+  height: 168px;
   display: flex;
   align-items: center;
   gap: 9px;
@@ -1285,11 +1287,11 @@
 
 .ewk-hud__card {
   flex-shrink: 0;
-  width: 186px;
+  width: 240px;
   display: flex;
   align-items: center;
-  gap: 7px;
-  padding: 7px 8px;
+  gap: 10px;
+  padding: 10px 12px;
   background: var(--surface-raised);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-md);
@@ -1302,11 +1304,10 @@
   box-shadow: var(--shadow-gold);
 }
 .ewk-hud__port {
-  width: 44px; height: 44px;
+  width: 66px; height: 66px;
   border-radius: var(--radius-xs);
   border: 2px solid var(--border-strong);
-  object-fit: cover;
-  object-position: top;
+  object-fit: contain;
   flex-shrink: 0;
 }
 .ewk-hud__card--active .ewk-hud__port { border-color: var(--accent-gold); }
@@ -1343,7 +1344,7 @@
 /* ── VN Speech Box (canvas overlay) ── */
 #fate-vn-box {
   position: fixed;
-  bottom: 112px;
+  bottom: 168px;
   left: 0;
   right: var(--ewk-sidebar-width, 380px);
   z-index: 55;
@@ -1371,15 +1372,15 @@
 }
 #fate-vn-name {
   font-family: var(--font-sans);
-  font-size: 0.9375rem;
+  font-size: 1.375rem;
   font-weight: 700;
   letter-spacing: 0.05em;
-  margin-bottom: 5px;
+  margin-bottom: 6px;
   color: var(--accent-gold);
 }
 #fate-vn-text {
   font-family: var(--font-serif);
-  font-size: 1.125rem;
+  font-size: 1.6rem;
   line-height: 1.55;
   color: #f0ece0;
   max-width: 60ch;
@@ -1935,4 +1936,15 @@ li:hover .ewk-msg-acts {
   width: 14px; height: 14px;
   cursor: se-resize;
   background: linear-gradient(135deg, transparent 50%, var(--border-strong) 50%);
+}
+
+/* ── Drag-and-drop feedback ── */
+.ewk-hud--dragover .ewk-hud__inner {
+  border-top: 2px solid var(--accent-gold);
+  background: linear-gradient(180deg, rgba(201,162,39,.18) 0%, rgba(10,11,15,.82) 100%) !important;
+  box-shadow: inset 0 0 32px rgba(201,162,39,.12);
+}
+.ewk-acard--dragging {
+  opacity: 0.45;
+  transform: scale(0.97);
 }

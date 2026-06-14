@@ -91,9 +91,9 @@
       "Dice": "주사위",
       "Skill": "기능",
       "Outcome": {
-        "SucceedWithStyle": "압도적 성공",
+        "SucceedWithStyle": "멋지게 성공",
         "Succeed": "성공",
-        "Tie": "동점",
+        "Tie": "비김",
         "Fail": "실패"
       }
     },
