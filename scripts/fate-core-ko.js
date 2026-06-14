@@ -1743,58 +1743,60 @@ const EWKQuickDock = {
     el.className = "fate-core-ko";
     el.style.left = (pos.x ?? 16) + "px";
     el.style.top  = (pos.y ?? 90) + "px";
+    // 초기 구조 설정
+    el.innerHTML = `
+<div id="ewk-qdock-hdr">
+  <span class="ewk-qdock-title">출연진</span>
+  <button class="ewk-qdock-hdr-btn" id="ewk-qdock-min" title="최소화">−</button>
+</div>
+<div id="ewk-qdock-body"></div>`;
     iface.appendChild(el);
     this._el = el;
-    this._wire();
-    this.render();
+    this._wire();    // 이벤트 한 번만 연결
+    this.render();   // 컨텐츠 채우기
   },
 
   render() {
     const el = this._el;
     if (!el) return;
+    const body = el.querySelector("#ewk-qdock-body");
+    if (!body) return;
+
     const roster = this.getRoster();
     const mySpeakerId = localStorage.getItem(`ewk-speaker-${game.userId}`) ?? null;
 
     const chips = roster.map(id => {
       const a = game.actors?.get(id);
       if (!a) return "";
-      const onStage  = a.getFlag("fate-core-ko", "onStage") ?? false;
+      const onStage   = a.getFlag("fate-core-ko", "onStage") ?? false;
       const isSpeaker = id === mySpeakerId;
-      const stageIcon = onStage  ? "▼무대" : "▲무대";
-      const speakIcon = isSpeaker ? "●발언" : "○발언";
       return `<div class="ewk-qdock-chip${onStage ? " ewk-qdock-chip--on" : ""}${isSpeaker ? " ewk-qdock-chip--spk" : ""}" data-qdock-id="${id}">
   <div class="ewk-qdock-port-wrap">
     <img class="ewk-qdock-port" src="${a.img}" alt="${a.name}">
-    ${onStage  ? '<span class="ewk-qdock-badge ewk-qdock-badge--stage">ON</span>' : ""}
+    ${onStage   ? '<span class="ewk-qdock-badge ewk-qdock-badge--stage">ON</span>'  : ""}
     ${isSpeaker ? '<span class="ewk-qdock-badge ewk-qdock-badge--spk">발언</span>' : ""}
   </div>
   <div class="ewk-qdock-name">${a.name}</div>
   <div class="ewk-qdock-acts">
-    <button class="ewk-qdock-act${onStage ? " active-stage" : ""}" data-qdock-stage="${id}" title="${onStage ? "무대 퇴장" : "무대 등장"}">${stageIcon}</button>
-    <button class="ewk-qdock-act${isSpeaker ? " active-spk" : ""}" data-qdock-speak="${id}" title="${isSpeaker ? "발언 해제" : "발언 선택"}">${speakIcon}</button>
+    <button class="ewk-qdock-act${onStage ? " active-stage" : ""}" data-qdock-stage="${id}"
+      title="${onStage ? "무대 퇴장" : "무대 등장"}">${onStage ? "▼무대" : "▲무대"}</button>
+    <button class="ewk-qdock-act${isSpeaker ? " active-spk" : ""}" data-qdock-speak="${id}"
+      title="${isSpeaker ? "발언 해제" : "발언 선택"}">${isSpeaker ? "●발언" : "○발언"}</button>
     <button class="ewk-qdock-act ewk-qdock-act--kick" data-qdock-kick="${id}" title="목록에서 제거">✕</button>
   </div>
 </div>`;
     }).join("");
 
-    const body = el.querySelector("#ewk-qdock-body");
-    const newBody = `<div id="ewk-qdock-body"${this._open ? "" : ' style="display:none"'}>${
-      roster.length === 0
+    if (this._open) {
+      body.style.display = "";
+      body.innerHTML = roster.length === 0
         ? `<div class="ewk-qdock-empty">액터 패널에서 여기로 드래그</div>`
-        : `<div class="ewk-qdock-chips">${chips}</div>`
-    }</div>`;
-
-    if (body) {
-      body.outerHTML = newBody;
-    } else {
-      el.innerHTML = `
-<div id="ewk-qdock-hdr">
-  <span class="ewk-qdock-title">출연진</span>
-  <button class="ewk-qdock-hdr-btn" id="ewk-qdock-min" title="최소화">${this._open ? "−" : "+"}</button>
-</div>
-${newBody}`;
-      this._wire();
+        : `<div class="ewk-qdock-chips">${chips}</div>`;
     }
+
+    // 최소화 버튼 텍스트 동기화
+    const minBtn = el.querySelector("#ewk-qdock-min");
+    if (minBtn) minBtn.textContent = this._open ? "−" : "+";
 
     this._wireBody();
   },
@@ -1825,6 +1827,15 @@ ${newBody}`;
       }
     });
 
+    // 최소화 버튼 (build 시 한 번만 연결)
+    el.querySelector("#ewk-qdock-min")?.addEventListener("click", () => {
+      this._open = !this._open;
+      const body = el.querySelector("#ewk-qdock-body");
+      if (body) body.style.display = this._open ? "" : "none";
+      const btn = el.querySelector("#ewk-qdock-min");
+      if (btn) btn.textContent = this._open ? "−" : "+";
+    });
+
     // 드롭 영역
     el.addEventListener("dragover", e => { e.preventDefault(); el.classList.add("ewk-qdock--over"); });
     el.addEventListener("dragleave", e => {
@@ -1841,15 +1852,6 @@ ${newBody}`;
   _wireBody() {
     const el = this._el;
     if (!el) return;
-
-    // 최소화 버튼 (re-wire after render replaces innerHTML)
-    el.querySelector("#ewk-qdock-min")?.addEventListener("click", () => {
-      this._open = !this._open;
-      const body = el.querySelector("#ewk-qdock-body");
-      if (body) body.style.display = this._open ? "" : "none";
-      const btn = el.querySelector("#ewk-qdock-min");
-      if (btn) btn.textContent = this._open ? "−" : "+";
-    });
 
     // 초상화 클릭 → 발언권 토글
     el.querySelectorAll(".ewk-qdock-port").forEach(img => {

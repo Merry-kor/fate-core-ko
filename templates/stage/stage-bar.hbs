@@ -1,5 +1,5 @@
-{{#if actors.length}}
 <div class="ewk-hud__inner">
+  {{#if actors.length}}
   {{#each actors as |actor|}}
   <div class="ewk-hud__card {{#if actor.isSpeaker}}ewk-hud__card--active{{/if}}"
     data-actor-id="{{actor.id}}">
@@ -28,5 +28,7 @@
     </div>
   </div>
   {{/each}}
+  {{else}}
+  <div class="ewk-hud__empty">출연진 없음 — 출연진 위젯이나 액터 패널에서 드래그</div>
+  {{/if}}
 </div>
-{{/if}}
