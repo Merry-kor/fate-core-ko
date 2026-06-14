@@ -1300,8 +1300,17 @@
 }
 .ewk-hud__card--active {
   border-color: var(--accent-gold);
-  background: linear-gradient(180deg, rgba(201,162,39,.06), var(--surface-raised));
-  box-shadow: var(--shadow-gold);
+  border-width: 2px;
+  background: linear-gradient(180deg, rgba(201,162,39,.14), var(--surface-raised));
+  box-shadow: 0 0 0 1px rgba(201,162,39,.5), 0 0 18px rgba(201,162,39,.3);
+}
+@keyframes ewk-hud-pulse {
+  0%   { box-shadow: 0 0 0 1px rgba(201,162,39,.5), 0 0 18px rgba(201,162,39,.3); }
+  40%  { box-shadow: 0 0 0 3px var(--accent-gold),   0 0 36px rgba(201,162,39,.7); }
+  100% { box-shadow: 0 0 0 1px rgba(201,162,39,.5), 0 0 18px rgba(201,162,39,.3); }
+}
+.ewk-hud__card--pulse {
+  animation: ewk-hud-pulse 0.9s ease;
 }
 .ewk-hud__top {
   display: flex;

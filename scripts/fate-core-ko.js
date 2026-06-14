@@ -1658,11 +1658,13 @@ const FateStageBar = {
   },
 
   _bindEvents(signal) {
-    const el = this._el;
-    if (!el) return;
+    // #fate-stage-bar는 pointer-events:none이므로 inner(pointer-events:all)에 직접 바인딩
+    const inner = this._el?.querySelector(".ewk-hud__inner");
+    const el    = this._el;
+    if (!inner || !el) return;
     const opts = { signal };
 
-    el.addEventListener("click", async e => {
+    inner.addEventListener("click", async e => {
       const btn = e.target.closest("button[data-stage-action]");
       if (!btn) return;
       const action = btn.dataset.stageAction;
@@ -1675,6 +1677,13 @@ const FateStageBar = {
         localStorage.getItem(key) === id
           ? localStorage.removeItem(key)
           : localStorage.setItem(key, id);
+        // 즉시 DOM 반영 후 풀 렌더
+        const newSpeaker = localStorage.getItem(key);
+        el.querySelectorAll("[data-actor-id]").forEach(c => {
+          const on = c.dataset.actorId === newSpeaker;
+          c.classList.toggle("ewk-hud__card--active", on);
+          c.querySelector("[data-stage-action='speak']")?.classList.toggle("ewk-hud__btn--on", on);
+        });
         await this.render();
         EWKQuickDock.render();
         return;
@@ -1704,9 +1713,12 @@ const FateStageBar = {
       }
     }, opts);
 
-    el.addEventListener("dragover", e => { e.preventDefault(); el.classList.add("ewk-hud--dragover"); }, opts);
-    el.addEventListener("dragleave", () => el.classList.remove("ewk-hud--dragover"), opts);
-    el.addEventListener("drop", async e => {
+    // 드롭은 inner 또는 el 모두에서 동작하도록 inner에 등록
+    inner.addEventListener("dragover", e => { e.preventDefault(); el.classList.add("ewk-hud--dragover"); }, opts);
+    inner.addEventListener("dragleave", e => {
+      if (!inner.contains(e.relatedTarget)) el.classList.remove("ewk-hud--dragover");
+    }, opts);
+    inner.addEventListener("drop", async e => {
       e.preventDefault();
       el.classList.remove("ewk-hud--dragover");
       const actorId = e.dataTransfer?.getData("ewk-actor-id");
@@ -1714,6 +1726,16 @@ const FateStageBar = {
       const actor = game.actors?.get(actorId);
       if (actor) await actor.setFlag("fate-core-ko", "onStage", true);
     }, opts);
+  },
+
+  // 채팅 발언 시 해당 카드 펄스
+  pulseSpeaker(actorId) {
+    const card = this._el?.querySelector(`[data-actor-id="${actorId}"]`);
+    if (!card) return;
+    card.classList.remove("ewk-hud__card--pulse");
+    void card.offsetWidth;  // reflow로 애니메이션 재시작
+    card.classList.add("ewk-hud__card--pulse");
+    setTimeout(() => card.classList.remove("ewk-hud__card--pulse"), 900);
   },
 };
 
@@ -2250,6 +2272,13 @@ Hooks.on("preCreateChatMessage", (message, data, options, userId) => {
   const speaker = ChatMessage.getSpeaker({ actor: speakerActor });
   speaker.alias = speakerActor.name;
   message.updateSource({ speaker });
+});
+
+// 채팅 전송 시 HUD 발언 카드 펄스
+Hooks.on("createChatMessage", (message) => {
+  const speakerActorId = message.speaker?.actor;
+  if (!speakerActorId) return;
+  FateStageBar.pulseSpeaker(speakerActorId);
 });
 
 // ─── Chat Styling ─────────────────────────────────────────────────────────
