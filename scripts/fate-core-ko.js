@@ -425,7 +425,6 @@ const EWKSidebar = {
     { key: "combat",     icon: "⚔️", label: "전투" },
     { key: "scenes",     icon: "🎭", label: "장면" },
     { key: "actors",     icon: "👤", label: "액터" },
-    { key: "items",      icon: "🎒", label: "아이템" },
     { key: "journal",    icon: "📖", label: "저널" },
     { key: "tables",     icon: "🎲", label: "테이블" },
     { key: "playlists",  icon: "🎵", label: "음악" },
@@ -435,6 +434,13 @@ const EWKSidebar = {
 
   build() {
     document.getElementById("ewk-sidebar")?.remove();
+
+    // 배경 이미지 요소 생성 (없을 때만)
+    if (!document.getElementById("ewk-scene-bg")) {
+      const bg = document.createElement("div");
+      bg.id = "ewk-scene-bg";
+      document.getElementById("interface")?.prepend(bg);
+    }
 
     // 저장된 너비 복원
     const savedPx = parseInt(localStorage.getItem("ewk-sidebar-width-px") ?? "380", 10);
@@ -467,8 +473,8 @@ const EWKSidebar = {
     // 채팅 패널 (완전 커스텀)
     panels.appendChild(this._buildChatPanel(savedPx));
 
-    // 비채팅 패널 — actors/items는 커스텀 렌더, 나머지는 FVTT 패널 이동
-    const CUSTOM_PANELS = new Set(["actors", "items"]);
+    // 비채팅 패널 — actors는 커스텀 렌더, 나머지는 FVTT 패널 이동
+    const CUSTOM_PANELS = new Set(["actors"]);
     this.TABS.filter(t => t.key !== "chat").forEach(({ key }) => {
       const p = document.createElement("div");
       p.id = `ewk-panel-${key}`;
@@ -537,7 +543,7 @@ const EWKSidebar = {
 
   // FVTT가 렌더한 패널을 우리 컨테이너로 이동 (커스텀 패널은 건너뜀)
   _adoptFVTTPanels() {
-    const SKIP = new Set(["chat", "actors", "items"]);
+    const SKIP = new Set(["chat", "actors"]);
     this.TABS.forEach(({ key }) => {
       if (SKIP.has(key)) return;
       const fvttPanel =
@@ -568,35 +574,46 @@ const EWKSidebar = {
       p.classList.toggle("active", p === targetPanel));
 
     // 커스텀 패널 렌더 or FVTT 패널 채택
-    if      (key === "actors") this._renderActorPanel();
-    else if (key === "items")  this._renderItemPanel();
+    if (key === "actors") this._renderActorPanel();
     else if (key !== "chat") {
       try { ui.sidebar?.changeTab(key, "primary"); } catch (_) {}
       setTimeout(() => this._adoptFVTTPanels(), 100);
     }
   },
 
-  // ── 액터 패널 ──────────────────────────────────────────────
+  // ── 액터 패널 (폴더 구조) ───────────────────────────────────
   _renderActorPanel() {
     const panel = document.getElementById("ewk-panel-actors");
     if (!panel) return;
+    const isGM = game.user?.isGM;
 
-    const canCreate = game.user?.isGM;
-    const actors = (game.actors?.contents ?? [])
-      .sort((a, b) => a.name.localeCompare(b.name, "ko"));
-    const chars = actors.filter(a => a.type === "character");
-    const npcs  = actors.filter(a => a.type !== "character");
+    // 폴더별 액터 그룹화
+    const byFolder = {};
+    (game.actors?.contents ?? []).forEach(a => {
+      const fid = a.folder?.id ?? "__none__";
+      (byFolder[fid] ??= []).push(a);
+    });
 
-    const actorCard = (a) => {
+    // 액터 타입 폴더 목록 (정렬)
+    const folders = (game.folders?.filter(f => f.type === "Actor") ?? [])
+      .sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0) || a.name.localeCompare(b.name, "ko"));
+
+    // 펼침 상태 (localStorage)
+    const EXP_KEY = "ewk-actor-exp";
+    let expState = {};
+    try { expState = JSON.parse(localStorage.getItem(EXP_KEY) ?? "{}"); } catch (_) {}
+    const isExp = id => expState[id] !== false;
+    const toggleExp = id => {
+      expState[id] = !isExp(id);
+      localStorage.setItem(EXP_KEY, JSON.stringify(expState));
+      this._renderActorPanel();
+    };
+
+    const mkCard = (a) => {
       const fp    = a.system?.fatepoints;
       const stage = a.getFlag("fate-core-ko", "onStage") ?? false;
       const fpHtml = fp
-        ? `<div class="ewk-acard-fp">
-             <span class="ewk-acard-fp-n">${fp.current}</span>
-             <span class="ewk-acard-fp-sep">/</span>
-             <span class="ewk-acard-fp-r">${fp.refresh}</span>
-             <span class="ewk-acard-fp-l">운명점</span>
-           </div>`
+        ? `<div class="ewk-acard-fp"><span class="ewk-acard-fp-n">${fp.current}</span><span class="ewk-acard-fp-sep">/</span><span class="ewk-acard-fp-r">${fp.refresh}</span><span class="ewk-acard-fp-l">운명점</span></div>`
         : "";
       return `<div class="ewk-acard" data-actor-id="${a.id}">
   <img class="ewk-acard-port" src="${a.img}" alt="">
@@ -604,46 +621,159 @@ const EWKSidebar = {
     <div class="ewk-acard-name">${a.name}${stage ? ' <span class="ewk-on-air">ON</span>' : ""}</div>
     ${fpHtml}
   </div>
-  <button class="ewk-acard-open" data-open="${a.id}" title="시트 열기">▶</button>
+  ${isGM ? `<button class="ewk-acard-btn" data-actor-own="${a.id}" title="권한 설정">🔑</button>` : ""}
+  <button class="ewk-acard-btn ewk-acard-open" data-open="${a.id}" title="시트 열기">▶</button>
+  ${isGM ? `<button class="ewk-acard-btn ewk-acard-del" data-actor-del="${a.id}" title="삭제">✕</button>` : ""}
 </div>`;
     };
 
-    const group = (label, list) => !list.length ? "" : `
-<div class="ewk-panel-group">
-  <div class="ewk-panel-group-hdr">${label}<span class="ewk-panel-group-count">${list.length}</span></div>
-  ${list.map(actorCard).join("")}
+    const mkFolder = (fid, fname, actors, { gmOnly = false, isNone = false } = {}) => {
+      if (!isGM && gmOnly) return "";
+      const exp = isExp(fid);
+      const sorted = [...actors].sort((a, b) => a.name.localeCompare(b.name, "ko"));
+      const gmBadge = gmOnly ? `<span class="ewk-fldr-gm" title="GM만 볼 수 있음">🔒</span>` : "";
+      const gmToggle = isGM && !isNone
+        ? `<button class="ewk-fldr-btn" data-fldr-gm="${fid}" data-gm-cur="${gmOnly}" title="${gmOnly ? "모두에게 보이기" : "GM 전용으로"}">${gmOnly ? "👁" : "🔒"}</button>`
+        : "";
+      const addBtn = isGM
+        ? `<button class="ewk-fldr-btn" data-fldr-add="${fid}" title="이 폴더에 추가">+</button>`
+        : "";
+      const delBtn = isGM && !isNone
+        ? `<button class="ewk-fldr-btn ewk-fldr-btn--danger" data-fldr-del="${fid}" title="폴더 삭제">✕</button>`
+        : "";
+      return `<div class="ewk-fldr${gmOnly ? " ewk-fldr--gm" : ""}" data-fldr-id="${fid}">
+  <div class="ewk-fldr-hdr" data-fldr-toggle="${fid}">
+    <span class="ewk-fldr-arrow">${exp ? "▾" : "▸"}</span>
+    <span class="ewk-fldr-name">${fname}</span>${gmBadge}
+    <span class="ewk-fldr-cnt">${sorted.length}</span>
+    ${gmToggle}${addBtn}${delBtn}
+  </div>
+  <div class="ewk-fldr-body${exp ? "" : " ewk-fldr-body--closed"}">
+    ${sorted.map(mkCard).join("") || '<div class="ewk-panel-empty ewk-panel-empty--sm">비어 있음</div>'}
+  </div>
 </div>`;
+    };
+
+    const foldersHtml = folders.map(f =>
+      mkFolder(f.id, f.name, byFolder[f.id] ?? [], { gmOnly: f.getFlag("fate-core-ko", "gmOnly") ?? false })
+    ).join("");
+
+    const unfiledActors = byFolder["__none__"] ?? [];
+    const unfiledHtml = (unfiledActors.length || !folders.length)
+      ? mkFolder("__none__", "미분류", unfiledActors, { isNone: true })
+      : "";
 
     panel.innerHTML = `
 <div class="ewk-panel-toolbar">
-  ${canCreate
-    ? `<button class="ewk-panel-new" data-create="character">+ 캐릭터</button>
-       <button class="ewk-panel-new" data-create="npc">+ NPC</button>`
-    : ""}
+  ${isGM ? `
+    <button class="ewk-panel-new" data-create-folder>+ 폴더</button>
+    <button class="ewk-panel-new" data-create-actor="character">+ 캐릭터</button>
+    <button class="ewk-panel-new" data-create-actor="npc">+ NPC</button>` : ""}
 </div>
 <div class="ewk-panel-scroll">
-  ${group("플레이어 캐릭터", chars)}
-  ${group("NPC", npcs)}
-  ${!actors.length ? '<div class="ewk-panel-empty">액터가 없습니다.</div>' : ""}
+  ${foldersHtml}${unfiledHtml}
+  ${!folders.length && !unfiledActors.length ? '<div class="ewk-panel-empty">액터가 없습니다.</div>' : ""}
 </div>`;
 
-    panel.querySelectorAll(".ewk-acard").forEach(el => {
-      el.addEventListener("click", (e) => {
-        if (e.target.closest(".ewk-acard-open")) return;
-        game.actors.get(el.dataset.actorId)?.sheet?.render(true);
+    // ── 이벤트 바인딩 ──────────────────────────────────────────
+
+    panel.querySelectorAll("[data-fldr-toggle]").forEach(hdr => {
+      hdr.addEventListener("click", e => {
+        if (e.target.closest("[data-fldr-gm],[data-fldr-add],[data-fldr-del]")) return;
+        toggleExp(hdr.dataset.fldrToggle);
       });
     });
-    panel.querySelectorAll(".ewk-acard-open").forEach(btn => {
-      btn.addEventListener("click", () => {
+
+    panel.querySelector("[data-create-folder]")?.addEventListener("click", async () => {
+      const name = this._promptText("폴더 이름:");
+      if (!name) return;
+      await Folder.create({ name, type: "Actor", color: "#4f6bc9" });
+    });
+
+    panel.querySelectorAll("[data-create-actor]").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const type = btn.dataset.createActor;
+        await Actor.create({ name: type === "character" ? "새 캐릭터" : "새 NPC", type });
+      });
+    });
+
+    panel.querySelectorAll("[data-fldr-add]").forEach(btn => {
+      btn.addEventListener("click", async e => {
+        e.stopPropagation();
+        const fid = btn.dataset.fldrAdd;
+        const name = this._promptText("캐릭터 이름:");
+        if (!name) return;
+        await Actor.create({ name, type: "character", folder: fid === "__none__" ? null : fid });
+      });
+    });
+
+    panel.querySelectorAll("[data-fldr-gm]").forEach(btn => {
+      btn.addEventListener("click", async e => {
+        e.stopPropagation();
+        const folder = game.folders.get(btn.dataset.fldrGm);
+        if (!folder) return;
+        await folder.setFlag("fate-core-ko", "gmOnly", btn.dataset.gmCur !== "true");
+      });
+    });
+
+    panel.querySelectorAll("[data-fldr-del]").forEach(btn => {
+      btn.addEventListener("click", async e => {
+        e.stopPropagation();
+        const folder = game.folders.get(btn.dataset.fldrDel);
+        if (!folder) return;
+        const ok = await foundry.applications.api.DialogV2.confirm({
+          content: `<p>"${folder.name}" 폴더를 삭제할까요? 액터는 미분류로 이동됩니다.</p>`,
+          yes: { label: "삭제" }, no: { label: "취소" },
+        }).catch(() => false);
+        if (ok) await folder.delete({ deleteSubfolders: false, deleteContents: false });
+      });
+    });
+
+    panel.querySelectorAll("[data-open]").forEach(btn => {
+      btn.addEventListener("click", e => {
+        e.stopPropagation();
         game.actors.get(btn.dataset.open)?.sheet?.render(true);
       });
     });
-    panel.querySelectorAll("[data-create]").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const type = btn.dataset.create;
-        Actor.create({ name: type === "character" ? "새 캐릭터" : "새 NPC", type });
+
+    panel.querySelectorAll("[data-actor-own]").forEach(btn => {
+      btn.addEventListener("click", e => {
+        e.stopPropagation();
+        const actor = game.actors.get(btn.dataset.actorOwn);
+        if (!actor) return;
+        try {
+          new foundry.applications.apps.DocumentOwnershipConfig({ document: actor }).render(true);
+        } catch (_) {
+          try {
+            new DocumentOwnershipConfig(actor, {}).render(true);
+          } catch (__) {}
+        }
       });
     });
+
+    panel.querySelectorAll("[data-actor-del]").forEach(btn => {
+      btn.addEventListener("click", async e => {
+        e.stopPropagation();
+        const actor = game.actors.get(btn.dataset.actorDel);
+        if (!actor) return;
+        const ok = await foundry.applications.api.DialogV2.confirm({
+          content: `<p>"${actor.name}"을(를) 영구 삭제할까요?</p>`,
+          yes: { label: "삭제" }, no: { label: "취소" },
+        }).catch(() => false);
+        if (ok) await actor.delete();
+      });
+    });
+
+    panel.querySelectorAll(".ewk-acard").forEach(el => {
+      el.addEventListener("click", e => {
+        if (e.target.closest(".ewk-acard-btn")) return;
+        game.actors.get(el.dataset.actorId)?.sheet?.render(true);
+      });
+    });
+  },
+
+  _promptText(label, def = "") {
+    return window.prompt(label, def) ?? null;
   },
 
   // ── 아이템 패널 ────────────────────────────────────────────
@@ -1420,6 +1550,9 @@ Hooks.once("init", () => {
   };
 
   Handlebars.registerHelper("gte", (a, b) => a >= b);
+  Handlebars.registerHelper("localizeAspectType", t =>
+    game.i18n.localize(`FATE.Item.Aspect.Type.${t ?? "general"}`)
+  );
 
   // each_times 헬퍼 — {{#each_times N}} {{@index}} {{/each_times}}
   Handlebars.registerHelper("each_times", function(n, options) {
@@ -1472,24 +1605,34 @@ Hooks.once("ready", () => {
     document.querySelector(`#ewk-chat-log [data-message-id="${message.id}"]`)?.remove();
   });
 
+  // 배경 이미지 업데이트
+  const updateBg = () => {
+    const bgSrc = game.scenes?.active?.background?.src;
+    const bgEl  = document.getElementById("ewk-scene-bg");
+    if (bgEl) bgEl.style.backgroundImage = bgSrc ? `url("${bgSrc}")` : "";
+  };
+  updateBg(); // 초기 씬 적용
+
   const refreshActors = () => {
     FateStageBar.render();
     if (EWKSidebar._activeTab === "actors") EWKSidebar._renderActorPanel();
   };
-  const refreshItems = () => {
-    if (EWKSidebar._activeTab === "items") EWKSidebar._renderItemPanel();
+  const refreshFolders = (folder) => {
+    if (folder?.type === "Actor" && EWKSidebar._activeTab === "actors") EWKSidebar._renderActorPanel();
   };
-  Hooks.on("createActor", refreshActors);
-  Hooks.on("updateActor", refreshActors);
-  Hooks.on("deleteActor", refreshActors);
-  Hooks.on("createItem",  refreshItems);
-  Hooks.on("updateItem",  refreshItems);
-  Hooks.on("deleteItem",  refreshItems);
+  Hooks.on("createActor",  refreshActors);
+  Hooks.on("updateActor",  refreshActors);
+  Hooks.on("deleteActor",  refreshActors);
+  Hooks.on("createFolder", refreshFolders);
+  Hooks.on("updateFolder", refreshFolders);
+  Hooks.on("deleteFolder", refreshFolders);
   Hooks.on("canvasReady", () => {
+    updateBg();
     FateSceneRail.render();
     EWKSidebar.updateSceneBadge();
   });
   Hooks.on("updateScene", () => {
+    updateBg();
     FateSceneRail.render();
     EWKSidebar.updateSceneBadge();
     foundry.applications.instances.get("fate-scene-panel")?.render();

@@ -188,7 +188,8 @@
   width: 72px; height: 72px;
   border: 2px solid var(--accent-gold);
   border-radius: var(--radius-sm);
-  object-fit: cover;
+  object-fit: contain;
+  background: var(--surface-card);
   cursor: pointer;
   transition: box-shadow var(--dur-base) var(--ease-out);
 }
@@ -546,16 +547,15 @@
 .fate-skill:hover { border-color: var(--border-strong); }
 
 .fate-skill__rank {
-  min-width: 56px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1px;
-  padding: 3px var(--sp-2);
+  display: inline-flex;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 4px;
+  padding: 2px var(--sp-2);
   background: rgba(201, 162, 39, 0.1);
   border: 1px solid rgba(201, 162, 39, 0.2);
   border-radius: var(--radius-xs);
+  white-space: nowrap;
 }
 .fate-skill__name { flex: 1; font-size: 0.875rem; color: var(--text-body); }
 
@@ -619,10 +619,9 @@
 }
 .fate-skill__rank-label {
   font-family: var(--font-sans);
-  font-size: 0.55rem;
+  font-size: 0.65rem;
   color: var(--accent-gold);
-  opacity: 0.75;
-  letter-spacing: 0.02em;
+  opacity: 0.8;
   line-height: 1;
 }
 
@@ -913,8 +912,21 @@
 #hotbar     { display: none !important; }
 #navigation { display: none !important; }
 #players    { display: none !important; }
-#controls   { opacity: 0.18; transition: opacity 0.2s; pointer-events: none; }
-#controls:hover { opacity: 1; pointer-events: all; }
+#controls   { display: none !important; }
+
+/* PIXI 캔버스 — 배경 이미지는 #ewk-scene-bg 로 대체 */
+#board { visibility: hidden !important; pointer-events: none !important; }
+
+/* ── 장면 배경 이미지 (fixed, fullscreen) ── */
+#ewk-scene-bg {
+  position: fixed;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  z-index: 0;
+  pointer-events: none;
+}
 
 /* FVTT 네이티브 사이드바 — 렌더링은 유지(로그·패널 정상 동작), 시각적으로만 숨김 */
 /* display:none 하면 FVTT가 #chat-log 렌더를 건너뛰어서 로그가 사라짐           */
@@ -1517,6 +1529,32 @@
   padding: 32px 16px; text-align: center;
   font-size: 0.8rem; color: var(--text-faint); font-style: italic;
 }
+.ewk-panel-empty--sm { padding: 10px 14px; }
+
+/* ── 폴더 ── */
+.ewk-fldr { border-bottom: 1px solid var(--border-strong); }
+.ewk-fldr-hdr {
+  display: flex; align-items: center; gap: 5px;
+  padding: 7px 10px 7px 8px;
+  background: var(--surface-well);
+  cursor: pointer; user-select: none;
+  transition: background 0.1s;
+}
+.ewk-fldr-hdr:hover { background: var(--surface-raised); }
+.ewk-fldr-arrow { font-size: 0.7rem; color: var(--text-faint); width: 10px; flex-shrink: 0; }
+.ewk-fldr-name  { flex: 1; font-size: 0.75rem; font-weight: 600; color: var(--text-body); letter-spacing: 0.04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ewk-fldr-gm    { font-size: 0.72rem; opacity: 0.65; }
+.ewk-fldr-cnt   { font-size: 0.65rem; color: var(--text-faint); background: var(--surface-card); border-radius: 99px; padding: 0 5px; }
+.ewk-fldr--gm .ewk-fldr-name { color: var(--text-muted); }
+.ewk-fldr-body--closed { display: none; }
+.ewk-fldr-btn {
+  flex-shrink: 0;
+  background: none; border: 1px solid transparent; border-radius: 3px;
+  color: var(--text-faint); font-size: 0.7rem; padding: 1px 4px; cursor: pointer;
+  transition: all 0.1s;
+}
+.ewk-fldr-btn:hover { color: var(--text-body); border-color: var(--border-strong); background: var(--surface-card); }
+.ewk-fldr-btn--danger:hover { color: #c94f4f; border-color: #c94f4f; }
 
 /* ── 액터 카드 ── */
 .ewk-acard {
@@ -1527,11 +1565,23 @@
   transition: background 0.12s;
 }
 .ewk-acard:hover { background: rgba(255,255,255,.04); }
+.ewk-acard-btn {
+  flex-shrink: 0;
+  background: none; border: 1px solid transparent; border-radius: 3px;
+  color: var(--text-faint); font-size: 0.7rem; padding: 2px 5px; cursor: pointer;
+  transition: all 0.1s;
+  opacity: 0;
+}
+.ewk-acard:hover .ewk-acard-btn { opacity: 1; }
+.ewk-acard-btn:hover { color: var(--text-body); border-color: var(--border-strong); background: var(--surface-card); }
+.ewk-acard-del:hover { color: #c94f4f !important; border-color: #c94f4f !important; }
 .ewk-acard-port {
   width: 38px; height: 38px; flex-shrink: 0;
   border-radius: var(--radius-xs);
   border: 1px solid var(--border-hairline);
-  object-fit: cover; object-position: top;
+  object-fit: contain;
+  object-position: center;
+  background: var(--surface-card);
 }
 .ewk-acard-body { flex: 1; min-width: 0; }
 .ewk-acard-name {
