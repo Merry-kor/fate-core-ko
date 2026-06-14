@@ -876,68 +876,54 @@
    VTT Stage UI
    ===================================================== */
 
-/* ── Hide / fade Foundry default elements ── */
+/* ── FVTT 기본 UI 숨김 / 축소 ── */
 #hotbar     { display: none !important; }
 #navigation { display: none !important; }
 #players    { display: none !important; }
 #controls   { opacity: 0.18; transition: opacity 0.2s; pointer-events: none; }
 #controls:hover { opacity: 1; pointer-events: all; }
 
-/* ── Foundry sidebar ── */
-#sidebar {
-  background: var(--surface-app) !important;
-  border-left: 1px solid var(--border-strong) !important;
-  height: calc(100vh - 112px) !important;
-  top: 0 !important;
+/* FVTT 네이티브 사이드바 완전 숨김 — 기능(API)은 유지, 비주얼은 우리 #ewk-sidebar */
+#sidebar { display: none !important; }
+
+/* ═══════════════════════════════════════════════════════
+   EWK Custom Sidebar — #interface에 직접 붙이는 커스텀 레이어
+   ═══════════════════════════════════════════════════════ */
+
+#ewk-sidebar {
+  position: fixed;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: var(--ewk-sidebar-width, 380px);
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-app);
+  border-left: 1px solid var(--border-strong);
+  z-index: 30;
+  overflow: hidden;
   --color-bg: var(--surface-app);
-  --color-bg-chat: transparent;
   --color-text-primary: var(--text-body);
-  --color-border: var(--border-strong);
-}
-/* ── 네이티브 sidebar-tabs: 기능은 유지, 시각적으로만 숨김 ──
-   display:none 하면 FVTT 내부 탭 라우팅이 끊김 → absolute off-screen 방식 사용 */
-#sidebar-tabs {
-  position: absolute !important;
-  left: -9999px !important;
-  width: 0 !important;
-  height: 0 !important;
-  overflow: hidden !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
-  flex-shrink: 0 !important;
 }
 
-/* sidebar-content가 전체 너비를 차지하도록 (sidebar-tabs는 절대위치라 flow에서 제외됨) */
-#sidebar-content {
-  flex: 1 1 auto !important;
-  width: 100% !important;
-  min-width: 0 !important;
-  display: flex !important;
-  flex-direction: column !important;
-  overflow: hidden !important;
-  position: relative !important;
+/* ── 가로 탭 스트립 ── */
+#ewk-tabstrip {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  background: var(--surface-well);
+  border-bottom: 1px solid var(--border-strong);
+  flex-shrink: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  height: 46px;
+  padding: 0 2px;
+  gap: 1px;
 }
+#ewk-tabstrip::-webkit-scrollbar { height: 2px; }
+#ewk-tabstrip::-webkit-scrollbar-thumb { background: var(--accent-gold); border-radius: 1px; }
 
-/* ── EWK 가로 탭 스트립 ── */
-#ewk-sidebar-tabstrip {
-  display: flex !important;
-  flex-direction: row !important;
-  align-items: stretch !important;
-  background: var(--surface-well) !important;
-  border-bottom: 1px solid var(--border-strong) !important;
-  flex-shrink: 0 !important;
-  overflow-x: auto !important;
-  overflow-y: hidden !important;
-  padding: 0 2px !important;
-  gap: 1px !important;
-  height: 46px !important;
-  box-sizing: border-box !important;
-  position: relative !important;
-  z-index: 10 !important;
-}
-#ewk-sidebar-tabstrip::-webkit-scrollbar { height: 2px; }
-#ewk-sidebar-tabstrip::-webkit-scrollbar-thumb { background: var(--accent-gold); }
-.ewk-stab {
+.ewk-tab {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -952,64 +938,28 @@
   cursor: pointer;
   flex-shrink: 0;
   min-width: 34px;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  transition: background 0.15s, color 0.15s;
 }
-.ewk-stab-icon { font-size: 14px; line-height: 1; }
-.ewk-stab-label {
-  font-family: var(--font-sans);
-  font-size: 7px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  color: inherit;
-  line-height: 1;
-  white-space: nowrap;
-}
-.ewk-stab:hover { background: rgba(255,255,255,0.05); color: var(--text-body); }
-.ewk-stab.active {
-  background: rgba(201,162,39,.08);
-  border-color: var(--accent-gold);
-  color: var(--accent-gold);
-}
+.ewk-tab-icon  { font-size: 14px; line-height: 1; }
+.ewk-tab-label { font-family: var(--font-sans); font-size: 7px; font-weight: 700;
+                  letter-spacing: 0.02em; line-height: 1; white-space: nowrap; color: inherit; }
+.ewk-tab:hover { background: rgba(255,255,255,0.05); color: var(--text-body); }
+.ewk-tab.active { background: rgba(201,162,39,.08); border-color: var(--accent-gold); color: var(--accent-gold); }
 
-/* ── #chat flex 레이아웃 강제 — .chat-scroll이 absolute로 헤더를 덮지 못하게 ── */
-#chat {
-  display: flex !important;
-  flex-direction: column !important;
-  flex: 1 1 auto !important;
-  min-height: 0 !important;
-  overflow: hidden !important;
-}
-/* chat-scroll 또는 directory-list: position:relative로 강제 (absolute 차단) */
-#chat > .chat-scroll,
-#chat > .directory-list {
-  flex: 1 1 auto !important;
-  min-height: 0 !important;
-  overflow-y: auto !important;
-  position: relative !important;
-  height: auto !important;
-}
+/* ── 패널 컨테이너 ── */
+#ewk-panels { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
 
-/* Width preset buttons — now inside #ewk-chat-hdr */
-#ewk-wpresets { display: flex; gap: 2px; }
-.ewk-wpbtn {
-  height: 20px;
-  padding: 0 4px;
-  background: transparent;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-xs);
-  color: var(--text-faint);
-  font-size: 0.58rem;
-  font-weight: 700;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
-}
-.ewk-wpbtn:hover { background: rgba(255,255,255,.06); color: var(--text-body); }
-.ewk-wpbtn--on { background: rgba(201,162,39,.1) !important; border-color: var(--accent-gold) !important; color: var(--accent-gold) !important; }
+.ewk-panel { display: none; flex-direction: column; flex: 1; overflow: hidden; }
+.ewk-panel.active { display: flex; }
 
-.sidebar-tab { background: transparent !important; }
+/* FVTT 패널 컨테이너 (비채팅 탭) */
+.ewk-fvtt-panel { overflow-y: auto; }
+.ewk-fvtt-panel .sidebar-tab { display: block !important; height: auto !important; overflow: visible !important; }
 
-/* ── EWK Chat Header ── */
+/* ── 채팅 패널 ── */
+#ewk-panel-chat { background: var(--surface-app); }
+
+/* 채팅 헤더 */
 #ewk-chat-hdr {
   display: flex;
   align-items: center;
@@ -1017,172 +967,122 @@
   padding: 6px 10px;
   border-bottom: 1px solid var(--border-strong);
   background: var(--surface-well);
-  flex-shrink: 0 !important;
+  flex-shrink: 0;
   flex-wrap: wrap;
   min-height: 36px;
-  position: relative;
-  z-index: 5;
-  pointer-events: all;
 }
-.ewk-chat-title {
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: var(--text-muted);
-  letter-spacing: 0.06em;
-  white-space: nowrap;
-}
+.ewk-chat-title { font-size: 0.72rem; font-weight: 700; color: var(--text-muted); letter-spacing: 0.06em; white-space: nowrap; }
 .ewk-scene-badge {
-  font-size: 0.63rem;
-  color: var(--accent-gold);
-  background: rgba(201,162,39,.1);
-  border: 1px solid rgba(201,162,39,.35);
-  border-radius: var(--radius-pill);
-  padding: 2px 7px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 130px;
-  margin-right: auto;
+  font-size: 0.63rem; color: var(--accent-gold);
+  background: rgba(201,162,39,.1); border: 1px solid rgba(201,162,39,.35);
+  border-radius: var(--radius-pill); padding: 2px 7px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 130px; margin-right: auto;
 }
-.ewk-hdr-acts { display: flex; gap: 3px; }
+.ewk-hdr-acts { display: flex; gap: 3px; align-items: center; }
+#ewk-wpresets { display: flex; gap: 2px; }
+.ewk-wpbtn {
+  height: 20px; padding: 0 4px;
+  background: transparent; border: 1px solid var(--border-strong);
+  border-radius: var(--radius-xs); color: var(--text-faint);
+  font-size: 0.58rem; font-weight: 700; cursor: pointer; white-space: nowrap;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.ewk-wpbtn:hover { background: rgba(255,255,255,.06); color: var(--text-body); }
+.ewk-wpbtn--on  { background: rgba(201,162,39,.1) !important; border-color: var(--accent-gold) !important; color: var(--accent-gold) !important; }
 .ewk-hdr-btn {
-  height: 24px;
-  padding: 0 7px;
-  background: transparent;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-sm);
-  color: var(--text-muted);
-  font-size: 0.63rem;
-  font-weight: 700;
-  cursor: pointer;
-  white-space: nowrap;
+  height: 24px; padding: 0 7px;
+  background: transparent; border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm); color: var(--text-muted);
+  font-size: 0.63rem; font-weight: 700; cursor: pointer; white-space: nowrap;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
-.ewk-hdr-btn:hover {
-  background: rgba(201,162,39,.08);
-  color: var(--accent-gold);
-  border-color: rgba(201,162,39,.4);
-}
+.ewk-hdr-btn:hover { background: rgba(201,162,39,.08); color: var(--accent-gold); border-color: rgba(201,162,39,.4); }
 
-/* ── EWK Chat Emotion Tools ── */
-#ewk-chat-tools {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  padding: 5px 10px;
-  border-top: 1px solid var(--border-strong);
-  flex-wrap: wrap;
-  flex-shrink: 0;
-  background: var(--surface-app);
+/* 채팅 로그 */
+#ewk-chat-log {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
 }
-.ewk-tool-btn {
-  height: 26px;
-  padding: 0 8px;
-  background: transparent;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  font-size: 0.72rem;
-  color: var(--text-muted);
-  white-space: nowrap;
-  transition: background 0.15s, color 0.15s;
-}
-.ewk-tool-btn:hover { background: rgba(255,255,255,.05); color: var(--text-body); }
-.ewk-tool-sep { width: 1px; height: 16px; background: var(--border-strong); flex-shrink: 0; margin: 0 2px; }
-.ewk-emo-btn {
-  height: 26px;
-  padding: 0 8px;
-  background: transparent;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  font-size: 0.72rem;
-  color: var(--text-muted);
-  white-space: nowrap;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
-}
-.ewk-emo-btn:hover { background: rgba(255,255,255,.05); color: var(--text-body); }
-.ewk-emo-btn--on { background: rgba(201,162,39,.12) !important; border-color: var(--accent-gold) !important; color: var(--accent-gold) !important; }
+#ewk-chat-log::-webkit-scrollbar { width: 3px; }
+#ewk-chat-log::-webkit-scrollbar-thumb { background: var(--border-hairline); border-radius: 2px; }
 
-/* ── Print / PDF ── */
-@media print {
-  body > *:not(#sidebar) { display: none !important; }
-  #sidebar {
-    position: static !important;
-    width: 100% !important;
-    height: auto !important;
-    border: none !important;
-  }
-  #ewk-sidebar-tabs, #ewk-chat-hdr, #chat-controls, #chat-form { display: none !important; }
-  #chat { display: block !important; height: auto !important; overflow: visible !important; }
-  #chat-log { overflow: visible !important; height: auto !important; }
-  .chat-message { page-break-inside: avoid; }
-}
-
-/* Chat messages — cover all Foundry v13 selectors */
-#chat-log li,
-#chat-log .chat-message,
-#chat-log li.chat-message,
-li.chat-message {
+/* 채팅 메시지 스타일 */
+#ewk-chat-log li,
+#ewk-chat-log .chat-message {
   background: transparent !important;
-  background-color: transparent !important;
   border: none !important;
   border-bottom: 1px solid var(--border-strong) !important;
   margin: 0 !important;
   padding: 12px 16px !important;
   box-shadow: none !important;
+  list-style: none;
 }
-#chat-log li:hover,
-#chat-log .chat-message:hover {
-  background: rgba(255,255,255,0.03) !important;
-  background-color: rgba(255,255,255,0.03) !important;
+#ewk-chat-log li:hover,
+#ewk-chat-log .chat-message:hover { background: rgba(255,255,255,0.03) !important; }
+#ewk-chat-log .message-header { background: transparent !important; border: none !important; padding: 0 !important; margin-bottom: 4px !important; }
+#ewk-chat-log .message-content,
+#ewk-chat-log .chat-message article,
+#ewk-chat-log .chat-message section { background: transparent !important; }
+#ewk-chat-log .message-sender    { font-family: var(--font-sans) !important; font-weight: 700 !important; font-size: 0.8125rem !important; color: var(--text-muted) !important; }
+#ewk-chat-log .message-timestamp { font-size: 0.6875rem !important; color: var(--text-faint) !important; }
+#ewk-chat-log .message-content   { font-size: 0.875rem !important; color: var(--text-body) !important; line-height: 1.6 !important; }
+
+/* 감정 도구 */
+#ewk-chat-tools {
+  display: flex; align-items: center; gap: 3px;
+  padding: 5px 10px; border-top: 1px solid var(--border-strong);
+  flex-wrap: wrap; flex-shrink: 0; background: var(--surface-app);
 }
-/* Inner message parts */
-.chat-message .message-header,
-li.chat-message header,
-.message-header { background: transparent !important; background-color: transparent !important; border: none !important; padding: 0 !important; margin-bottom: 4px !important; }
-.chat-message article,
-.chat-message section,
-.chat-message .message-body,
-.chat-message .message-content,
-.message-content { background: transparent !important; background-color: transparent !important; }
-.message-sender { font-family: var(--font-sans) !important; font-weight: 700 !important; font-size: 0.8125rem !important; color: var(--text-muted) !important; }
-.message-timestamp { font-size: 0.6875rem !important; color: var(--text-faint) !important; }
-.message-content { font-size: 0.875rem !important; color: var(--text-body) !important; line-height: 1.6 !important; }
-/* ── Chat form — Foundry v13 DOM: #chat .chat-form (class wrapper) ─────── */
-/* 레퍼런스 방식: .chat-form 래퍼 + #chat-message ID + .ProseMirror 통합 타겟 */
-#chat .chat-form {
-  border-top: 1px solid var(--border-strong) !important;
-  padding: 4px 8px 8px !important;
-  flex-shrink: 0 !important;
-  background: var(--surface-app) !important;
+.ewk-tool-btn {
+  height: 26px; padding: 0 8px;
+  background: transparent; border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm); cursor: pointer;
+  font-size: 0.72rem; color: var(--text-muted); white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
 }
-#chat-message,
-#chat .chat-form textarea,
-#chat .chat-form input[type="text"],
-#chat .ProseMirror {
-  background: var(--surface-raised) !important;
-  border: 1px solid var(--border-hairline) !important;
-  border-radius: var(--radius-sm) !important;
-  color: var(--text-body) !important;
-  font-family: var(--font-sans) !important;
-  font-size: 0.8125rem !important;
-  padding: 5px 8px !important;
-  resize: none !important;
-  box-sizing: border-box !important;
+.ewk-tool-btn:hover { background: rgba(255,255,255,.05); color: var(--text-body); }
+.ewk-tool-sep { width: 1px; height: 16px; background: var(--border-strong); flex-shrink: 0; margin: 0 2px; }
+.ewk-emo-btn {
+  height: 26px; padding: 0 8px;
+  background: transparent; border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm); cursor: pointer;
+  font-size: 0.72rem; color: var(--text-muted); white-space: nowrap;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
-#chat-message:focus,
-#chat .chat-form textarea:focus,
-#chat .ProseMirror:focus { outline: none !important; border-color: var(--accent-gold) !important; }
-/* Send button */
-#chat .chat-form button[name="submit"],
-#chat .chat-form button[type="submit"],
-#chat .chat-form button[data-action="send"],
-#chat .chat-form .send-button {
-  background: var(--accent-gold) !important;
-  color: #0a0b0f !important;
-  border-color: var(--accent-gold) !important;
-  font-weight: 700 !important;
+.ewk-emo-btn:hover { background: rgba(255,255,255,.05); color: var(--text-body); }
+.ewk-emo-btn--on { background: rgba(201,162,39,.12) !important; border-color: var(--accent-gold) !important; color: var(--accent-gold) !important; }
+
+/* 채팅 입력 폼 */
+#ewk-chat-form {
+  display: flex; align-items: flex-end; gap: 4px;
+  padding: 6px 8px 8px; flex-shrink: 0;
+  background: var(--surface-app); border-top: 1px solid var(--border-strong);
+}
+#ewk-chat-input {
+  flex: 1; resize: none;
+  background: var(--surface-raised); border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-sm); color: var(--text-body);
+  font-family: var(--font-sans); font-size: 0.8125rem;
+  padding: 5px 8px; min-height: 32px; max-height: 80px; line-height: 1.4;
+}
+#ewk-chat-input:focus  { outline: none; border-color: var(--accent-gold); }
+#ewk-chat-input::placeholder { color: var(--text-faint); }
+#ewk-chat-send {
+  height: 32px; padding: 0 12px; flex-shrink: 0;
+  background: var(--accent-gold); border: none; border-radius: var(--radius-sm);
+  color: #0a0b0f; font-weight: 700; font-size: 0.75rem; cursor: pointer;
+  transition: background 0.15s;
+}
+#ewk-chat-send:hover { background: var(--accent-gold-bright); }
+
+/* ── Print ── */
+@media print {
+  #ewk-sidebar, #fate-stage-bar, #fate-scene-rail, #fate-vn-box { display: none !important; }
+  #ewk-chat-log { display: block !important; height: auto !important; overflow: visible !important; }
+  .chat-message { page-break-inside: avoid; }
 }
 
 /* ── Scene Rail (top canvas overlay) ── */
@@ -1190,7 +1090,7 @@ li.chat-message header,
   position: fixed;
   top: 0;
   left: 50px;
-  right: calc(var(--foundry-sidebar-width, 320px) + 4px);
+  right: calc(var(--ewk-sidebar-width, 380px) + 4px);
   z-index: 50;
   display: flex;
   align-items: center;
@@ -1299,7 +1199,7 @@ li.chat-message header,
   position: fixed;
   bottom: 0;
   left: 0;
-  right: var(--foundry-sidebar-width, 320px); /* sidebar를 침범하지 않음 */
+  right: var(--ewk-sidebar-width, 380px); /* sidebar를 침범하지 않음 */
   z-index: 60;
   pointer-events: none;
 }
@@ -1379,7 +1279,7 @@ li.chat-message header,
   position: fixed;
   bottom: 112px;
   left: 0;
-  right: var(--foundry-sidebar-width, 320px);
+  right: var(--ewk-sidebar-width, 380px);
   z-index: 55;
   padding: 18px 24px 22px 260px;
   opacity: 0;

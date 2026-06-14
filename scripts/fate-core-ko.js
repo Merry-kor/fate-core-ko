@@ -380,7 +380,8 @@ const FateVNBox = {
   },
 };
 
-// ─── EWK Sidebar (tabs + chat header + width presets) ─────────────────────
+// ─── EWK Sidebar — 완전 커스텀 비주얼 레이어 ──────────────────────────────
+// #sidebar는 FVTT 기능용(hidden), 우리 UI는 #interface에 직접 붙임
 
 const EWKSidebar = {
   WIDTHS: [
@@ -389,7 +390,7 @@ const EWKSidebar = {
     { key: "wide",   label: "넓게",    px: 480 },
     { key: "xwide",  label: "매우넓게", px: 560 },
   ],
-  _currentWidth: "normal",
+  _activeTab: "chat",
   _currentEmo: "normal",
 
   TABS: [
@@ -405,196 +406,235 @@ const EWKSidebar = {
     { key: "settings",   icon: "⚙️", label: "설정" },
   ],
 
-  init() {
-    this._currentWidth = localStorage.getItem("ewk-sidebar-width") ?? "normal";
-    this._applyWidth();
-    this._buildCustomTabs();
-    this._injectChatUI();
-    setTimeout(() => {
-      this._buildCustomTabs();
-      if (!document.getElementById("ewk-chat-hdr")) this._injectChatUI();
-    }, 800);
-    setTimeout(() => {
-      this._buildCustomTabs();
-      if (!document.getElementById("ewk-chat-hdr")) this._injectChatUI();
-    }, 2500);
-  },
+  build() {
+    document.getElementById("ewk-sidebar")?.remove();
 
-  _buildCustomTabs() {
-    // 네이티브 #sidebar-tabs는 CSS에서 display:none — 우리가 직접 가로 탭 스트립 생성
-    document.getElementById("ewk-sidebar-tabstrip")?.remove();
-    const sidebarContent = document.getElementById("sidebar-content");
-    if (!sidebarContent) return;
+    // 저장된 너비 복원
+    const savedPx = parseInt(localStorage.getItem("ewk-sidebar-width-px") ?? "380", 10);
+    this._applyWidth(savedPx);
 
-    const activeTab = ui.sidebar?.activeTab ?? "chat";
-    const strip = document.createElement("nav");
-    strip.id = "ewk-sidebar-tabstrip";
+    // ── 사이드바 루트 ───────────────────────────────────
+    const sidebar = document.createElement("aside");
+    sidebar.id = "ewk-sidebar";
+    sidebar.className = "fate-core-ko";
+    sidebar.style.width = savedPx + "px";
 
+    // ── 가로 탭 스트립 ──────────────────────────────────
+    const tabstrip = document.createElement("nav");
+    tabstrip.id = "ewk-tabstrip";
     this.TABS.forEach(({ key, icon, label }) => {
       const btn = document.createElement("button");
       btn.type = "button";
-      btn.className = "ewk-stab" + (key === activeTab ? " active" : "");
+      btn.className = "ewk-tab" + (key === "chat" ? " active" : "");
       btn.dataset.tab = key;
-      btn.innerHTML = `<span class="ewk-stab-icon">${icon}</span><span class="ewk-stab-label">${label}</span>`;
-      btn.addEventListener("click", () => {
-        try {
-          // FVTT v13: changeTab(tabName, group) — group은 "primary" 또는 생략
-          if (typeof ui.sidebar.changeTab === "function") {
-            ui.sidebar.changeTab(key, "primary");
-          } else {
-            // 폴백: 네이티브 탭 버튼 직접 클릭
-            const nativeBtn = document.querySelector(`#sidebar-tabs [data-tab="${key}"]`);
-            nativeBtn?.click();
-          }
-          strip.querySelectorAll(".ewk-stab").forEach(b =>
-            b.classList.toggle("active", b.dataset.tab === key));
-        } catch (e) {
-          console.error("EWK | 탭 전환 실패:", e);
-        }
-      });
-      strip.appendChild(btn);
+      btn.innerHTML = `<span class="ewk-tab-icon">${icon}</span><span class="ewk-tab-label">${label}</span>`;
+      btn.addEventListener("click", () => this._switchTab(key));
+      tabstrip.appendChild(btn);
+    });
+    sidebar.appendChild(tabstrip);
+
+    // ── 패널 컨테이너 ───────────────────────────────────
+    const panels = document.createElement("div");
+    panels.id = "ewk-panels";
+
+    // 채팅 패널 (완전 커스텀)
+    panels.appendChild(this._buildChatPanel(savedPx));
+
+    // 비채팅 패널 (FVTT 패널을 이 안으로 이동)
+    this.TABS.filter(t => t.key !== "chat").forEach(({ key }) => {
+      const p = document.createElement("div");
+      p.id = `ewk-panel-${key}`;
+      p.className = "ewk-panel ewk-fvtt-panel";
+      panels.appendChild(p);
     });
 
-    sidebarContent.prepend(strip);
+    sidebar.appendChild(panels);
+    document.getElementById("interface")?.appendChild(sidebar);
+
+    // 이벤트 연결
+    this._wireWidthPresets();
+    this._wireChatInput();
+    this._wireChatTools();
+
+    // 기존 메시지 복사 (이미 FVTT가 렌더한 것들)
+    this._loadExistingMessages();
+
+    // FVTT 패널 가져오기 (FVTT 렌더 완료 후)
+    setTimeout(() => this._adoptFVTTPanels(), 300);
   },
 
-  _syncTabActive(key) {
-    const strip = document.getElementById("ewk-sidebar-tabstrip");
-    if (!strip) return;
-    strip.querySelectorAll(".ewk-stab").forEach(b =>
-      b.classList.toggle("active", b.dataset.tab === key));
-  },
-
-  _findChatPanel() {
-    return document.getElementById("chat")
-      ?? document.querySelector("#sidebar section[data-tab='chat']")
-      ?? document.querySelector("#sidebar [data-tab='chat']")
-      ?? document.querySelector(".sidebar-tab[data-tab='chat']")
-      ?? document.querySelector("[data-tab='chat']");
-  },
-
-  _injectChatUI() {
-    const chatPanel = this._findChatPanel();
-    if (!chatPanel) return;
-
-    // ── Chat Header (scene badge + width presets + log/print) ────────────
-    document.getElementById("ewk-chat-hdr")?.remove();
+  _buildChatPanel(currentPx) {
     const sceneName = game.scenes?.active?.name ?? "장면 없음";
-    const cw = this._currentWidth;
-    const hdr = document.createElement("div");
-    hdr.id = "ewk-chat-hdr";
-    hdr.innerHTML = `
-      <span class="ewk-chat-title">채팅 로그</span>
-      <span class="ewk-scene-badge">${sceneName}</span>
-      <div class="ewk-hdr-acts">
-        <div id="ewk-wpresets">${this.WIDTHS.map(w =>
-          `<button class="ewk-wpbtn${w.key === cw ? " ewk-wpbtn--on" : ""}" data-w="${w.key}">${w.label}</button>`
-        ).join("")}</div>
-        <button class="ewk-hdr-btn" id="ewk-dl-btn" title="채팅 로그 TXT 다운로드">⬇ 로그</button>
-        <button class="ewk-hdr-btn" id="ewk-print-btn" title="세션 로그 인쇄/PDF">📄 인쇄</button>
-      </div>`;
+    const widthBtns = this.WIDTHS.map(w =>
+      `<button class="ewk-wpbtn${w.px === currentPx ? " ewk-wpbtn--on" : ""}" data-w="${w.px}">${w.label}</button>`
+    ).join("");
 
-    chatPanel.prepend(hdr);
-
-    hdr.querySelector("#ewk-dl-btn")?.addEventListener("click", () => this._downloadLog());
-    hdr.querySelector("#ewk-print-btn")?.addEventListener("click", () => this._printLog());
-    hdr.querySelectorAll(".ewk-wpbtn").forEach(btn => {
-      btn.addEventListener("click", () => {
-        this._currentWidth = btn.dataset.w;
-        localStorage.setItem("ewk-sidebar-width", this._currentWidth);
-        this._applyWidth();
-        hdr.querySelectorAll(".ewk-wpbtn").forEach(b =>
-          b.classList.toggle("ewk-wpbtn--on", b.dataset.w === this._currentWidth));
-      });
-    });
-
-    // ── Emotion Tools (above chat form) ─────────────────────────────────
-    document.getElementById("ewk-chat-tools")?.remove();
-    // Foundry v13: form wrapper is .chat-form (class), inner form is #chat-form
-    const chatFormWrapper = chatPanel.querySelector(".chat-form")
-      ?? chatPanel.querySelector("#chat-form")?.parentElement
-      ?? chatPanel.querySelector("form")?.parentElement;
-    const chatForm = chatPanel.querySelector("#chat-form")
-      ?? chatPanel.querySelector("form")
-      ?? document.querySelector("#chat-form");
-
-    if (chatForm) {
-      // Force-style the native input via inline !important (beats Foundry dark-mode inline styles)
-      const chatInput = document.getElementById("chat-message")
-        ?? chatForm.querySelector("textarea, input[type='text'], input[name='content'], [contenteditable]");
-      if (chatInput) {
-        chatInput.style.setProperty("background", "#262b3a", "important");
-        chatInput.style.setProperty("color", "#c3cad9", "important");
-        chatInput.style.setProperty("border", "1px solid #3c4459", "important");
-        chatInput.style.setProperty("border-radius", "4px", "important");
-        chatInput.style.setProperty("padding", "5px 8px", "important");
-        chatInput.style.setProperty("box-sizing", "border-box", "important");
-        if (chatInput.tagName !== "DIV") chatInput.placeholder = "대사나 행동 입력… (Enter)";
-      }
-
-      const tools = document.createElement("div");
-      tools.id = "ewk-chat-tools";
-      tools.innerHTML = `
-        <button class="ewk-tool-btn" data-emo-wrap="「」" title="꺾쇠 따옴표">「 」</button>
-        <button class="ewk-tool-btn" data-emo-wrap='""' title="쌍따옴표">" "</button>
+    const panel = document.createElement("div");
+    panel.id = "ewk-panel-chat";
+    panel.className = "ewk-panel active";
+    panel.innerHTML = `
+      <div id="ewk-chat-hdr">
+        <span class="ewk-chat-title">채팅 로그</span>
+        <span id="ewk-scene-badge" class="ewk-scene-badge">${sceneName}</span>
+        <div class="ewk-hdr-acts">
+          <div id="ewk-wpresets">${widthBtns}</div>
+          <button class="ewk-hdr-btn" id="ewk-dl-btn">⬇ 로그</button>
+          <button class="ewk-hdr-btn" id="ewk-print-btn">📄 인쇄</button>
+        </div>
+      </div>
+      <div id="ewk-chat-log"></div>
+      <div id="ewk-chat-tools">
+        <button class="ewk-tool-btn" data-emo-wrap="「」">「 」</button>
+        <button class="ewk-tool-btn" data-emo-wrap='""'>" "</button>
         <div class="ewk-tool-sep"></div>
         <button class="ewk-emo-btn ewk-emo-btn--on" data-emo="normal">보통</button>
-        <button class="ewk-emo-btn" data-emo="shake" title="두려움·추위">진동</button>
-        <button class="ewk-emo-btn" data-emo="shout" title="분노·절규">외침</button>
-        <button class="ewk-emo-btn" data-emo="wave" title="흔들림">파동</button>
-        <button class="ewk-emo-btn" data-emo="glow" title="강조">빛남</button>`;
-      // 래퍼(.chat-form) 앞에 삽입 — #chat의 직속 자식으로 추가되어 form을 건드리지 않음
-      const insertTarget = chatFormWrapper ?? chatForm;
-      insertTarget.parentElement.insertBefore(tools, insertTarget);
+        <button class="ewk-emo-btn" data-emo="shake">진동</button>
+        <button class="ewk-emo-btn" data-emo="shout">외침</button>
+        <button class="ewk-emo-btn" data-emo="wave">파동</button>
+        <button class="ewk-emo-btn" data-emo="glow">빛남</button>
+      </div>
+      <div id="ewk-chat-form">
+        <textarea id="ewk-chat-input" rows="2" placeholder="대사나 행동 입력… (Enter)"></textarea>
+        <button id="ewk-chat-send" type="button">전송</button>
+      </div>`;
+    return panel;
+  },
 
-      tools.querySelectorAll(".ewk-tool-btn").forEach(btn => {
-        btn.addEventListener("click", () => {
-          const wrap = btn.dataset.emoWrap;
-          const input = chatForm.querySelector(
-            "#chat-message, input[name='content'], textarea, input[type='text']"
-          );
-          if (!input) return;
-          const [open, close] = [wrap[0], wrap[wrap.length - 1]];
-          const s = input.selectionStart, e = input.selectionEnd;
-          const v = input.value;
-          input.value = s !== e
-            ? v.slice(0, s) + open + v.slice(s, e) + close + v.slice(e)
-            : open + v + close;
-          input.focus();
-        });
-      });
+  // FVTT가 렌더한 패널을 우리 컨테이너로 이동
+  _adoptFVTTPanels() {
+    this.TABS.forEach(({ key }) => {
+      if (key === "chat") return;
+      const fvttPanel =
+        document.getElementById(key) ??
+        document.querySelector(`#sidebar-content [data-tab="${key}"]`) ??
+        document.querySelector(`.sidebar-tab[data-tab="${key}"]`);
+      const ourPanel = document.getElementById(`ewk-panel-${key}`);
+      if (!fvttPanel || !ourPanel || ourPanel.contains(fvttPanel)) return;
+      fvttPanel.removeAttribute("hidden");
+      fvttPanel.style.removeProperty("display");
+      fvttPanel.style.height = "100%";
+      fvttPanel.style.overflow = "auto";
+      ourPanel.appendChild(fvttPanel);
+    });
+  },
 
-      tools.querySelectorAll(".ewk-emo-btn").forEach(btn => {
-        btn.addEventListener("click", () => {
-          this._currentEmo = btn.dataset.emo;
-          tools.querySelectorAll(".ewk-emo-btn").forEach(b =>
-            b.classList.toggle("ewk-emo-btn--on", b === btn));
-        });
-      });
+  _switchTab(key) {
+    this._activeTab = key;
+
+    // 탭 버튼 active 갱신
+    document.querySelectorAll("#ewk-tabstrip .ewk-tab").forEach(b =>
+      b.classList.toggle("active", b.dataset.tab === key));
+
+    // 패널 표시/숨김
+    const chatPanel = document.getElementById("ewk-panel-chat");
+    const targetPanel = key === "chat" ? chatPanel : document.getElementById(`ewk-panel-${key}`);
+    document.querySelectorAll("#ewk-panels .ewk-panel").forEach(p =>
+      p.classList.toggle("active", p === targetPanel));
+
+    // 비채팅 탭: FVTT에도 알려서 필요시 재렌더
+    if (key !== "chat") {
+      try { ui.sidebar?.changeTab(key, "primary"); } catch (_) {}
+      setTimeout(() => this._adoptFVTTPanels(), 100);
     }
+  },
+
+  // 기존 메시지 (ready 시점에 이미 렌더된 것) 복사
+  _loadExistingMessages() {
+    const fvttLog = document.getElementById("chat-log");
+    const ourLog  = document.getElementById("ewk-chat-log");
+    if (!fvttLog || !ourLog) return;
+    fvttLog.querySelectorAll("li, .chat-message").forEach(child => {
+      ourLog.appendChild(child.cloneNode(true));
+    });
+    ourLog.scrollTop = ourLog.scrollHeight;
+  },
+
+  // renderChatMessageHTML 훅에서 호출 — 새 메시지를 우리 로그에 추가
+  addMessage(el) {
+    const log = document.getElementById("ewk-chat-log");
+    if (!log) return;
+    log.appendChild(el.cloneNode(true));
+    log.scrollTop = log.scrollHeight;
+  },
+
+  _wireChatInput() {
+    const input = document.getElementById("ewk-chat-input");
+    const btn   = document.getElementById("ewk-chat-send");
+
+    const send = async () => {
+      const content = input?.value?.trim();
+      if (!content) return;
+      input.value = "";
+      await ChatMessage.create({ content, speaker: ChatMessage.getSpeaker() });
+    };
+
+    input?.addEventListener("keydown", e => {
+      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
+    });
+    btn?.addEventListener("click", send);
+  },
+
+  _wireChatTools() {
+    const tools = document.getElementById("ewk-chat-tools");
+    if (!tools) return;
+
+    tools.querySelectorAll(".ewk-tool-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const wrap  = btn.dataset.emoWrap;
+        const input = document.getElementById("ewk-chat-input");
+        if (!input || !wrap) return;
+        const [open, close] = [wrap[0], wrap[wrap.length - 1]];
+        const s = input.selectionStart, e = input.selectionEnd;
+        const v = input.value;
+        input.value = s !== e
+          ? v.slice(0, s) + open + v.slice(s, e) + close + v.slice(e)
+          : v + open + close;
+        input.focus();
+      });
+    });
+
+    tools.querySelectorAll(".ewk-emo-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        this._currentEmo = btn.dataset.emo;
+        tools.querySelectorAll(".ewk-emo-btn").forEach(b =>
+          b.classList.toggle("ewk-emo-btn--on", b === btn));
+      });
+    });
+  },
+
+  _wireWidthPresets() {
+    document.getElementById("ewk-wpresets")?.querySelectorAll(".ewk-wpbtn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const px = parseInt(btn.dataset.w, 10);
+        localStorage.setItem("ewk-sidebar-width-px", String(px));
+        this._applyWidth(px);
+        document.querySelectorAll(".ewk-wpbtn").forEach(b =>
+          b.classList.toggle("ewk-wpbtn--on", b.dataset.w === btn.dataset.w));
+      });
+    });
+    document.getElementById("ewk-dl-btn")?.addEventListener("click",  () => this._downloadLog());
+    document.getElementById("ewk-print-btn")?.addEventListener("click", () => window.print());
+  },
+
+  _applyWidth(px) {
+    const sidebar = document.getElementById("ewk-sidebar");
+    if (sidebar) sidebar.style.width = px + "px";
+    document.documentElement.style.setProperty("--ewk-sidebar-width",    px + "px");
+    document.documentElement.style.setProperty("--foundry-sidebar-width", px + "px");
   },
 
   updateSceneBadge() {
-    const badge = document.querySelector(".ewk-scene-badge");
+    const badge = document.getElementById("ewk-scene-badge");
     if (badge) badge.textContent = game.scenes?.active?.name ?? "장면 없음";
   },
 
-  _applyWidth() {
-    const w = this.WIDTHS.find(x => x.key === this._currentWidth) ?? this.WIDTHS[1];
-    const sidebar = document.getElementById("sidebar") ?? document.getElementById("ui-right");
-    if (sidebar) {
-      sidebar.style.setProperty("width", w.px + "px", "important");
-      document.documentElement.style.setProperty("--foundry-sidebar-width", w.px + "px");
-    }
-  },
-
   _downloadLog() {
-    const msgs = document.querySelectorAll("#chat-log li, #chat-log .chat-message");
+    const msgs = document.querySelectorAll("#ewk-chat-log li, #ewk-chat-log .chat-message");
     const lines = [];
     const scene = game.scenes?.active?.name;
     if (scene) { lines.push(`=== ${scene} ===`); lines.push(""); }
     msgs.forEach(m => {
-      const sender  = m.querySelector(".message-sender")?.textContent?.trim() ?? "";
+      const sender  = m.querySelector(".message-sender")?.textContent?.trim()  ?? "";
       const content = m.querySelector(".message-content")?.textContent?.trim() ?? "";
       const ts      = m.querySelector(".message-timestamp")?.textContent?.trim() ?? "";
       if (content) lines.push(`[${ts}] ${sender}: ${content}`);
@@ -606,8 +646,6 @@ const EWKSidebar = {
     a.click();
     URL.revokeObjectURL(a.href);
   },
-
-  _printLog() { window.print(); },
 };
 
 // ─── Scene Rail ────────────────────────────────────────────────────────────
@@ -944,35 +982,14 @@ Hooks.once("init", () => {
 // ─── Ready ────────────────────────────────────────────────────────────────
 
 Hooks.once("ready", () => {
-  // Measure the full right-panel width (from its left edge to viewport right)
-  // so the scene rail and VN box stop exactly at the sidebar's left edge.
-  const updateSidebarWidth = () => {
-    const panel = document.getElementById("ui-right") || document.getElementById("sidebar");
-    if (panel) {
-      const w = window.innerWidth - panel.getBoundingClientRect().left;
-      document.documentElement.style.setProperty("--foundry-sidebar-width", w + "px");
-    }
-  };
-  updateSidebarWidth();
-  setTimeout(updateSidebarWidth, 600);
-  // Keep updating if sidebar resizes (e.g. collapse/expand)
-  const sidebarPanel = document.getElementById("ui-right") || document.getElementById("sidebar");
-  if (sidebarPanel) new ResizeObserver(updateSidebarWidth).observe(sidebarPanel);
-
-  EWKSidebar.init();
+  // 우리 커스텀 사이드바 빌드 (FVTT #sidebar는 CSS에서 숨김)
+  EWKSidebar.build();
   FateStageBar.render();
   FateSceneRail.render();
 
-  // 탭 스트립 재적용 (사이드바 렌더 + 탭 전환 시)
+  // FVTT가 사이드바를 재렌더할 때 패널 재채택
   Hooks.on("renderSidebar", () => {
-    EWKSidebar._buildCustomTabs();
-    if (!document.getElementById("ewk-chat-hdr")) EWKSidebar._injectChatUI();
-  });
-  Hooks.on("renderChatLog", () => {
-    if (!document.getElementById("ewk-chat-hdr")) EWKSidebar._injectChatUI();
-  });
-  Hooks.on("changeSidebarTab", (sidebar) => {
-    EWKSidebar._syncTabActive(sidebar.activeTab ?? sidebar.tabName ?? "chat");
+    setTimeout(() => EWKSidebar._adoptFVTTPanels(), 200);
   });
 
   Hooks.on("updateActor", () => FateStageBar.render());
@@ -981,11 +998,10 @@ Hooks.once("ready", () => {
     FateSceneRail.render();
     EWKSidebar.updateSceneBadge();
   });
-  Hooks.on("updateScene",  () => {
+  Hooks.on("updateScene", () => {
     FateSceneRail.render();
     EWKSidebar.updateSceneBadge();
-    const panel = foundry.applications.instances.get("fate-scene-panel");
-    if (panel?.rendered) panel.render();
+    foundry.applications.instances.get("fate-scene-panel")?.render();
   });
   Hooks.on("createScene", () => FateSceneRail.render());
   Hooks.on("deleteScene", () => FateSceneRail.render());
@@ -1040,6 +1056,8 @@ Hooks.on("renderChatMessageHTML", (message, html) => {
 
   if (el.querySelector(".fate-roll-card")) {
     el.classList.add("ewk-chat--roll");
+    // 롤 카드도 우리 로그에 추가
+    EWKSidebar.addMessage(el);
     return;
   }
 
@@ -1060,7 +1078,6 @@ Hooks.on("renderChatMessageHTML", (message, html) => {
         header.prepend(img);
       }
     }
-    // VN speech box: show for isSpeaker actor's dialogue (not roll cards)
     if (actor.getFlag("fate-core-ko", "isSpeaker") && !el.querySelector(".fate-roll-card")) {
       const content = el.querySelector(".message-content")?.textContent?.trim();
       if (content) FateVNBox.show(actor, content);
@@ -1068,4 +1085,7 @@ Hooks.on("renderChatMessageHTML", (message, html) => {
   } else {
     el.classList.add("ewk-chat--narration");
   }
+
+  // 스타일링 완료 후 우리 로그에 추가
+  EWKSidebar.addMessage(el);
 });
