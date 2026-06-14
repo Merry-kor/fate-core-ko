@@ -651,7 +651,7 @@ const EWKSidebar = {
         ? `<button class="ewk-fldr-btn ewk-fldr-btn--danger" data-fldr-del="${fid}" title="폴더 삭제">✕</button>`
         : "";
       return `<div class="ewk-fldr${gmOnly ? " ewk-fldr--gm" : ""}" data-fldr-id="${fid}">
-  <div class="ewk-fldr-hdr" data-fldr-toggle="${fid}">
+  <div class="ewk-fldr-hdr" data-fldr-toggle="${fid}" data-fldr-drop="${fid}">
     <span class="ewk-fldr-arrow">${exp ? "▾" : "▸"}</span>
     <span class="ewk-fldr-name">${fname}</span>${gmBadge}
     <span class="ewk-fldr-cnt">${sorted.length}</span>
@@ -690,6 +690,27 @@ const EWKSidebar = {
       hdr.addEventListener("click", e => {
         if (e.target.closest("[data-fldr-gm],[data-fldr-add],[data-fldr-del]")) return;
         toggleExp(hdr.dataset.fldrToggle);
+      });
+    });
+
+    // 폴더 헤더 드롭: 액터를 다른 폴더로 이동
+    panel.querySelectorAll("[data-fldr-drop]").forEach(hdr => {
+      hdr.addEventListener("dragover", e => {
+        const id = e.dataTransfer?.types?.includes("text/plain") || true;
+        if (id) { e.preventDefault(); hdr.classList.add("ewk-fldr-hdr--over"); }
+      });
+      hdr.addEventListener("dragleave", () => hdr.classList.remove("ewk-fldr-hdr--over"));
+      hdr.addEventListener("drop", async e => {
+        e.preventDefault();
+        hdr.classList.remove("ewk-fldr-hdr--over");
+        const actorId = e.dataTransfer?.getData("ewk-actor-id");
+        if (!actorId) return;
+        const actor = game.actors?.get(actorId);
+        if (!actor) return;
+        const targetFid = hdr.dataset.fldrDrop;
+        const newFolder = targetFid === "__none__" ? null : targetFid;
+        if (actor.folder?.id === newFolder || (!actor.folder && newFolder === null)) return;
+        await actor.update({ folder: newFolder });
       });
     });
 
@@ -1685,16 +1706,20 @@ const FateStageBar = {
 };
 
 // ─── Quick Actor Dock ──────────────────────────────────────────────────────
-// 스테이지 바 위 왼쪽에 고정된 개인 퀵 핫바.
-// 액터 패널에서 드래그하거나 각 칩의 버튼으로 무대 추가/제거·발언권 토글 가능.
+// 자유 드래그 가능한 플로팅 출연진 핫바 (면모 위젯과 동일한 드래그 방식).
+// 액터 패널 카드를 드래그하여 등록; 초상화 클릭=발언권, 버튼으로 무대/발언 토글.
 const EWKQuickDock = {
-  _el: null,
+  _el:   null,
+  _drag: null,
+  _open: true,
 
-  _key() { return `ewk-qdock-${game.userId}`; },
+  _key()    { return `ewk-qdock-${game.userId}`; },
+  _posKey() { return `ewk-qdock-pos-${game.userId}`; },
 
-  getRoster() {
-    try { return JSON.parse(localStorage.getItem(this._key()) ?? "[]"); } catch { return []; }
-  },
+  _getPos() { try { return JSON.parse(localStorage.getItem(this._posKey()) ?? "{}"); } catch { return {}; } },
+  _savePos(x, y) { localStorage.setItem(this._posKey(), JSON.stringify({ x, y })); },
+
+  getRoster() { try { return JSON.parse(localStorage.getItem(this._key()) ?? "[]"); } catch { return []; } },
   _saveRoster(ids) { localStorage.setItem(this._key(), JSON.stringify(ids)); },
 
   addActor(id) {
@@ -1708,11 +1733,19 @@ const EWKQuickDock = {
   },
 
   build() {
-    if (this._el) return;
-    this._el = document.createElement("div");
-    this._el.id = "ewk-qdock";
-    this._el.className = "fate-core-ko";
-    document.getElementById("interface")?.appendChild(this._el);
+    this._el?.remove();
+    const iface = document.getElementById("interface");
+    if (!iface) return;
+    const pos = this._getPos();
+
+    const el = document.createElement("div");
+    el.id = "ewk-qdock";
+    el.className = "fate-core-ko";
+    el.style.left = (pos.x ?? 16) + "px";
+    el.style.top  = (pos.y ?? 90) + "px";
+    iface.appendChild(el);
+    this._el = el;
+    this._wire();
     this.render();
   },
 
@@ -1725,40 +1758,116 @@ const EWKQuickDock = {
     const chips = roster.map(id => {
       const a = game.actors?.get(id);
       if (!a) return "";
-      const onStage = a.getFlag("fate-core-ko", "onStage") ?? false;
+      const onStage  = a.getFlag("fate-core-ko", "onStage") ?? false;
       const isSpeaker = id === mySpeakerId;
+      const stageIcon = onStage  ? "▼무대" : "▲무대";
+      const speakIcon = isSpeaker ? "●발언" : "○발언";
       return `<div class="ewk-qdock-chip${onStage ? " ewk-qdock-chip--on" : ""}${isSpeaker ? " ewk-qdock-chip--spk" : ""}" data-qdock-id="${id}">
-  <img class="ewk-qdock-port" src="${a.img}" alt="${a.name}" title="${a.name}">
+  <div class="ewk-qdock-port-wrap">
+    <img class="ewk-qdock-port" src="${a.img}" alt="${a.name}">
+    ${onStage  ? '<span class="ewk-qdock-badge ewk-qdock-badge--stage">ON</span>' : ""}
+    ${isSpeaker ? '<span class="ewk-qdock-badge ewk-qdock-badge--spk">발언</span>' : ""}
+  </div>
   <div class="ewk-qdock-name">${a.name}</div>
-  <div class="ewk-qdock-btns">
-    <button class="ewk-qdock-btn${onStage ? " ewk-qdock-btn--on" : ""}" data-qdock-stage="${id}" title="${onStage ? "무대 퇴장" : "무대 등장"}">무대</button>
-    <button class="ewk-qdock-btn${isSpeaker ? " ewk-qdock-btn--spk" : ""}" data-qdock-speak="${id}" title="${isSpeaker ? "발언 해제" : "발언권"}">발언</button>
-    <button class="ewk-qdock-btn ewk-qdock-btn--kick" data-qdock-kick="${id}" title="독에서 제거">✕</button>
+  <div class="ewk-qdock-acts">
+    <button class="ewk-qdock-act${onStage ? " active-stage" : ""}" data-qdock-stage="${id}" title="${onStage ? "무대 퇴장" : "무대 등장"}">${stageIcon}</button>
+    <button class="ewk-qdock-act${isSpeaker ? " active-spk" : ""}" data-qdock-speak="${id}" title="${isSpeaker ? "발언 해제" : "발언 선택"}">${speakIcon}</button>
+    <button class="ewk-qdock-act ewk-qdock-act--kick" data-qdock-kick="${id}" title="목록에서 제거">✕</button>
   </div>
 </div>`;
     }).join("");
 
-    el.innerHTML = `<div id="ewk-qdock-inner">${
+    const body = el.querySelector("#ewk-qdock-body");
+    const newBody = `<div id="ewk-qdock-body"${this._open ? "" : ' style="display:none"'}>${
       roster.length === 0
-        ? `<div class="ewk-qdock-hint">액터 패널에서 드래그하여 등록</div>`
-        : chips
+        ? `<div class="ewk-qdock-empty">액터 패널에서 여기로 드래그</div>`
+        : `<div class="ewk-qdock-chips">${chips}</div>`
     }</div>`;
 
-    // 드롭 영역 이벤트
+    if (body) {
+      body.outerHTML = newBody;
+    } else {
+      el.innerHTML = `
+<div id="ewk-qdock-hdr">
+  <span class="ewk-qdock-title">출연진</span>
+  <button class="ewk-qdock-hdr-btn" id="ewk-qdock-min" title="최소화">${this._open ? "−" : "+"}</button>
+</div>
+${newBody}`;
+      this._wire();
+    }
+
+    this._wireBody();
+  },
+
+  _wire() {
+    const el = this._el;
+    if (!el) return;
+
+    // 헤더 드래그
+    el.addEventListener("mousedown", e => {
+      const hdr = e.target.closest("#ewk-qdock-hdr");
+      if (!hdr || e.target.closest("button")) return;
+      const r = el.getBoundingClientRect();
+      this._drag = { sx: e.clientX, sy: e.clientY, ox: r.left, oy: r.top };
+      e.preventDefault();
+    });
+    document.addEventListener("mousemove", e => {
+      if (!this._drag) return;
+      const x = Math.max(0, this._drag.ox + e.clientX - this._drag.sx);
+      const y = Math.max(0, this._drag.oy + e.clientY - this._drag.sy);
+      el.style.left = x + "px";
+      el.style.top  = y + "px";
+    });
+    document.addEventListener("mouseup", () => {
+      if (this._drag) {
+        this._savePos(parseInt(el.style.left), parseInt(el.style.top));
+        this._drag = null;
+      }
+    });
+
+    // 드롭 영역
     el.addEventListener("dragover", e => { e.preventDefault(); el.classList.add("ewk-qdock--over"); });
-    el.addEventListener("dragleave", () => el.classList.remove("ewk-qdock--over"));
+    el.addEventListener("dragleave", e => {
+      if (!el.contains(e.relatedTarget)) el.classList.remove("ewk-qdock--over");
+    });
     el.addEventListener("drop", e => {
       e.preventDefault();
       el.classList.remove("ewk-qdock--over");
       const id = e.dataTransfer?.getData("ewk-actor-id");
       if (id) this.addActor(id);
     });
+  },
 
-    // 버튼 이벤트
+  _wireBody() {
+    const el = this._el;
+    if (!el) return;
+
+    // 최소화 버튼 (re-wire after render replaces innerHTML)
+    el.querySelector("#ewk-qdock-min")?.addEventListener("click", () => {
+      this._open = !this._open;
+      const body = el.querySelector("#ewk-qdock-body");
+      if (body) body.style.display = this._open ? "" : "none";
+      const btn = el.querySelector("#ewk-qdock-min");
+      if (btn) btn.textContent = this._open ? "−" : "+";
+    });
+
+    // 초상화 클릭 → 발언권 토글
+    el.querySelectorAll(".ewk-qdock-port").forEach(img => {
+      img.addEventListener("click", e => {
+        e.stopPropagation();
+        const id = img.closest("[data-qdock-id]")?.dataset.qdockId;
+        if (!id) return;
+        const key = `ewk-speaker-${game.userId}`;
+        localStorage.getItem(key) === id ? localStorage.removeItem(key) : localStorage.setItem(key, id);
+        this.render(); FateStageBar.render();
+      });
+    });
+
+    // 무대 버튼
     el.querySelectorAll("[data-qdock-stage]").forEach(btn => {
       btn.addEventListener("click", async e => {
         e.stopPropagation();
-        const id = btn.dataset.qdockStage;
+        const id    = btn.dataset.qdockStage;
         const actor = game.actors?.get(id);
         if (!actor) return;
         const onStage = actor.getFlag("fate-core-ko", "onStage") ?? false;
@@ -1769,48 +1878,24 @@ const EWKQuickDock = {
         } else {
           await actor.setFlag("fate-core-ko", "onStage", true);
         }
-        this.render();
-        FateStageBar.render();
+        this.render(); FateStageBar.render();
       });
     });
 
+    // 발언 버튼
     el.querySelectorAll("[data-qdock-speak]").forEach(btn => {
       btn.addEventListener("click", e => {
         e.stopPropagation();
-        const id = btn.dataset.qdockSpeak;
+        const id  = btn.dataset.qdockSpeak;
         const key = `ewk-speaker-${game.userId}`;
-        if (localStorage.getItem(key) === id) {
-          localStorage.removeItem(key);
-        } else {
-          localStorage.setItem(key, id);
-        }
-        this.render();
-        FateStageBar.render();
+        localStorage.getItem(key) === id ? localStorage.removeItem(key) : localStorage.setItem(key, id);
+        this.render(); FateStageBar.render();
       });
     });
 
+    // 제거 버튼
     el.querySelectorAll("[data-qdock-kick]").forEach(btn => {
-      btn.addEventListener("click", e => {
-        e.stopPropagation();
-        this.removeActor(btn.dataset.qdockKick);
-      });
-    });
-
-    // 초상화 클릭 → 발언권 토글 (단축)
-    el.querySelectorAll(".ewk-qdock-port").forEach(img => {
-      img.addEventListener("click", e => {
-        e.stopPropagation();
-        const id = img.closest("[data-qdock-id]")?.dataset.qdockId;
-        if (!id) return;
-        const key = `ewk-speaker-${game.userId}`;
-        if (localStorage.getItem(key) === id) {
-          localStorage.removeItem(key);
-        } else {
-          localStorage.setItem(key, id);
-        }
-        this.render();
-        FateStageBar.render();
-      });
+      btn.addEventListener("click", e => { e.stopPropagation(); this.removeActor(btn.dataset.qdockKick); });
     });
   },
 };

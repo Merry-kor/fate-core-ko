@@ -1937,75 +1937,135 @@ li:hover .ewk-msg-acts {
   background: linear-gradient(135deg, transparent 50%, var(--border-strong) 50%);
 }
 
-/* ── Quick Actor Dock ── */
+/* ── Quick Actor Dock (플로팅 드래그 위젯) ── */
 #ewk-qdock {
-  position: fixed;
-  bottom: 176px; /* 스테이지 바 168px + 8px 간격 */
-  left: 8px;
-  z-index: 58;
-  max-width: calc(100vw - var(--ewk-sidebar-width, 380px) - 24px);
+  position: absolute;
+  z-index: 62;
   pointer-events: all;
+  min-width: 180px;
+  max-width: 480px;
+  border: 1px solid rgba(201,162,39,.35);
+  border-radius: var(--radius-md);
+  background: rgba(10,11,15,.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 6px 32px rgba(0,0,0,.65);
+  overflow: hidden;
 }
-#ewk-qdock-inner {
+#ewk-qdock.ewk-qdock--over {
+  border-color: var(--accent-gold);
+  box-shadow: 0 0 0 1px var(--accent-gold), 0 6px 32px rgba(0,0,0,.65);
+}
+#ewk-qdock-hdr {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   gap: 6px;
   padding: 6px 10px;
-  background: rgba(10,11,15,.72);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(201,162,39,.25);
-  border-radius: var(--radius-md);
-  overflow-x: auto;
-  max-width: 100%;
+  border-bottom: 1px solid rgba(201,162,39,.2);
+  cursor: grab;
+  user-select: none;
 }
-#ewk-qdock-inner::-webkit-scrollbar { height: 3px; }
-#ewk-qdock-inner::-webkit-scrollbar-thumb { background: var(--accent-gold); border-radius: 2px; }
-#ewk-qdock.ewk-qdock--over #ewk-qdock-inner {
-  border-color: var(--accent-gold);
-  background: rgba(201,162,39,.12);
+#ewk-qdock-hdr:active { cursor: grabbing; }
+.ewk-qdock-title {
+  font-family: var(--font-sans);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent-gold);
+  flex: 1;
 }
-.ewk-qdock-hint {
+.ewk-qdock-hdr-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.9rem;
+  line-height: 1;
+  padding: 0 3px;
+  flex-shrink: 0;
+}
+.ewk-qdock-hdr-btn:hover { color: var(--text-body); }
+
+#ewk-qdock-body {
+  padding: 8px;
+}
+.ewk-qdock-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.ewk-qdock-empty {
   font-size: 0.7rem;
   color: var(--text-faint);
-  padding: 6px 4px;
-  white-space: nowrap;
   font-style: italic;
+  text-align: center;
+  padding: 8px 12px;
 }
+
+/* 개별 칩 */
 .ewk-qdock-chip {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
-  flex-shrink: 0;
-  width: 64px;
-  padding: 5px 4px;
+  gap: 4px;
+  width: 70px;
+  padding: 6px 4px 5px;
   border-radius: var(--radius-sm);
-  border: 1px solid rgba(255,255,255,.08);
-  background: var(--surface-card);
+  border: 1px solid rgba(255,255,255,.09);
+  background: var(--surface-raised);
   transition: border-color 0.15s, background 0.15s;
 }
-.ewk-qdock-chip--on {
-  border-color: rgba(79,174,107,.5);
-  background: rgba(79,174,107,.08);
-}
-.ewk-qdock-chip--spk {
+.ewk-qdock-chip--on  { border-color: rgba(79,174,107,.45); background: rgba(79,174,107,.07); }
+.ewk-qdock-chip--spk { border-color: rgba(201,162,39,.55); background: rgba(201,162,39,.09); }
+.ewk-qdock-chip--on.ewk-qdock-chip--spk {
   border-color: var(--accent-gold);
-  background: rgba(201,162,39,.1);
+  background: linear-gradient(160deg, rgba(79,174,107,.08), rgba(201,162,39,.1));
 }
-.ewk-qdock-port {
-  width: 44px; height: 44px;
-  border-radius: var(--radius-xs);
-  object-fit: contain;
-  cursor: pointer;
-  border: 2px solid transparent;
-  transition: border-color 0.15s;
+
+/* 초상화 래퍼 — 배지 위치 기준 */
+.ewk-qdock-port-wrap {
+  position: relative;
   flex-shrink: 0;
 }
-.ewk-qdock-chip--spk .ewk-qdock-port { border-color: var(--accent-gold); }
-.ewk-qdock-port:hover { border-color: var(--text-muted); }
+.ewk-qdock-port {
+  width: 48px; height: 48px;
+  border-radius: 4px;
+  object-fit: contain;
+  display: block;
+  cursor: pointer;
+  border: 2px solid rgba(255,255,255,.08);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.ewk-qdock-chip--spk .ewk-qdock-port {
+  border-color: var(--accent-gold);
+  box-shadow: 0 0 8px rgba(201,162,39,.4);
+}
+.ewk-qdock-port:hover { border-color: rgba(255,255,255,.3); }
+
+/* 상태 배지 */
+.ewk-qdock-badge {
+  position: absolute;
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  padding: 1px 3px;
+  border-radius: 2px;
+  line-height: 1.2;
+  pointer-events: none;
+}
+.ewk-qdock-badge--stage {
+  top: -4px; right: -4px;
+  background: #4fae6b; color: #0a0b0f;
+}
+.ewk-qdock-badge--spk {
+  bottom: -4px; left: -4px;
+  background: var(--accent-gold); color: #0a0b0f;
+}
+
 .ewk-qdock-name {
-  font-size: 0.6rem;
+  font-family: var(--font-sans);
+  font-size: 0.58rem;
   font-weight: 700;
   color: var(--text-muted);
   text-align: center;
@@ -2013,34 +2073,43 @@ li:hover .ewk-msg-acts {
   overflow: hidden;
   text-overflow: ellipsis;
   width: 100%;
+  max-width: 62px;
 }
 .ewk-qdock-chip--spk .ewk-qdock-name { color: var(--accent-gold); }
-.ewk-qdock-btns {
+
+/* 액션 버튼 행 */
+.ewk-qdock-acts {
   display: flex;
   gap: 2px;
-  flex-wrap: wrap;
   justify-content: center;
+  width: 100%;
 }
-.ewk-qdock-btn {
-  font-size: 0.6rem;
+.ewk-qdock-act {
+  flex: 1;
+  font-size: 0.55rem;
   font-weight: 700;
-  padding: 1px 4px;
+  padding: 2px 2px;
   border-radius: 3px;
   border: 1px solid var(--border-hairline);
   background: transparent;
   color: var(--text-faint);
   cursor: pointer;
-  line-height: 1.4;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   transition: border-color 0.12s, color 0.12s, background 0.12s;
 }
-.ewk-qdock-btn:hover { border-color: var(--text-muted); color: var(--text-body); }
-.ewk-qdock-btn--on { border-color: rgba(79,174,107,.6); color: #4fae6b; }
-.ewk-qdock-btn--on:hover { background: rgba(79,174,107,.15); }
-.ewk-qdock-btn--spk { border-color: rgba(201,162,39,.6); color: var(--accent-gold); }
-.ewk-qdock-btn--spk:hover { background: rgba(201,162,39,.15); }
-.ewk-qdock-btn--kick { color: var(--text-faint); }
-.ewk-qdock-btn--kick:hover { border-color: #c94f4f; color: #c94f4f; }
+.ewk-qdock-act:hover { border-color: var(--text-muted); color: var(--text-body); background: rgba(255,255,255,.05); }
+.ewk-qdock-act.active-stage { border-color: rgba(79,174,107,.6); color: #4fae6b; background: rgba(79,174,107,.08); }
+.ewk-qdock-act.active-spk   { border-color: rgba(201,162,39,.6); color: var(--accent-gold); background: rgba(201,162,39,.08); }
+.ewk-qdock-act--kick { flex: 0 0 auto; color: var(--text-faint); }
+.ewk-qdock-act--kick:hover { border-color: #c94f4f; color: #c94f4f; background: rgba(201,79,79,.08); }
+
+/* 폴더 드롭 피드백 */
+.ewk-fldr-hdr--over {
+  background: rgba(201,162,39,.12) !important;
+  outline: 1px dashed var(--accent-gold);
+}
 
 /* ── Drag-and-drop feedback ── */
 .ewk-hud--dragover .ewk-hud__inner {
