@@ -371,9 +371,10 @@ Hooks.on("renderTokenHUD", (hud, html, _data) => {
 // ─── VN Speech Box ─────────────────────────────────────────────────────────
 
 const FateVNBox = {
-  _el:        null,
-  _timer:     null,
-  _cropCache: new Map(), // src → cropped data URL
+  _el:           null,
+  _timer:        null,
+  _portraitTimer: null,
+  _cropCache:    new Map(), // src → cropped data URL
 
   _ensure() {
     if (this._el) return;
@@ -440,16 +441,7 @@ const FateVNBox = {
     const nameEl   = document.getElementById("fate-vn-name");
     const textEl   = document.getElementById("fate-vn-text");
 
-    // 초상화: 즉시 원본 표시 후 크롭 완료 시 교체 (같은 액터일 때만)
-    const src = actor.img;
-    if (portrait.dataset.src !== src) {
-      portrait.dataset.src = src;
-      portrait.src = src;
-      this._cropPortrait(src).then(cropped => {
-        if (portrait.dataset.src === src) portrait.src = cropped;
-      });
-    }
-
+    // 이름·텍스트 즉시 갱신
     nameEl.textContent = actor.name;
     nameEl.style.setProperty("--vn-name-color", actor.getFlag("fate-core-ko", "color") || "var(--accent-gold)");
     textEl.innerHTML = "";
@@ -468,6 +460,44 @@ const FateVNBox = {
         setTimeout(() => cursor.remove(), 2200);
       }
     }, 28);
+
+    // 초상화 전환
+    const src = actor.img;
+    if (portrait.dataset.src === src) return; // 같은 액터면 텍스트만 교체
+
+    if (this._portraitTimer) { clearTimeout(this._portraitTimer); this._portraitTimer = null; }
+
+    const isFirstShow = !portrait.dataset.src;
+    portrait.dataset.src = src;
+
+    const applyPortrait = (newSrc) => {
+      portrait.src = newSrc;
+      portrait.classList.remove("fate-vn-portrait--out");
+    };
+    const applyCropAsync = () => {
+      this._cropPortrait(src).then(cropped => {
+        if (portrait.dataset.src === src) portrait.src = cropped;
+      });
+    };
+
+    if (isFirstShow) {
+      // 첫 등장: VN 박스 자체 페이드인에 맡김 — 별도 트랜지션 없음
+      portrait.src = src;
+      applyCropAsync();
+      return;
+    }
+
+    // 액터 전환: 페이드아웃 → 이미지 교체 → 페이드인
+    portrait.classList.add("fate-vn-portrait--out");
+    this._portraitTimer = setTimeout(() => {
+      this._portraitTimer = null;
+      if (this._cropCache.has(src)) {
+        applyPortrait(this._cropCache.get(src));
+      } else {
+        applyPortrait(src);
+        applyCropAsync();
+      }
+    }, 260); // CSS transition 250ms 보다 약간 길게
   },
 };
 
