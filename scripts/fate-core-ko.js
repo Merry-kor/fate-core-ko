@@ -609,6 +609,10 @@ const EWKSidebar = {
       if (this._textStyles.bold)   content = `<strong>${content}</strong>`;
       if (this._textStyles.italic)  content = `<em>${content}</em>`;
       if (this._textStyles.center)  content = `<div style="text-align:center">${content}</div>`;
+      // 감정 효과 적용 (normal이 아닌 경우 span으로 감쌈)
+      if (this._currentEmo && this._currentEmo !== "normal") {
+        content = `<span class="ewk-emo ewk-emo--${this._currentEmo}">${content}</span>`;
+      }
       await ChatMessage.create({ content, speaker: ChatMessage.getSpeaker() });
     };
 

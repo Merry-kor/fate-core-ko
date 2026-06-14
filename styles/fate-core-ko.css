@@ -1425,6 +1425,60 @@
   line-height: 1.6;
 }
 
+/* ── 감정 애니메이션 ── */
+@keyframes ewk-shake {
+  0%, 100% { transform: translateX(0); }
+  15%  { transform: translateX(-4px) rotate(-0.5deg); }
+  30%  { transform: translateX(4px)  rotate( 0.5deg); }
+  45%  { transform: translateX(-3px); }
+  60%  { transform: translateX(3px); }
+  75%  { transform: translateX(-1px); }
+}
+@keyframes ewk-shout-pulse {
+  0%, 100% { transform: scale(1); }
+  40%  { transform: scale(1.06); }
+}
+@keyframes ewk-wave-bg {
+  0%   { background-position: 0%   center; }
+  100% { background-position: 200% center; }
+}
+@keyframes ewk-glow-pulse {
+  0%, 100% { text-shadow: 0 0 4px rgba(201,162,39,0.3); }
+  50%  { text-shadow: 0 0 14px rgba(201,162,39,0.95), 0 0 28px rgba(201,162,39,0.45); }
+}
+
+.ewk-emo { display: inline; }
+.ewk-emo--shake {
+  display: inline-block;
+  animation: ewk-shake 0.55s ease-in-out 3;
+}
+.ewk-emo--shout {
+  display: inline-block;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  color: var(--accent-gold-bright);
+  animation: ewk-shout-pulse 0.4s ease-in-out 2;
+}
+.ewk-emo--wave {
+  display: inline-block;
+  background: linear-gradient(90deg,
+    var(--text-body) 0%,
+    var(--accent-gold-bright) 30%,
+    #8ecfff 55%,
+    var(--accent-gold-bright) 70%,
+    var(--text-body) 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: ewk-wave-bg 2.4s linear infinite;
+}
+.ewk-emo--glow {
+  display: inline-block;
+  color: var(--accent-gold-bright);
+  animation: ewk-glow-pulse 1.6s ease-in-out infinite;
+}
+
 /* ── Chat Styling ── */
 .ewk-chat .message-header { display: flex; align-items: center; gap: 10px; }
 .ewk-speaker-portrait {
