@@ -468,7 +468,7 @@ const EWKSidebar = {
       btn.type = "button";
       btn.className = "ewk-tab" + (key === "chat" ? " active" : "");
       btn.dataset.tab = key;
-      btn.innerHTML = `<span class="ewk-tab-icon">${icon}</span><span class="ewk-tab-label">${label}</span>`;
+      btn.textContent = label;
       btn.addEventListener("click", () => this._switchTab(key));
       tabstrip.appendChild(btn);
     });
@@ -774,17 +774,24 @@ const EWKSidebar = {
     });
 
     panel.querySelectorAll(".ewk-acard").forEach(el => {
+      let _didDrag = false;
       el.addEventListener("click", e => {
+        if (_didDrag) { _didDrag = false; return; }
         if (e.target.closest(".ewk-acard-btn")) return;
         game.actors.get(el.dataset.actorId)?.sheet?.render(true);
       });
-      // 드래그 → 하단 무대 바에 드롭하여 무대 등장
+      // 드래그 → 하단 무대 바 또는 퀵독에 드롭
       el.addEventListener("dragstart", e => {
+        e.stopPropagation(); // FVTT DragDrop 인터셉트 방지
         e.dataTransfer.setData("ewk-actor-id", el.dataset.actorId);
         e.dataTransfer.effectAllowed = "copy";
+        _didDrag = true;
         el.classList.add("ewk-acard--dragging");
       });
-      el.addEventListener("dragend", () => el.classList.remove("ewk-acard--dragging"));
+      el.addEventListener("dragend", () => {
+        el.classList.remove("ewk-acard--dragging");
+        setTimeout(() => { _didDrag = false; }, 100);
+      });
     });
   },
 
@@ -1677,6 +1684,137 @@ const FateStageBar = {
   },
 };
 
+// ─── Quick Actor Dock ──────────────────────────────────────────────────────
+// 스테이지 바 위 왼쪽에 고정된 개인 퀵 핫바.
+// 액터 패널에서 드래그하거나 각 칩의 버튼으로 무대 추가/제거·발언권 토글 가능.
+const EWKQuickDock = {
+  _el: null,
+
+  _key() { return `ewk-qdock-${game.userId}`; },
+
+  getRoster() {
+    try { return JSON.parse(localStorage.getItem(this._key()) ?? "[]"); } catch { return []; }
+  },
+  _saveRoster(ids) { localStorage.setItem(this._key(), JSON.stringify(ids)); },
+
+  addActor(id) {
+    const ids = this.getRoster();
+    if (!ids.includes(id)) { ids.push(id); this._saveRoster(ids); }
+    this.render();
+  },
+  removeActor(id) {
+    this._saveRoster(this.getRoster().filter(i => i !== id));
+    this.render();
+  },
+
+  build() {
+    if (this._el) return;
+    this._el = document.createElement("div");
+    this._el.id = "ewk-qdock";
+    this._el.className = "fate-core-ko";
+    document.getElementById("interface")?.appendChild(this._el);
+    this.render();
+  },
+
+  render() {
+    const el = this._el;
+    if (!el) return;
+    const roster = this.getRoster();
+    const mySpeakerId = localStorage.getItem(`ewk-speaker-${game.userId}`) ?? null;
+
+    const chips = roster.map(id => {
+      const a = game.actors?.get(id);
+      if (!a) return "";
+      const onStage = a.getFlag("fate-core-ko", "onStage") ?? false;
+      const isSpeaker = id === mySpeakerId;
+      return `<div class="ewk-qdock-chip${onStage ? " ewk-qdock-chip--on" : ""}${isSpeaker ? " ewk-qdock-chip--spk" : ""}" data-qdock-id="${id}">
+  <img class="ewk-qdock-port" src="${a.img}" alt="${a.name}" title="${a.name}">
+  <div class="ewk-qdock-name">${a.name}</div>
+  <div class="ewk-qdock-btns">
+    <button class="ewk-qdock-btn${onStage ? " ewk-qdock-btn--on" : ""}" data-qdock-stage="${id}" title="${onStage ? "무대 퇴장" : "무대 등장"}">무대</button>
+    <button class="ewk-qdock-btn${isSpeaker ? " ewk-qdock-btn--spk" : ""}" data-qdock-speak="${id}" title="${isSpeaker ? "발언 해제" : "발언권"}">발언</button>
+    <button class="ewk-qdock-btn ewk-qdock-btn--kick" data-qdock-kick="${id}" title="독에서 제거">✕</button>
+  </div>
+</div>`;
+    }).join("");
+
+    el.innerHTML = `<div id="ewk-qdock-inner">${
+      roster.length === 0
+        ? `<div class="ewk-qdock-hint">액터 패널에서 드래그하여 등록</div>`
+        : chips
+    }</div>`;
+
+    // 드롭 영역 이벤트
+    el.addEventListener("dragover", e => { e.preventDefault(); el.classList.add("ewk-qdock--over"); });
+    el.addEventListener("dragleave", () => el.classList.remove("ewk-qdock--over"));
+    el.addEventListener("drop", e => {
+      e.preventDefault();
+      el.classList.remove("ewk-qdock--over");
+      const id = e.dataTransfer?.getData("ewk-actor-id");
+      if (id) this.addActor(id);
+    });
+
+    // 버튼 이벤트
+    el.querySelectorAll("[data-qdock-stage]").forEach(btn => {
+      btn.addEventListener("click", async e => {
+        e.stopPropagation();
+        const id = btn.dataset.qdockStage;
+        const actor = game.actors?.get(id);
+        if (!actor) return;
+        const onStage = actor.getFlag("fate-core-ko", "onStage") ?? false;
+        if (onStage) {
+          await actor.unsetFlag("fate-core-ko", "onStage");
+          if (localStorage.getItem(`ewk-speaker-${game.userId}`) === id)
+            localStorage.removeItem(`ewk-speaker-${game.userId}`);
+        } else {
+          await actor.setFlag("fate-core-ko", "onStage", true);
+        }
+        this.render();
+        FateStageBar.render();
+      });
+    });
+
+    el.querySelectorAll("[data-qdock-speak]").forEach(btn => {
+      btn.addEventListener("click", e => {
+        e.stopPropagation();
+        const id = btn.dataset.qdockSpeak;
+        const key = `ewk-speaker-${game.userId}`;
+        if (localStorage.getItem(key) === id) {
+          localStorage.removeItem(key);
+        } else {
+          localStorage.setItem(key, id);
+        }
+        this.render();
+        FateStageBar.render();
+      });
+    });
+
+    el.querySelectorAll("[data-qdock-kick]").forEach(btn => {
+      btn.addEventListener("click", e => {
+        e.stopPropagation();
+        this.removeActor(btn.dataset.qdockKick);
+      });
+    });
+
+    // 초상화 클릭 → 발언권 토글 (단축)
+    el.querySelectorAll(".ewk-qdock-port").forEach(img => {
+      img.addEventListener("click", e => {
+        e.stopPropagation();
+        const id = img.closest("[data-qdock-id]")?.dataset.qdockId;
+        if (!id) return;
+        const key = `ewk-speaker-${game.userId}`;
+        if (localStorage.getItem(key) === id) {
+          localStorage.removeItem(key);
+        } else {
+          localStorage.setItem(key, id);
+        }
+        this.render();
+        FateStageBar.render();
+      });
+    });
+  },
+};
+
 // ─── Scene Aspects Panel ───────────────────────────────────────────────────
 
 class FateScenePanel extends foundry.applications.api.HandlebarsApplicationMixin(
@@ -1870,6 +2008,7 @@ Hooks.once("ready", () => {
   FateStageBar.render();
   FateSceneRail.render();
   EWKAspectWidget.build();
+  EWKQuickDock.build();
 
   // FVTT 기본 컨트롤 버튼 제거
   setTimeout(() => {
@@ -1929,6 +2068,7 @@ Hooks.once("ready", () => {
 
   const refreshActors = () => {
     FateStageBar.render();
+    EWKQuickDock.render();
     if (EWKSidebar._activeTab === "actors") EWKSidebar._renderActorPanel();
   };
   const refreshFolders = (folder) => {
