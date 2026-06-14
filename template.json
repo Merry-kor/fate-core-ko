@@ -30,6 +30,7 @@
     "aspect": {
       "templates": ["base"],
       "label": "",
+      "aspectType": "general",
       "invoke": 0
     },
     "skill": {

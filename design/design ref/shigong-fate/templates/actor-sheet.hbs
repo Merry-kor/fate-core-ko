@@ -1,0 +1,148 @@
+<div class="sg-sheet sg-v2">
+
+  {{!-- ════ 히어로 밴드 (씬 아트 배경) ════ --}}
+  <div class="sg-hero2">
+    <div class="sg-portrait2" data-action="editImage" style="background-image:url('{{actor.img}}')"></div>
+    <div class="sg-id2">
+      <div class="sg-chiprow">
+        {{#each system.tags}}
+        <span class="sg-chip2">
+          <input type="text" name="system.tags.{{@index}}" value="{{this}}" placeholder="태그">
+          <a class="x" data-action="delTag" data-index="{{@index}}">×</a>
+        </span>
+        {{/each}}
+        <a class="sg-chipadd" data-action="addTag">＋</a>
+      </div>
+      <input class="sg-name2" type="text" name="name" value="{{actor.name}}" placeholder="이름">
+      <div class="sg-stats2">
+        <div class="st">
+          <span>운명점</span>
+          <div class="fate2">
+            <a data-action="spendFate">−</a>
+            <b>{{system.fate.value}}</b>
+            <i>/</i><input class="rf" type="number" name="system.fate.refresh" value="{{system.fate.refresh}}">
+            <a data-action="gainFate">+</a>
+          </div>
+        </div>
+        <div class="st">
+          <span>성별</span>
+          <input type="text" name="system.gender" value="{{system.gender}}" placeholder="—">
+        </div>
+        <div class="st">
+          <span>나이</span>
+          <input type="text" name="system.age" value="{{system.age}}" placeholder="—">
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="sg-perforation"></div>
+
+  {{!-- ════ 2열 본문 ════ --}}
+  <div class="sg-cols">
+
+    {{!-- ── 왼쪽 열 ── --}}
+    <div class="sg-col">
+
+      <div class="sg-h2"><b>Ⅰ</b> 면모 <span>ASPECTS · {{system.aspects.length}}</span><a class="sg-add" data-action="addAspect"><i class="fas fa-plus"></i></a></div>
+      {{#each system.aspects}}
+      <div class="sg-aspect2">
+        <input class="k" type="text" name="system.aspects.{{@index}}.label" value="{{this.label}}">
+        <input class="v" type="text" name="system.aspects.{{@index}}.value" value="{{this.value}}" placeholder="양상을 적으시오">
+        <a class="sg-del" data-action="delAspect" data-index="{{@index}}"><i class="fas fa-xmark"></i></a>
+      </div>
+      {{/each}}
+
+      <div class="sg-h2"><b>Ⅱ</b> 적용 면모 <span>IN PLAY · {{system.activeAspects.length}}</span><a class="sg-add" data-action="addActive"><i class="fas fa-plus"></i></a></div>
+      {{#each system.activeAspects}}
+      <div class="sg-aspect2 lite">
+        <input class="v" type="text" name="system.activeAspects.{{@index}}.value" value="{{this.value}}" placeholder="현재 적용 중인 면모">
+        <a class="sg-del" data-action="delActive" data-index="{{@index}}"><i class="fas fa-xmark"></i></a>
+      </div>
+      {{/each}}
+      {{#unless system.activeAspects.length}}<div class="sg-empty">＋로 적용 중인 면모를 추가하세요.</div>{{/unless}}
+
+      <div class="sg-h2"><b>Ⅲ</b> 기능 <span>SKILL PYRAMID</span><a class="sg-add" data-action="toggleSkillEdit" title="편집"><i class="fas fa-pen"></i></a></div>
+      {{#unless editSkills}}
+      {{#each pyramid}}
+      <div class="sg-pyr-row">
+        <span class="rank">+{{this.rank}}</span>
+        <span class="pips">{{#each this.pips}}<i class="{{#if this}}on{{/if}}"></i>{{/each}}</span>
+        <span class="ladder">{{this.ladder}}</span>
+        <span class="chips">
+          {{#each this.skills}}
+          <a class="sg-skillchip" data-action="rollSkill" data-index="{{this.index}}">{{this.name}}</a>
+          {{/each}}
+        </span>
+      </div>
+      {{/each}}
+      {{#unless pyramid.length}}<div class="sg-empty">✎ 편집에서 기능을 직접 추가하세요.</div>{{/unless}}
+      {{else}}
+      <div class="sg-skills">
+        {{#each skills}}
+        <div class="sg-skill">
+          <input class="nm-edit on" type="text" name="system.skills.{{this.index}}.name" value="{{this.name}}">
+          <input class="rk" type="number" name="system.skills.{{this.index}}.rank" value="{{this.rank}}">
+          <a class="sg-del" data-action="delSkill" data-index="{{this.index}}"><i class="fas fa-xmark"></i></a>
+        </div>
+        {{/each}}
+        <a class="sg-addskill" data-action="addSkill"><i class="fas fa-plus"></i> 기능 추가</a>
+      </div>
+      {{/unless}}
+
+      <div class="sg-h2"><b>Ⅳ</b> 특성 <span>STUNTS · {{stunts.length}}</span><a class="sg-add" data-action="addStunt"><i class="fas fa-plus"></i></a></div>
+      {{#each stunts}}
+      <div class="sg-stunt2">
+        <div class="head">
+          <a class="nm" data-action="postStunt" data-id="{{this.id}}" title="채팅에 출력">{{this.name}}</a>
+          <a class="sg-mini" data-action="editStunt" data-id="{{this.id}}"><i class="fas fa-pen"></i></a>
+          <a class="sg-mini" data-action="delStunt" data-id="{{this.id}}"><i class="fas fa-trash"></i></a>
+        </div>
+        <div class="desc">{{{this.system.description}}}</div>
+      </div>
+      {{/each}}
+
+    </div>
+
+    {{!-- ── 오른쪽 열 ── --}}
+    <div class="sg-col">
+
+      {{#if gauge}}
+      <div class="sg-gaugebox">
+        <div class="head">
+          <b>불씨 게이지</b><span class="tag">[EMBER]</span>
+          <span class="num"><em>{{gauge.value}}</em> / {{gauge.max}}</span>
+        </div>
+        <div class="bar"><i style="width:{{gauge.pct}}%"></i></div>
+        <div class="quote">"나는 불씨를 품으리니"</div>
+      </div>
+      {{/if}}
+
+      <div class="sg-h2"><b>Ⅴ</b> 스트레스 <span>STRESS TRACKS</span></div>
+      <div class="sg-track2">
+        <span class="tk">육체</span>
+        {{#each stressP}}
+        <a class="sg-box2 {{#if this.on}}on{{/if}}" data-action="toggleStress" data-track="physical" data-index="{{@index}}">{{#if this.on}}✕{{else}}{{this.num}}{{/if}}</a>
+        {{/each}}
+        <a class="sg-mini" data-action="stressBoxes" data-track="physical" data-delta="-1">−</a>
+        <a class="sg-mini" data-action="stressBoxes" data-track="physical" data-delta="+1">+</a>
+      </div>
+      <div class="sg-track2">
+        <span class="tk">정신</span>
+        {{#each stressM}}
+        <a class="sg-box2 dark {{#if this.on}}on{{/if}}" data-action="toggleStress" data-track="mental" data-index="{{@index}}">{{#if this.on}}✕{{else}}{{this.num}}{{/if}}</a>
+        {{/each}}
+        <a class="sg-mini" data-action="stressBoxes" data-track="mental" data-delta="-1">−</a>
+        <a class="sg-mini" data-action="stressBoxes" data-track="mental" data-delta="+1">+</a>
+      </div>
+
+      <div class="sg-h2"><b>Ⅵ</b> 결과 <span>CONSEQUENCES</span></div>
+      <div class="sg-cons2"><span>가벼움 <em>-2</em></span><input type="text" name="system.consequences.mild" value="{{system.consequences.mild}}" placeholder="—"></div>
+      <div class="sg-cons2"><span>보통 <em>-4</em></span><input type="text" name="system.consequences.moderate" value="{{system.consequences.moderate}}" placeholder="—"></div>
+      <div class="sg-cons2"><span>심각 <em>-6</em></span><input type="text" name="system.consequences.severe" value="{{system.consequences.severe}}" placeholder="—"></div>
+
+      <div class="sg-h2"><b>Ⅶ</b> 비고 <span>NOTES</span></div>
+      <textarea class="sg-notes" name="system.lore" rows="6" placeholder="기록할 것을 적으시오.">{{system.lore}}</textarea>
+
+    </div>
+  </div>
+</div>

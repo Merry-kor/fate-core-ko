@@ -1,0 +1,1667 @@
+/* ════════════════════════════════════════════════════════════════════
+   시공열차 아카이브 — Foundry VTT v14 테마  v2.0
+   실제 v14 DOM(#scene-navigation, #scene-controls, .faded-ui 등)에
+   목업 styles.css의 수치를 1:1로 매핑한 전면 개정판.
+   ════════════════════════════════════════════════════════════════════ */
+
+/* ── 1 · 브랜드 토큰 ─────────────────────────────────────────────────── */
+:root {
+  --tts-abyss:       #0A0B14;
+  --tts-ink:         #15192B;
+  --tts-soot:        #1F1B1E;
+  --tts-surface:     #12141F;
+  --tts-surface-1:   #1A1E30;
+  --tts-ember:       #E8923C;
+  --tts-ash-gold:    #C46A1E;
+  --tts-afterglow:   #F5D49B;
+  --tts-starlight:   #FFF4E1;
+  --tts-parchment:   #D8C9B0;
+  --tts-ink-grey:    #888780;
+  --tts-silence:     #6B6F7A;
+  --tts-dancheong:   #A03A3E;
+  --tts-gromwell:    #2E4A6B;
+  --tts-accent-rgb:  232,146,60;
+  --tts-deep-rgb:    5,6,12;
+  --tts-abyss-rgb:   10,11,20;
+  --tts-ink-rgb:     15,17,28;
+  --tts-surface-rgb: 18,20,31;
+  --tts-raised-rgb:  26,30,48;
+  --tts-paper-rgb:   216,201,176;
+  --tts-hairline:    rgba(var(--tts-paper-rgb, 216,201,176),0.10);
+  --tts-hairline-2:  rgba(var(--tts-paper-rgb, 216,201,176),0.18);
+
+  --tts-font-serif: "Nanum Myeongjo", "본명조", "Cormorant Garamond", "Noto Serif KR", serif;
+  --tts-font-body:  "Pretendard", "Noto Sans KR", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --tts-font-mono:  "JetBrains Mono", "D2Coding", "SF Mono", ui-monospace, monospace;
+}
+
+/* ── 2 · Foundry 테마 변수 재정의 ────────────────────────────────────── */
+:root, .theme-dark, body.vtt, #interface.themed {
+  --color-warm-1: var(--tts-ember);
+  --color-warm-2: var(--tts-ash-gold);
+  --color-cool-3: var(--tts-gromwell);
+  --color-bg: var(--tts-abyss);
+  --color-bg-option: var(--tts-surface);
+  --color-text-dark-primary: var(--tts-parchment);
+  --color-text-light-primary: var(--tts-parchment);
+  --color-text-light-heading: var(--tts-starlight);
+  --color-text-hyperlink: var(--tts-afterglow);
+  --color-text-light-highlight: var(--tts-afterglow);
+  --color-border-light-1: var(--tts-hairline-2);
+  --color-border-light-2: var(--tts-hairline);
+  --color-border-dark: rgba(0,0,0,0.6);
+  --color-control-bg: rgba(var(--tts-ink-rgb, 15,17,28),0.82);
+  --color-control-border: var(--tts-hairline);
+  --color-control-fg: var(--tts-parchment);
+  --font-primary: var(--tts-font-body);
+  --font-h1: var(--tts-font-serif);
+  --font-h2: var(--tts-font-serif);
+  --font-h3: var(--tts-font-serif);
+  --font-mono: var(--tts-font-mono);
+  --color-shadow-primary: rgba(var(--tts-accent-rgb, 232,146,60),0.45);
+  --color-shadow-highlight: rgba(245,212,155,0.5);
+}
+
+body.vtt, body.game { background: var(--tts-abyss, #05060C); }
+
+/* ── 3 · Font Awesome 아이콘 보호 (버전 무관, FA 자체 변수 참조) ─────── */
+.fas, .far,
+.fa-solid, .fa-regular, .fa-light, .fa-thin, .fa-duotone,
+[class^="fa-"], [class*=" fa-"] {
+  font-family: var(--fa-style-family-classic, var(--fa-style-family, "Font Awesome 6 Pro")) !important;
+}
+.fab, .fa-brands {
+  font-family: var(--fa-style-family-brands, "Font Awesome 6 Brands") !important;
+}
+
+/* ── 4 · 공통 HUD 패널 (.faded-ui = v13+ 모든 떠있는 패널) ───────────── */
+#interface .faded-ui {
+  background: rgba(var(--tts-ink-rgb, 15,17,28),0.82);
+  border: 1px solid var(--tts-hairline);
+  border-radius: 0;
+  backdrop-filter: blur(12px) saturate(0.85);
+  box-shadow: 0 24px 60px -20px rgba(0,0,0,0.85);
+  color: var(--tts-parchment);
+}
+
+/* 제목 글꼴 → 명조 */
+h1, h2, h3, h4, .window-title, .application .window-title {
+  font-family: var(--tts-font-serif) !important;
+  color: var(--tts-starlight);
+  letter-spacing: 0.01em;
+}
+
+/* 범용 컨트롤 버튼 (v13+ .ui-control) */
+#interface .ui-control {
+  color: var(--tts-silence);
+  border-radius: 0;
+  border-color: transparent;
+  transition: color 160ms, background 160ms, border-color 160ms;
+}
+#interface .ui-control:hover {
+  color: var(--tts-parchment);
+  background: rgba(var(--tts-accent-rgb, 232,146,60),0.05);
+  border-color: rgba(var(--tts-accent-rgb, 232,146,60),0.25);
+  box-shadow: none;
+}
+#interface .ui-control.active,
+#interface .ui-control[aria-pressed="true"] {
+  color: var(--tts-ember);
+  background: rgba(var(--tts-accent-rgb, 232,146,60),0.08);
+  border: 1px solid rgba(var(--tts-accent-rgb, 232,146,60),0.4);
+  box-shadow: none;
+}
+
+/* ── 5 · 사이드바 탭 레일 ────────────────────────────────────────────── */
+#sidebar-tabs {
+  background: rgba(var(--tts-abyss-rgb, 10,11,20),0.92);
+}
+#sidebar-tabs menu { gap: 3px; }
+#sidebar-tabs .ui-control { position: relative; font-size: 15px; }
+#sidebar-tabs .ui-control.active::before,
+#sidebar-tabs .ui-control[aria-pressed="true"]::before {
+  content: "";
+  position: absolute; left: -1px; top: 50%; transform: translateY(-50%);
+  width: 2px; height: 22px;
+  background: var(--tts-ember);
+  box-shadow: 0 0 8px rgba(var(--tts-accent-rgb, 232,146,60),0.6);
+}
+#sidebar-tabs .notification-pip { color: var(--tts-dancheong); }
+#sidebar-content {
+  background: rgba(var(--tts-abyss-rgb, 10,11,20),0.9);
+  border: 1px solid var(--tts-hairline);
+  border-radius: 0;
+}
+
+/* ── 6 · 씬 내비게이션 ───────────────────────────────────────────────── */
+#scene-navigation { background: rgba(var(--tts-abyss-rgb, 10,11,20),0.7); }
+#scene-navigation li, #scene-navigation .ui-control {
+  font-family: var(--tts-font-serif);
+  font-size: 13px;
+  color: var(--tts-ink-grey);
+  border-radius: 0;
+}
+#scene-navigation li:hover { color: var(--tts-parchment); background: rgba(var(--tts-accent-rgb, 232,146,60),0.05); }
+#scene-navigation li.active, #scene-navigation li[aria-current],
+#scene-navigation .scene.active {
+  color: var(--tts-afterglow);
+  background: rgba(var(--tts-accent-rgb, 232,146,60),0.08);
+  box-shadow: inset 0 -2px 0 0 var(--tts-ember);
+}
+
+/* ── 7 · 씬 컨트롤 (좌측 도구) ───────────────────────────────────────── */
+#scene-controls menu { gap: 2px; }
+#scene-controls .ui-control { width: 36px; height: 36px; font-size: 15px; }
+
+/* ── 8 · 핫바 ────────────────────────────────────────────────────────── */
+#hotbar { background: rgba(var(--tts-abyss-rgb, 10,11,20),0.82); }
+#action-bar > li {
+  border-right: 1px solid var(--tts-hairline);
+  border-radius: 0;
+  background: transparent;
+  transition: background 160ms;
+}
+#action-bar > li:last-child { border-right: 0; }
+#action-bar > li:hover { background: rgba(var(--tts-accent-rgb, 232,146,60),0.06); }
+#action-bar .macro-key, #hotbar .macro-key {
+  font-family: var(--tts-font-mono);
+  font-size: 8px;
+  color: var(--tts-silence);
+}
+.hotbar-controls { color: var(--tts-silence); }
+.hotbar-controls .page-number, #hotbar .page {
+  font-family: var(--tts-font-mono); font-size: 9px; color: var(--tts-ember);
+}
+
+/* ── 9 · 플레이어 목록 ───────────────────────────────────────────────── */
+#players { background: rgba(var(--tts-abyss-rgb, 10,11,20),0.82); }
+#players .player-name, #players-active .player {
+  font-family: var(--tts-font-body);
+  font-size: 12px;
+  color: var(--tts-parchment);
+}
+#players li:hover { background: rgba(var(--tts-accent-rgb, 232,146,60),0.04); }
+#players .player.gm .player-name, #players .gm .player-name {
+  color: var(--tts-afterglow); font-weight: 600;
+}
+
+/* ── 10 · 채팅 ───────────────────────────────────────────────────────── */
+#chat .chat-scroll { padding: 6px 4px; }
+#chat-log .chat-message, .chat-message {
+  background: rgba(var(--tts-surface-rgb, 18,20,31),0.7);
+  border-radius: 0;
+  color: var(--tts-parchment);
+  box-shadow: none;
+  margin-bottom: 10px;
+}
+.chat-message .message-header { display: flex; align-items: center; gap: 9px; padding: 2px 2px 4px; }
+.chat-message .message-sender {
+  font-family: var(--tts-font-serif);
+  font-weight: 700; font-size: 13px; line-height: 1.1;
+  color: var(--tts-starlight);
+}
+.chat-message .message-metadata, .chat-message .message-timestamp {
+  font-family: var(--tts-font-mono);
+  font-size: 8px; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--tts-silence);
+  margin-left: auto; flex: 0 0 auto;
+}
+.chat-message .message-content {
+  font-family: var(--tts-font-serif);
+  font-size: 14px; line-height: 1.6;
+  text-wrap: pretty;
+}
+.chat-message .whisper-to { font-family: var(--tts-font-mono); font-size: 8px; color: var(--tts-gromwell); }
+
+/* 발화자 초상 + 서브라벨 (fco-bridge.js가 주입) */
+.chat-message .tts-portrait {
+  width: 30px; height: 30px; flex: 0 0 30px;
+  object-fit: cover; object-position: top;
+  border: 1px solid var(--tts-hairline);
+  background: var(--tts-surface-1);
+}
+.chat-message .tts-portrait.gm { border-color: rgba(160,58,62,0.5); }
+.chat-message .tts-who { flex: 1; min-width: 0; }
+.chat-message .tts-who .message-sender { display: block; }
+.chat-message .tts-sub {
+  display: block; margin-top: 2px;
+  font-family: var(--tts-font-mono);
+  font-size: 8px; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--tts-ember);
+}
+.chat-message.tts-gm-seal .tts-sub { color: var(--tts-dancheong); }
+
+/* GM 내레이션 不 인장 (둥근 도장) */
+.chat-message.tts-gm-seal { position: relative; }
+.chat-message.tts-gm-seal::after {
+  content: "不";
+  position: absolute; top: 8px; right: 28px;
+  width: 26px; height: 26px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--tts-font-serif);
+  font-size: 12px; font-weight: 700;
+  color: var(--tts-dancheong);
+  border: 1px solid rgba(160,58,62,0.5);
+  transform: rotate(-9deg);
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* 주사위 굴림 */
+.dice-roll .dice-formula {
+  background: rgba(var(--tts-paper-rgb, 216,201,176),0.02);
+  border: 1px solid var(--tts-hairline);
+  border-radius: 0;
+  font-family: var(--tts-font-mono);
+  font-size: 11px;
+  color: var(--tts-ink-grey);
+}
+.dice-roll .dice-total {
+  background: rgba(var(--tts-deep-rgb, 5,6,12),0.5);
+  border: 1px solid var(--tts-hairline);
+  border-radius: 0;
+  font-family: var(--tts-font-serif);
+  font-weight: 800; font-size: 22px;
+  color: var(--tts-afterglow);
+  text-shadow: 0 0 22px rgba(var(--tts-accent-rgb, 232,146,60),0.4);
+}
+.dice-roll .dice-tooltip .roll.die, .dice-roll .roll.die {
+  font-family: var(--tts-font-mono);
+  color: var(--tts-afterglow);
+}
+.dice-roll .roll.max { color: var(--tts-ember); text-shadow: 0 0 10px rgba(var(--tts-accent-rgb, 232,146,60),0.6); }
+.dice-roll .roll.min { color: var(--tts-dancheong); }
+
+/* 채팅 입력 */
+#chat .chat-form { border-top: 1px solid var(--tts-hairline); padding: 8px; }
+#chat-message, #chat .chat-form textarea, #chat .ProseMirror {
+  background: rgba(var(--tts-deep-rgb, 5,6,12),0.6);
+  border: 1px solid var(--tts-hairline);
+  border-radius: 0;
+  color: var(--tts-parchment);
+  font-family: var(--tts-font-body);
+  font-size: 13px;
+}
+#chat-message:focus, #chat .chat-form textarea:focus { outline: none; border-color: var(--tts-ember); }
+#chat .prosemirror menu, .prosemirror menu {
+  background: rgba(var(--tts-abyss-rgb, 10,11,20),0.9);
+  border-bottom: 1px solid var(--tts-hairline);
+}
+
+/* ── 11 · 애플리케이션 윈도우 ────────────────────────────────────────── */
+.window-app, .application {
+  background: rgba(var(--tts-ink-rgb, 15,17,28),0.96);
+  border: 1px solid var(--tts-hairline-2);
+  border-radius: 0;
+  box-shadow: 0 24px 60px -20px rgba(0,0,0,0.85);
+  color: var(--tts-parchment);
+}
+.window-app .window-header, .application .window-header {
+  background: linear-gradient(180deg, rgba(var(--tts-raised-rgb, 26,30,48),0.95), rgba(var(--tts-ink-rgb, 15,17,28),0.92));
+  border-bottom: 1px solid var(--tts-hairline);
+  border-radius: 0;
+  gap: 8px;
+}
+/* 티켓 천공 모티프 — 헤더 왼쪽의 점선 스트립 */
+.application .window-header::before, .window-app .window-header::before {
+  content: "";
+  width: 4px; align-self: stretch;
+  width: 3px;
+  border-right: 1.5px dashed rgba(var(--tts-paper-rgb, 216,201,176),0.4);
+  opacity: 1;
+}
+.window-app .window-header .window-title,
+.application .window-header .window-title {
+  font-family: var(--tts-font-serif);
+  color: var(--tts-starlight);
+  font-weight: 700; font-size: 14px;
+}
+.window-app a.header-button:hover, .application .header-control:hover { color: var(--tts-ember); }
+.window-app a.header-button.close:hover,
+.application .header-control[data-action="close"]:hover { color: var(--tts-dancheong); }
+
+/* 폼 컨트롤 */
+.window-content input[type="text"], .window-content input[type="number"],
+.window-content select, .window-content textarea,
+.application input, .application select, .application textarea {
+  background: rgba(var(--tts-deep-rgb, 5,6,12),0.6);
+  border: 1px solid var(--tts-hairline);
+  border-radius: 0;
+  color: var(--tts-parchment);
+  font-family: var(--tts-font-body);
+}
+.window-content input:focus, .application input:focus { border-color: var(--tts-ember); outline: none; }
+
+button:not([class*="fa-"]), .application button:not([class*="fa-"]) {
+  background: transparent;
+  border: 1px solid var(--tts-hairline);
+  border-radius: 0;
+  color: var(--tts-parchment);
+  font-family: var(--tts-font-mono);
+  letter-spacing: 0.12em; text-transform: uppercase; font-size: 0.72rem;
+  transition: all 180ms;
+}
+button:hover, .application button:hover {
+  border-color: var(--tts-ember); color: var(--tts-ember);
+  background: rgba(var(--tts-accent-rgb, 232,146,60),0.06);
+  box-shadow: none;
+}
+/* 위험/확정 버튼 → 단청 */
+.application button[data-action="delete"], .dialog-button.yes ~ .no,
+button.seal {
+  border-color: rgba(160,58,62,0.5); color: var(--tts-dancheong);
+}
+
+/* 저널 본문 → 명조 기록체 */
+.journal-entry-page, .journal-page-content, .editor-content {
+  font-family: var(--tts-font-serif);
+  line-height: 1.7;
+  color: var(--tts-parchment);
+}
+
+/* ── 12 · [꺾쇠] 시그니처 ────────────────────────────────────────────── */
+.tts-term {
+  font-family: var(--tts-font-mono);
+  color: var(--tts-afterglow);
+  letter-spacing: 0.02em;
+}
+.tts-term::before { content: "["; color: var(--tts-ember); }
+.tts-term::after  { content: "]"; color: var(--tts-ember); }
+
+/* ── 13 · 스크롤바 / 토큰 링 ─────────────────────────────────────────── */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: rgba(var(--tts-accent-rgb, 232,146,60),0.3); border-radius: 0; }
+::-webkit-scrollbar-track { background: transparent; }
+.token .token-ring, .token-ring-color { --token-ring-color: var(--tts-ember); }
+
+/* ── 14 · Fate Core Official 시트 ────────────────────────────────────── */
+:root, .mfate-sheet {
+  --fco-font-family: var(--tts-font-body);
+  --fco-accent-colour: var(--tts-ember);
+  --fco-header-colour: var(--tts-ink);
+  --fco-label-colour: var(--tts-starlight);
+  --fco-sheet-text-colour: var(--tts-parchment);
+  --fco-sheet-background-colour: var(--tts-surface);
+  --fco-sheet-input-colour: rgba(var(--tts-deep-rgb, 5,6,12),0.6);
+  --fco-foundry-interactable-color: var(--tts-hairline-2);
+  --fco-border-radius: 0;
+}
+.mfate-panel__header::after { background: var(--tts-ember) !important; }
+.mfate-sheet__identity-name, .mfate-panel__header-label {
+  font-family: var(--tts-font-serif) !important;
+  color: var(--tts-starlight);
+}
+.mfate-skills-list__number { font-family: var(--tts-font-mono); color: var(--tts-afterglow); }
+.aspect_box, .cs_box, .fco-box {
+  background: rgba(var(--tts-deep-rgb, 5,6,12),0.4);
+  border: 1px solid var(--tts-hairline);
+  border-radius: 0;
+}
+.mfate-sheet__header-right img {
+  filter: grayscale(1) sepia(0.45) saturate(1.6) hue-rotate(-12deg) brightness(0.85);
+  opacity: 0.85;
+}
+
+/* ── 15 · 메시지 종류/작성자 색 (마지막: !important 우선) ────────────── */
+#chat-log .chat-message, #chat .chat-message, .chat-message {
+  border: 1px solid var(--tts-hairline) !important;
+  border-left: 2px solid color-mix(in srgb, var(--user-color, rgba(var(--tts-paper-rgb, 216,201,176),0.18)) 45%, transparent) !important;
+}
+.chat-message.whisper { border-left: 2px solid rgba(46,74,107,0.8) !important; }
+.chat-message.blind   { border-left: 2px solid rgba(160,58,62,0.5) !important; }
+.chat-message.emote   { border-left: 2px solid rgba(var(--tts-accent-rgb, 232,146,60),0.45) !important; }
+
+
+/* ── 16 · 대비 강화 패스 ─────────────────────────────────────────────
+   v14 기본 다크와 확실히 구분되도록 핵심 표면을 강제 적용.
+   (코어 스타일 우선순위에 밀리지 않게 !important) */
+
+/* HUD 패널: 잉크청 그라데이션 + 헤어라인 */
+#interface .faded-ui {
+  background: linear-gradient(180deg, rgba(var(--tts-raised-rgb, 26,30,48),0.95), rgba(var(--tts-abyss-rgb, 10,11,20),0.92)) !important;
+  border: 1px solid var(--tts-hairline-2) !important;
+  border-radius: 0 !important;
+}
+
+/* 사이드바 콘텐츠/디렉토리 */
+#sidebar-content {
+  background: rgba(var(--tts-abyss-rgb, 10,11,20),0.94) !important;
+  border: 1px solid var(--tts-hairline-2) !important;
+}
+.directory .directory-item h4, .directory .entry-name {
+  font-family: var(--tts-font-serif) !important;
+  color: var(--tts-parchment);
+}
+.directory .directory-item:hover { background: rgba(var(--tts-accent-rgb, 232,146,60),0.05) !important; }
+.directory .folder-header {
+  background: var(--tts-ink) !important;
+  border-bottom: 1px solid var(--tts-hairline) !important;
+}
+
+/* 씬 내비: 명조 강제 */
+#scene-navigation li, #scene-navigation a, #scene-navigation .ui-control {
+  font-family: var(--tts-font-serif) !important;
+}
+
+/* 활성 컨트롤: 엠버 강제 */
+#interface .ui-control.active,
+#interface .ui-control[aria-pressed="true"] {
+  color: var(--tts-ember) !important;
+  background: rgba(var(--tts-accent-rgb, 232,146,60),0.1) !important;
+  border: 1px solid rgba(var(--tts-accent-rgb, 232,146,60),0.45) !important;
+}
+
+/* 창 헤더: 그라데이션 강제 */
+.application .window-header, .window-app .window-header {
+  background: linear-gradient(180deg, rgba(var(--tts-raised-rgb, 26,30,48),0.97), rgba(var(--tts-ink-rgb, 15,17,28),0.94)) !important;
+  border-bottom: 1px solid var(--tts-hairline-2) !important;
+}
+
+/* 창 본문 */
+.application .window-content {
+  background: rgba(var(--tts-ink-rgb, 15,17,28),0.97) !important;
+  color: var(--tts-parchment);
+}
+
+
+/* ── 17 · 보정 2차 — 실제 v14 DOM 구조 확인 후 정밀 매핑 ─────────────── */
+
+/* 챗 알림 패널: 평소엔 완전 투명 (faded-ui 일괄 채색의 부작용 수정) */
+#chat-notifications {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+/* ── 핫바 (목업: 이어진 슬롯 스트립 + 헤어라인 구분) ── */
+#hotbar { gap: 6px; }
+#action-bar { gap: 0; }
+#action-bar .slot {
+  border: none;
+  border-right: 1px solid var(--tts-hairline);
+  border-radius: 0;
+  background: transparent;
+  transition: background 160ms;
+}
+#action-bar .slot:last-child { border-right: none; }
+#action-bar .slot:hover { background: rgba(var(--tts-accent-rgb, 232,146,60),0.06); }
+#action-bar .slot:has(img) { background: rgba(var(--tts-accent-rgb, 232,146,60),0.04); }
+#action-bar .slot .key {
+  font-family: var(--tts-font-mono);
+  font-size: 8px;
+  color: var(--tts-silence);
+}
+#action-bar .slot.open .key { color: rgba(var(--tts-paper-rgb, 216,201,176),0.25); }
+.hotbar-controls .ui-control { color: var(--tts-silence); }
+.hotbar-controls .ui-control:hover { color: var(--tts-ember); }
+
+/* ── 씬 내비게이션 → 목업처럼 상단 중앙 가로 바 ── */
+#scene-navigation {
+  position: static !important;
+  flex-direction: row !important;
+  align-items: stretch;
+  background: rgba(var(--tts-abyss-rgb, 10,11,20),0.8) !important;
+}
+#scene-navigation .scene-navigation-menu {
+  flex-direction: row !important;
+  gap: 0;
+}
+#scene-navigation .scene {
+  display: flex; align-items: center; gap: 9px;
+  padding: 9px 16px;
+  font-family: var(--tts-font-serif) !important;
+  font-size: 13px;
+  color: var(--tts-ink-grey);
+  border: none;
+  border-right: 1px solid var(--tts-hairline);
+  border-radius: 0;
+  position: relative;
+  background: transparent !important;
+}
+#scene-navigation .scene::before {
+  content: "";
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--tts-silence);
+  flex: 0 0 5px;
+}
+#scene-navigation .scene:hover {
+  color: var(--tts-parchment);
+  background: rgba(var(--tts-accent-rgb, 232,146,60),0.05) !important;
+}
+#scene-navigation .scene.active, #scene-navigation .scene.view {
+  color: var(--tts-afterglow);
+  background: rgba(var(--tts-accent-rgb, 232,146,60),0.08) !important;
+}
+#scene-navigation .scene.active::after, #scene-navigation .scene.view::after {
+  content: "";
+  position: absolute; left: 0; right: 0; bottom: 0; height: 2px;
+  background: var(--tts-ember);
+}
+#scene-navigation .scene.active::before, #scene-navigation .scene.view::before {
+  background: var(--tts-ember);
+  box-shadow: 0 0 8px rgba(var(--tts-accent-rgb, 232,146,60),0.7);
+}
+#scene-navigation .scene-name { font-family: var(--tts-font-serif); }
+#scene-navigation-expand {
+  padding: 0 12px;
+  border-right: 1px solid var(--tts-hairline);
+  color: var(--tts-silence);
+}
+#scene-navigation .scene-player {
+  font-family: var(--tts-font-mono);
+  font-size: 8px;
+  border-radius: 50%;
+}
+
+/* ── 우측 사이드바 레일 (목업: 50px 레일 + 38px 탭 + 활성 발광 바) ── */
+#sidebar-tabs {
+  width: 50px;
+  background: rgba(var(--tts-abyss-rgb, 10,11,20),0.92) !important;
+  padding: 8px 0;
+}
+#sidebar-tabs menu { gap: 3px; align-items: center; }
+#sidebar-tabs li { position: relative; }
+#sidebar-tabs .ui-control {
+  width: 38px; height: 38px;
+  font-size: 16px;
+  border: none !important;
+  background: transparent !important;
+  color: var(--tts-silence) !important;
+}
+#sidebar-tabs .ui-control:hover { color: var(--tts-parchment) !important; }
+#sidebar-tabs .ui-control.active,
+#sidebar-tabs .ui-control[aria-pressed="true"] {
+  color: var(--tts-ember) !important;
+}
+
+
+/* ── 18 · 씬 내비 마무리 (중앙 정렬 + 빈 메뉴 잔재 제거) ─────────────── */
+#scene-navigation { height: auto !important; }
+/* 씬이 하나도 없는 메뉴는 통째로 숨김 (탭 아래 빈 상자의 정체) */
+#scene-navigation .scene-navigation-menu:not(:has(.scene)) { display: none !important; }
+
+/* 빈 핫바 슬롯 번호 가독성 살짝 보강 */
+#action-bar .slot.open .key { color: rgba(var(--tts-paper-rgb, 216,201,176),0.35); }
+
+
+/* ── 19 · 목업 마감: 월드 태그 · 굴림 칩 · 주사위 합계 · 초상 플레이스홀더 ── */
+
+/* 월드 태그 배지 (좌상단) */
+#tts-world-tag {
+  position: static;
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 14px;
+  background: rgba(var(--tts-abyss-rgb, 10,11,20),0.85);
+  border: 1px solid var(--tts-hairline-2);
+  backdrop-filter: blur(10px);
+}
+#tts-world-tag .seal {
+  width: 26px; height: 26px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  border: 1.5px solid rgba(160,58,62,0.6);
+  color: var(--tts-dancheong);
+  font-family: var(--tts-font-serif); font-size: 13px;
+  transform: rotate(-8deg);
+}
+#tts-world-tag .t b {
+  display: block;
+  font-family: var(--tts-font-serif);
+  font-size: 13px; color: var(--tts-starlight);
+}
+#tts-world-tag .t i {
+  font-style: normal;
+  font-family: var(--tts-font-mono);
+  font-size: 8px; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--tts-ember);
+}
+
+/* 굴림 칩 */
+#tts-roll-chips {
+  display: flex; gap: 5px;
+  padding: 8px 8px 0;
+}
+.tts-chip {
+  font-family: var(--tts-font-mono);
+  font-size: 9px; letter-spacing: 0.08em;
+  padding: 5px 9px;
+  border: 1px solid var(--tts-hairline);
+  color: var(--tts-ink-grey);
+  cursor: pointer;
+}
+.tts-chip:hover { border-color: var(--tts-ember); color: var(--tts-ember); }
+
+/* 주사위 합계: "합계 · TOTAL" 라벨 + 큰 숫자 (목업 dr-total) */
+.dice-roll .dice-total {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 14px;
+}
+.dice-roll .dice-total::before {
+  content: "합계 · TOTAL";
+  font-family: var(--tts-font-mono);
+  font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--tts-silence);
+  font-weight: 400; text-shadow: none;
+}
+
+/* 초상 플레이스홀더 (이미지 없는 발화자: 이니셜/不) */
+.chat-message .tts-portrait.ph {
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--tts-font-serif);
+  font-size: 13px; font-weight: 700;
+  color: var(--tts-afterglow);
+  background: var(--tts-surface-1);
+}
+.chat-message .tts-portrait.ph.gm { color: var(--tts-dancheong); }
+
+/* 플레이어 패널 마감 (목업 톤) */
+#players { min-width: 180px; }
+#players li {
+  font-family: var(--tts-font-body);
+  font-size: 12px; color: var(--tts-parchment);
+  padding: 5px 10px;
+}
+#players li:hover { background: rgba(var(--tts-accent-rgb, 232,146,60),0.04); }
+
+
+/* ── 20 · UI 셸 (골격 재구성: shell.js와 한 쌍) ─────────────────────── */
+
+/* 패널이 캔버스 위에서 흐려지지 않게 (회색으로 씻겨 보이던 원인) */
+#interface .faded-ui { opacity: 1 !important; }
+
+/* 상단 어셈블리: 월드 태그 + 씬 내비 한 줄 */
+#tts-topbar {
+  position: fixed; top: 10px; left: 0; right: 0;
+  margin-inline: auto;
+  width: max-content; max-width: 90vw;
+  display: flex; align-items: stretch; gap: 10px;
+  z-index: 60;
+}
+
+/* 채팅 패널 헤더 */
+.tts-chat-head {
+  display: flex; align-items: baseline; gap: 8px;
+  padding: 10px 12px 8px;
+  border-bottom: 1px solid var(--tts-hairline);
+  flex: 0 0 auto;
+}
+.tts-chat-head b {
+  font-family: var(--tts-font-serif);
+  font-size: 15px; color: var(--tts-starlight);
+}
+.tts-chat-head span {
+  flex: 1;
+  font-family: var(--tts-font-mono);
+  font-size: 8px; letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--tts-ember);
+}
+.tts-chat-head a { color: var(--tts-silence); cursor: pointer; padding: 0 4px; }
+.tts-chat-head a:hover { color: var(--tts-ember); }
+
+/* 플레이어 패널 */
+.tts-players-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--tts-hairline);
+}
+.tts-players-head b {
+  font-family: var(--tts-font-mono);
+  font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--tts-ember); font-weight: 400;
+}
+.tts-players-head span {
+  font-family: var(--tts-font-mono);
+  font-size: 9px; color: var(--tts-silence);
+}
+#players .tts-role {
+  margin-left: auto;
+  font-family: var(--tts-font-mono);
+  font-size: 8px; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--tts-silence);
+}
+#players li[data-user-id] { display: flex; align-items: center; gap: 8px; }
+
+/* 핫바: 라벨형 슬롯 */
+#action-bar .slot {
+  width: 64px; height: 52px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 2px;
+  position: relative;
+}
+#action-bar .slot img {
+  width: 20px; height: 20px;
+  border: none;
+  filter: invert(0.75) sepia(0.4) saturate(3) hue-rotate(-15deg); /* 흰 SVG → 엠버 톤 */
+}
+#action-bar .slot .key {
+  position: absolute; top: 3px; left: 5px;
+}
+#action-bar .slot .tts-ml {
+  font-family: var(--tts-font-serif);
+  font-size: 9px; line-height: 1;
+  color: var(--tts-parchment);
+  max-width: 58px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+}
+#action-bar .slot.filled { background: rgba(var(--tts-accent-rgb, 232,146,60),0.04); }
+
+/* 줌 컨트롤 (우하단) */
+#tts-zoom {
+  position: fixed; right: 360px; bottom: 16px; z-index: 40;
+  display: flex; gap: 2px;
+  background: rgba(var(--tts-abyss-rgb, 10,11,20),0.85);
+  border: 1px solid var(--tts-hairline);
+}
+#tts-zoom a {
+  width: 30px; height: 30px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--tts-silence); cursor: pointer;
+}
+#tts-zoom a:hover { color: var(--tts-ember); }
+
+
+/* ── 21 · 마감 패스: 상단·사이드바·디렉토리·저널·플레이어 ──────────── */
+
+/* 상단 어셈블리 마감: 빈 메뉴/잔재 제거, 폭은 내용만큼만 */
+#scene-navigation { width: max-content; background: transparent !important; border: none !important; box-shadow: none !important; }
+#scene-navigation .scene-navigation-menu {
+  background: rgba(var(--tts-abyss-rgb, 10,11,20),0.85);
+  border: 1px solid var(--tts-hairline-2);
+}
+#scene-navigation .scene-navigation-menu:not(:has(li)) { display: none !important; }
+#scene-navigation-expand {
+  align-self: center;
+  width: 26px; height: 26px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(var(--tts-abyss-rgb, 10,11,20),0.85);
+  border: 1px solid var(--tts-hairline);
+}
+
+/* 우측 사이드바 미러링: 레일을 오른쪽 끝으로 (목업 구조) */
+
+#sidebar-tabs { border-left: none; border-right: 1px solid var(--tts-hairline); }
+#sidebar-tabs .notification-pip { background: var(--tts-ember); box-shadow: 0 0 6px rgba(var(--tts-accent-rgb, 232,146,60),0.7); }
+
+/* 디렉토리(씬/액터 목록) 컴팩트화: 거대한 빈 썸네일 칸 제거 */
+.directory .directory-item img.thumbnail,
+.directory .directory-item .thumbnail { display: none !important; }
+.directory li.directory-item {
+  min-height: 34px; height: auto !important;
+  display: flex; align-items: center;
+  padding: 5px 10px;
+  margin: 2px 6px;
+  background: rgba(var(--tts-surface-rgb, 18,20,31),0.5);
+  border: 1px solid var(--tts-hairline);
+}
+.directory .directory-item .entry-name, .directory .directory-item h4 {
+  text-align: left !important;
+  font-size: 13px !important;
+  margin: 0;
+}
+.directory .folder-header h3 {
+  font-size: 12px;
+  color: var(--tts-afterglow);
+}
+
+/* 저널 시트 마감 */
+.journal-sheet .journal-sidebar, .journal-entry .sidebar {
+  background: rgba(var(--tts-abyss-rgb, 10,11,20),0.6);
+  border-right: 1px solid var(--tts-hairline);
+}
+.journal-sheet .journal-sidebar .pages-list li, .journal-sheet .toc li {
+  font-family: var(--tts-font-serif);
+  border-bottom: 1px solid var(--tts-hairline);
+}
+.journal-sheet input[name="search"], .journal-sheet search input {
+  background: rgba(var(--tts-deep-rgb, 5,6,12),0.6);
+  border: 1px solid var(--tts-hairline);
+}
+.journal-entry-page h1, .journal-page-content h1 {
+  font-size: 1.6em;
+  border-bottom: 1px solid rgba(160,58,62,0.5); /* 단청 밑줄 */
+  padding-bottom: 4px;
+}
+.journal-entry-page h2, .journal-page-content h2 {
+  border-bottom: 1px solid rgba(160,58,62,0.35);
+  padding-bottom: 3px;
+}
+.journal-entry-content .journal-header input.title,
+.journal-sheet .journal-header input {
+  font-family: var(--tts-font-serif) !important;
+  color: var(--tts-starlight);
+  background: transparent;
+  border: 1px solid var(--tts-hairline);
+}
+
+/* 플레이어 패널 마감 */
+#players { min-width: 210px; }
+#players ol:not(:has(li)) { display: none; } /* 빈 비활성 목록 박스 제거 */
+#players .player-name { overflow: visible; }
+
+/* 채팅 사이드바가 접혔을 때 핫바와 줌이 자리를 지키도록 */
+#tts-zoom { right: 16px; }
+
+
+/* ── 22 · 긴급 수리: 접힘 유령 패널 · 레일 스크롤바 · 목록 레이아웃 ──── */
+
+/* 사이드바를 접으면 내용은 확실히 사라지게 (opacity 강제와 충돌 해소) */
+#sidebar-content:not(.expanded) { display: none !important; }
+
+/* 레일: 스크롤바 숨김 (주황 세로줄의 정체) + 간격 정돈 */
+#sidebar-tabs menu {
+  overflow-y: auto;
+  scrollbar-width: none;           /* Firefox */
+}
+#sidebar-tabs menu::-webkit-scrollbar { display: none; }  /* Chromium */
+#sidebar-tabs { padding: 10px 0; }
+#sidebar-tabs .ui-control { font-size: 15px; }
+#sidebar-tabs .notification-pip {
+  background: var(--tts-ember) !important;
+  color: var(--tts-abyss) !important;
+  box-shadow: 0 0 6px rgba(var(--tts-accent-rgb, 232,146,60),0.7) !important;
+}
+
+/* 디렉토리 레이아웃 수리: 항목이 세로로 뭉개지던 문제 */
+.directory ol, .directory ul { display: block !important; }
+.directory li.directory-item {
+  width: auto !important;
+  white-space: normal;
+  margin: 3px 8px !important;
+}
+.directory .directory-item .entry-name, .directory .directory-item h4 {
+  flex: 1;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+/* 폴더 헤더: 가운데 뜬 알약 → 전체 폭 바 */
+.directory .folder-header {
+  display: flex !important; align-items: center; gap: 6px;
+  width: auto !important;
+  margin: 4px 6px !important;
+  padding: 5px 10px !important;
+}
+.directory .folder-header h3 { flex: 1; text-align: left; margin: 0; }
+/* 하위 목록 들여쓰기 정돈 */
+.directory .subdirectory { padding-left: 10px !important; }
+
+
+/* ── 23 · 시안 레이아웃: 전폭 상단바 + 통짜 좌측 독 ──────────────────── */
+
+/* 상단바: 화면 전폭 */
+#tts-topbar {
+  top: 0; left: 0; right: 0;
+  width: auto; max-width: none;
+  margin: 0;
+  display: flex; align-items: center; gap: 14px;
+  padding: 6px 14px;
+  background: linear-gradient(180deg, rgba(var(--tts-abyss-rgb, 10,11,20),0.95), rgba(var(--tts-abyss-rgb, 10,11,20),0.72));
+  border-bottom: 1px solid var(--tts-hairline);
+  backdrop-filter: blur(10px);
+}
+#tts-world-tag { background: transparent !important; border: none !important; padding: 0 10px 0 0; }
+#tts-topbar .tts-spacer { flex: 1; }
+
+/* 레일 → 상단바 우측에 가로 배열 */
+#tts-topbar #sidebar-tabs {
+  width: auto !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+#tts-topbar #sidebar-tabs menu { flex-direction: row !important; gap: 2px; }
+#tts-topbar #sidebar-tabs .ui-control { width: 32px; height: 32px; font-size: 14px; }
+#tts-topbar #sidebar-tabs .ui-control.active::before,
+#tts-topbar #sidebar-tabs .ui-control[aria-pressed="true"]::before {
+  left: 50%; top: auto; bottom: -7px;
+  transform: translateX(-50%);
+  width: 22px; height: 2px;
+}
+
+/* 사이드바 본문은 상단바 아래에서 시작 */
+#ui-right { padding-top: 50px; box-sizing: border-box; }
+
+/* 좌측 독: 한 덩어리 패널 */
+#ui-left-column-1 {
+  background: rgba(var(--tts-abyss-rgb, 10,11,20),0.85);
+  border-right: 1px solid var(--tts-hairline);
+  padding: 56px 6px 12px;
+  min-height: 100vh;
+  gap: 10px;
+}
+#ui-left-column-1 .faded-ui {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none;
+}
+
+/* 씬 내비: Level 항목 숨김 (씬만 표시) */
+#scene-navigation .scene-navigation-menu > li:not([data-scene-id]) { display: none !important; }
+
+/* 떠다니는 채팅 알림/입력 완전 제거 */
+#chat-notifications { display: none !important; }
+
+/* 디렉토리 재정비 — 디자인 세트 톤 */
+.directory ol, .directory ul { padding-left: 0 !important; margin: 0 !important; }
+.directory .folder-header {
+  background: var(--tts-ink) !important;
+  border: 1px solid var(--tts-hairline-2) !important;
+  margin: 6px 8px 2px !important;
+}
+.directory .folder-header h3 {
+  font-family: var(--tts-font-mono) !important;
+  font-size: 10px !important;
+  letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--tts-ember) !important;
+}
+.directory li.directory-item {
+  background: rgba(var(--tts-surface-rgb, 18,20,31),0.55);
+  border: 1px solid var(--tts-hairline);
+  border-left: 2px solid transparent;
+  margin: 2px 8px 2px 14px !important;
+  min-height: 32px;
+  padding: 4px 10px;
+}
+.directory li.directory-item:hover {
+  background: rgba(var(--tts-accent-rgb, 232,146,60),0.06) !important;
+  border-left-color: var(--tts-ember);
+}
+.directory .directory-item .entry-name, .directory .directory-item h4 {
+  font-family: var(--tts-font-serif) !important;
+  font-size: 13px !important;
+  color: var(--tts-parchment);
+}
+
+
+/* ── 24 · 합체 레이아웃 수정: 레일은 사이드바 안에 두고 CSS로만 상단 배치 ── */
+
+/* 레일: 상단바 우측에 시각적으로 합체 (DOM은 #sidebar 내부 → 클릭 정상) */
+#sidebar-tabs {
+  position: fixed !important;
+  top: 0; right: 8px;
+  height: 50px;
+  width: auto !important;
+  padding: 0 6px !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  z-index: 61;
+}
+#sidebar-tabs menu {
+  flex-direction: row !important;
+  align-items: center;
+  height: 50px;
+  gap: 2px;
+  overflow: visible;
+}
+#sidebar-tabs .ui-control { width: 34px; height: 34px; font-size: 14px; }
+#sidebar-tabs .ui-control.active::before,
+#sidebar-tabs .ui-control[aria-pressed="true"]::before { display: none; }
+
+/* 상단 탭 6종만 표시: 대화·씬·액터·저널·음악·설정 */
+#sidebar-tabs li:has(button[data-tab]):not(
+  :has(button[data-tab="chat"]),
+  :has(button[data-tab="scenes"]),
+  :has(button[data-tab="actors"]),
+  :has(button[data-tab="journal"]),
+  :has(button[data-tab="playlists"]),
+  :has(button[data-tab="settings"])
+) { display: none !important; }
+
+/* 활성 컨트롤: 목업처럼 통일색이 "켜지는" 점등 방식 */
+#interface .ui-control.active,
+#interface .ui-control[aria-pressed="true"] {
+  background: var(--tts-ember) !important;
+  color: var(--tts-abyss) !important;
+  border: none !important;
+  box-shadow: 0 0 12px rgba(var(--tts-accent-rgb, 232,146,60),0.45) !important;
+}
+
+/* 사이드바 본문: 상단바와 이음새 없이 합체 */
+#ui-right { padding-top: 50px; }
+#sidebar-content {
+  border-top: none !important;
+  margin-top: 0;
+}
+
+/* 좌측 독 수리: 독은 #ui-left 전체가 한 덩어리, 내부는 투명 */
+#ui-left {
+  background: rgba(var(--tts-abyss-rgb, 10,11,20),0.85);
+  border-right: 1px solid var(--tts-hairline);
+  padding: 58px 8px 12px;
+  gap: 8px;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+#ui-left-column-1, #ui-left-column-2 {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  min-height: 0 !important;
+  gap: 6px;
+}
+#ui-left .faded-ui {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none;
+}
+#ui-left .ui-control { width: 36px; height: 36px; font-size: 15px; }
+#scene-controls menu { gap: 4px; }
+
+
+/* ── 25 · 회귀 수정: 좌측 슬래브 · 씬탭 주황덩어리 · 레일 배치 ────────── */
+
+/* 레일: 상단바 안에서는 일반 배치 (§24의 fixed 무효화) */
+#tts-topbar #sidebar-tabs {
+  position: static !important;
+  top: auto; right: auto;
+  height: auto;
+}
+
+/* 좌측: #ui-left 전체 칠하기 취소 → 컬럼1만 폭 맞춰 독으로 */
+#ui-left {
+  background: none !important;
+  border: none !important;
+  padding: 0 !important;
+  min-height: 0 !important;
+}
+#ui-left-column-1 {
+  background: rgba(var(--tts-abyss-rgb, 10,11,20),0.85) !important;
+  border-right: 1px solid var(--tts-hairline) !important;
+  padding: 58px 6px 12px !important;
+  width: max-content;
+  min-height: 100vh !important;
+  box-sizing: border-box;
+}
+
+/* 씬 탭은 점등 방식 제외 — 은은한 엠버 밑줄 유지 */
+#scene-navigation .ui-control.active,
+#scene-navigation .ui-control[aria-pressed="true"],
+#scene-navigation .scene.active,
+#scene-navigation .scene.view {
+  background: rgba(var(--tts-accent-rgb, 232,146,60),0.10) !important;
+  color: var(--tts-afterglow) !important;
+  border: none !important;
+  box-shadow: inset 0 -2px 0 0 var(--tts-ember) !important;
+}
+
+
+/* 상단바가 다른 요소에 클릭을 뺏기지 않도록 최상위로 */
+#tts-topbar { z-index: 80; }
+
+
+/* ── 26 · 자체 탭 스트립 (원본 레일은 숨김 — 코어 보호) ──────────────── */
+#sidebar-tabs { display: none !important; }
+
+#tts-tabs { display: flex; align-items: center; gap: 3px; }
+#tts-tabs .tts-tab {
+  width: 34px; height: 34px;
+  display: flex; align-items: center; justify-content: center;
+  background: transparent;
+  border: none; border-radius: 0;
+  color: var(--tts-silence);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 160ms;
+  padding: 0;
+}
+#tts-tabs .tts-tab:hover {
+  color: var(--tts-parchment);
+  background: rgba(var(--tts-accent-rgb, 232,146,60),0.08);
+  border: none; box-shadow: none;
+}
+#tts-tabs .tts-tab.active {
+  background: var(--tts-ember);
+  color: var(--tts-abyss);
+  box-shadow: 0 0 12px rgba(var(--tts-accent-rgb, 232,146,60),0.45);
+}
+#tts-tabs .tts-toggle { margin-left: 6px; opacity: 0.7; }
+
+
+/* ── 27 · 디렉토리 레이아웃 전면 강제: 세로 풀폭 리스트 ─────────────── */
+.directory .directory-list,
+.directory ol.directory-list,
+#scenes ol.directory-list, #actors ol.directory-list,
+#journal ol.directory-list, #playlists ol.directory-list {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  grid-template-columns: none !important;
+}
+.directory li.directory-item {
+  display: flex !important;
+  align-items: center !important;
+  width: auto !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  flex: 0 0 auto !important;
+  height: auto !important;
+  aspect-ratio: auto !important;
+}
+.directory .directory-item .entry-name,
+.directory .directory-item h4,
+.directory .directory-item a {
+  flex: 1 1 auto !important;
+  width: auto !important;
+  max-width: none !important;
+  text-align: left !important;
+}
+/* 씬 카드형 배경 이미지/그라데이션 제거 (행 형태 유지) */
+#scenes .directory-item {
+  background-image: none !important;
+}
+
+
+/* ── 28 · 결정 수정: 폴더도 directory-item이었다 ─────────────────────
+   (.folder에 행 규칙이 적용돼 내용물이 가로로 짓눌리던 근본 원인) */
+
+/* 폴더: 박스/행 규칙 전부 해제, 원래의 세로 구조 복원 */
+.directory li.directory-item.folder {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  background: transparent !important;
+  border: none !important;
+  margin: 2px 0 !important;
+  padding: 0 !important;
+  min-height: 0 !important;
+}
+/* 폴더 헤더만 잉크 바 */
+.directory .folder-header {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 6px;
+}
+.directory .folder-header .folder-name {
+  flex: 1;
+  font-family: var(--tts-font-mono);
+  font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--tts-ember);
+}
+
+/* 행 규칙은 "폴더가 아닌" 항목에만 */
+.directory li.directory-item:not(.folder) {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+}
+
+
+/* ── 29 · 액터 목록: 작은 초상 복원 (씬 썸네일은 계속 숨김) ─────────── */
+#actors .directory-item img.thumbnail,
+#actors .directory-item .thumbnail {
+  display: inline-block !important;
+  width: 28px; height: 28px;
+  flex: 0 0 28px;
+  object-fit: cover; object-position: top;
+  border: 1px solid var(--tts-hairline-2);
+  margin-right: 8px;
+}
+
+/* ── 30 · 폴더 접기 복구 ─────────────────────────────────────────────
+   (§27의 subdirectory 강제 표시가 접힘을 무시하던 문제) */
+.directory .folder.collapsed .subdirectory,
+.directory li.directory-item.folder.collapsed ol,
+.directory li.directory-item.folder.collapsed ul {
+  display: none !important;
+}
+
+
+/* ── 31 · 폴더 접기 존중: 코어의 모든 숨김 방식이 강제 표시를 이기게 ── */
+.directory .subdirectory[hidden],
+.directory ol[hidden], .directory ul[hidden],
+.directory li[hidden], .directory .entry[hidden],
+.directory .subdirectory[style*="display: none"],
+.directory .subdirectory[style*="display:none"],
+.directory .folder.collapsed .subdirectory {
+  display: none !important;
+}
+
+
+/* ── 32 · 씬 영역 확장 + 탭 한 줄 정렬 ──────────────────────────────── */
+
+/* 씬 내비가 월드 태그~우측 탭 사이를 가득 채움 */
+#tts-topbar #scene-navigation {
+  flex: 1 1 auto !important;
+  width: auto !important;
+  max-width: none !important;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+#tts-topbar .tts-spacer { flex: 0 0 12px; }
+
+/* 메뉴는 내용만큼만, 늘어나지 않게 */
+#scene-navigation .scene-navigation-menu {
+  flex: 0 0 auto !important;
+  height: 38px;
+  align-items: stretch;
+}
+
+/* 씬 탭: 이름과 접속자 점을 한 줄로 (하단 빈 공간 제거) */
+#scene-navigation .scene {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  height: 100%;
+  padding: 0 16px !important;
+}
+#scene-navigation .scene .scene-players {
+  display: flex;
+  gap: 3px;
+  margin: 0 0 0 8px;
+  position: static;
+}
+#scene-navigation .scene-player {
+  width: 12px; height: 12px;
+  font-size: 7px;
+  display: flex; align-items: center; justify-content: center;
+}
+#scene-navigation-expand { align-self: center; }
+
+
+/* ── 33 · 고정된 씬 항상 표시 (펼침 토글과 무관하게) ────────────────── */
+#scene-navigation .scene-navigation-menu,
+#scene-navigation:not(.expanded) .scene-navigation-menu,
+#scene-navigation-inactive {
+  display: flex !important;
+}
+/* 단, 씬이 하나도 없는 메뉴는 계속 숨김 */
+#scene-navigation .scene-navigation-menu:not(:has(li)) { display: none !important; }
+
+
+/* ── 34 · 비활성 씬 탭 겹침 해소: 절대좌표 → 일반 흐름 ──────────────── */
+#scene-navigation .scene-navigation-menu li.scene {
+  position: static !important;
+  transform: none !important;
+  top: auto !important; left: auto !important;
+  opacity: 1 !important;
+  width: max-content !important;
+}
+/* 씬이 많아지면 줄바꿈 허용 */
+#scene-navigation .scene-navigation-menu {
+  height: auto !important;
+  min-height: 38px;
+  flex-wrap: wrap;
+}
+
+
+/* ── 35 · 씬 탭 통합: 메뉴 3개의 포장을 걷어내고 단일 줄로 ──────────── */
+#tts-topbar #scene-navigation {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+/* 포장지(메뉴)를 투명화 → 모든 씬이 같은 줄의 형제가 됨 */
+#scene-navigation .scene-navigation-menu { display: contents !important; }
+
+/* 모든 씬 탭을 동일한 버튼 형식으로 */
+#scene-navigation li.scene {
+  height: 34px !important;
+  padding: 0 14px !important;
+  background: rgba(var(--tts-abyss-rgb, 10,11,20),0.85) !important;
+  border: 1px solid var(--tts-hairline) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px;
+}
+#scene-navigation li.scene:hover {
+  border-color: rgba(var(--tts-accent-rgb, 232,146,60),0.4) !important;
+  background: rgba(var(--tts-accent-rgb, 232,146,60),0.06) !important;
+}
+/* 보는 중/활성 씬: 같은 형식 + 엠버 점등만 */
+#scene-navigation li.scene.view,
+#scene-navigation li.scene.active {
+  color: var(--tts-afterglow) !important;
+  border-color: rgba(var(--tts-accent-rgb, 232,146,60),0.5) !important;
+  background: rgba(var(--tts-accent-rgb, 232,146,60),0.10) !important;
+  box-shadow: inset 0 -2px 0 0 var(--tts-ember) !important;
+}
+#scene-navigation-expand { order: -1; height: 34px; }
+
+
+/* ── 36 · 점등 방식 변경: 박스 채움 → 아이콘 발광 (목업 방식) ────────── */
+#tts-tabs .tts-tab.active,
+#interface .ui-control.active,
+#interface .ui-control[aria-pressed="true"] {
+  background: transparent !important;
+  border: none !important;
+  color: var(--tts-ember) !important;
+  box-shadow: none !important;
+  text-shadow: 0 0 14px rgba(var(--tts-accent-rgb, 232,146,60),0.9), 0 0 4px rgba(var(--tts-accent-rgb, 232,146,60),0.6);
+}
+#tts-tabs .tts-tab.active i,
+#interface .ui-control.active i,
+#interface .ui-control[aria-pressed="true"] i {
+  filter: drop-shadow(0 0 7px rgba(var(--tts-accent-rgb, 232,146,60),0.75));
+}
+/* 호버는 발광 예고만 살짝 */
+#tts-tabs .tts-tab:hover,
+#interface .ui-control:hover {
+  background: transparent !important;
+  border: none !important;
+  color: var(--tts-afterglow) !important;
+  box-shadow: none !important;
+}
+
+
+/* ── 37 · 무대(stage.css) 레이어링: 핫바·플레이어는 무대 위 ─────────── */
+#hotbar, #players { z-index: 70; position: relative; }
+
+
+/* ── 38 · 무대: 발화자 선택 표시 ────────────────────────────────────── */
+.sg-dock-item.speak-as {
+  outline: 2px solid var(--tts-afterglow, #F5D49B);
+  outline-offset: 1px;
+}
+#sg-speak-chip { color: var(--tts-ember) !important; border-color: rgba(var(--tts-accent-rgb, 232,146,60),0.5) !important; }
+#sg-speak-chip b { font-weight: 600; }
+
+
+/* ── 39 · 무대: 액터별 대사 박스 + 핫바 상단 이동 ────────────────────── */
+
+/* 스탠디 발치를 덮는 개별 대사 박스 */
+#sg-stage .sg-standee { position: relative; }
+#sg-stage .sg-line-box {
+  position: absolute;
+  left: -12%; right: -12%; bottom: 4%;
+  min-height: 26%;
+  padding: 12px 16px;
+  background: rgba(var(--tts-abyss-rgb, 10,11,20),0.93);
+  border: 1px solid var(--tts-hairline-2);
+  border-left: 2px solid var(--tts-ember);
+  pointer-events: none;
+  transition: opacity 420ms var(--sg-ease, ease), transform 420ms var(--sg-ease, ease), filter 420ms;
+}
+#sg-stage .sg-line-box .h { display: flex; align-items: baseline; gap: 8px; margin-bottom: 5px; }
+#sg-stage .sg-line-box .h b {
+  font-family: var(--tts-font-serif);
+  font-size: 15px; color: var(--tts-starlight);
+}
+#sg-stage .sg-line-box .h span {
+  font-family: var(--tts-font-mono);
+  font-size: 8px; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--tts-ember);
+}
+#sg-stage .sg-line-box .t {
+  font-family: var(--tts-font-serif);
+  font-size: 14px; line-height: 1.65;
+  color: var(--tts-parchment);
+  text-wrap: pretty;
+}
+/* 발화 중 박스: 또렷 + 전면 */
+#sg-stage .sg-line-box.active { opacity: 1; z-index: 5; }
+/* 비발화 박스: 흐리고 살짝 뒤로 */
+#sg-stage .sg-line-box.faded {
+  opacity: 0.42;
+  transform: translateY(7px) scale(0.97);
+  filter: brightness(0.75);
+  border-left-color: rgba(var(--tts-accent-rgb, 232,146,60),0.3);
+  z-index: 1;
+}
+/* 발화 중 스탠디의 박스가 항상 위로 */
+#sg-stage .sg-standee.speaking { z-index: 4; }
+
+/* 핫바: 상단바 바로 아래 중앙으로 이동 (무대가 하단을 쓰므로) */
+#hotbar {
+  position: fixed !important;
+  top: 52px; bottom: auto !important;
+  left: 50%; transform: translateX(-50%);
+  z-index: 70;
+}
+
+
+/* ── 40 · 무대 비율 조정: 대사 글자 ↑ · 스탠디 ↓ ────────────────────── */
+:root { --sg-standee-h: 47vh; }
+#sg-stage .sg-line-box .t { font-size: 16px; line-height: 1.7; }
+#sg-stage .sg-line-box .h b { font-size: 17px; }
+#sg-stage .sg-line-box .h span { font-size: 9px; }
+
+
+/* ── 41 · 시트 헤더 출연 토글 버튼 ──────────────────────────────────── */
+.window-header .sg-roster-btn {
+  flex: 0 0 auto;
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 10px; margin-left: 6px;
+  border: 1px solid var(--tts-hairline-2);
+  font-family: var(--tts-font-mono);
+  font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--tts-silence);
+  cursor: pointer;
+}
+.window-header .sg-roster-btn:hover { color: var(--tts-ember); border-color: rgba(var(--tts-accent-rgb, 232,146,60),0.45); }
+.window-header .sg-roster-btn.on {
+  color: var(--tts-ember);
+  border-color: rgba(var(--tts-accent-rgb, 232,146,60),0.55);
+  background: rgba(var(--tts-accent-rgb, 232,146,60),0.10);
+  text-shadow: 0 0 10px rgba(var(--tts-accent-rgb, 232,146,60),0.5);
+}
+
+
+/* ── 42 · 폴더 접기 (자체 처리) ─────────────────────────────────────── */
+.directory li.folder.sg-collapsed > .subdirectory,
+.directory li.folder.sg-collapsed > ol,
+.directory li.folder.sg-collapsed > ul {
+  display: none !important;
+}
+/* 접힘 상태 아이콘: 열린 폴더 → 닫힌 폴더 */
+.directory li.folder.sg-collapsed .folder-header > i.fa-folder-open::before {
+  content: "\f07b";
+}
+
+
+/* ── 43 · 무대 보정: 가장자리 박스 잘림 방지 + 비발화 가독성 ────────── */
+
+/* 무대 바닥에 좌우 여유를 주고, 양끝 박스는 무대 안쪽으로 클램프 */
+#sg-stage .sg-stage-floor { padding-left: 3%; padding-right: 3%; }
+#sg-stage .sg-standee:first-child .sg-line-box { left: 0; right: -18%; }
+#sg-stage .sg-standee:last-child .sg-line-box { left: -18%; right: 0; }
+
+/* 비발화 박스: 살짝만 가라앉게 (0.42 → 0.6) */
+#sg-stage .sg-line-box.faded {
+  opacity: 0.6;
+  filter: brightness(0.85);
+}
+
+
+/* ── 44 · 대사 박스 인터랙션 활성화 (드래그/우클릭) ─────────────────── */
+#sg-stage .sg-line-box {
+  pointer-events: auto;
+  cursor: grab;
+  user-select: none;
+}
+#sg-stage .sg-line-box:active { cursor: grabbing; }
+#sg-stage .sg-standee-img { transform-origin: bottom center; }
+
+
+/* ── 45 · 대사 박스를 포트레이트 바로 아래 고정 (일반 흐름 배치) ────── */
+#sg-stage .sg-standee {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+}
+#sg-stage .sg-line-box {
+  position: static !important;   /* 절대좌표 해제 → 이미지 하단에 항상 밀착 */
+  width: 118%;
+  margin: 0 -9%;
+  flex: 0 0 auto;
+  min-height: 0;
+}
+#sg-stage .sg-standee:first-child .sg-line-box { margin-left: 0; width: 109%; }
+#sg-stage .sg-standee:last-child .sg-line-box { margin-right: 0; width: 109%; }
+
+
+/* 빈 대사 박스도 형태 유지 */
+#sg-stage .sg-line-box .t { min-height: 1.7em; }
+
+
+/* ── 46 · 대사 박스 배치 재수술 (§45 폐기): 이미지 하단 밀착 + 잘림 해소 ── */
+
+/* §45의 플로우 배치 원복 */
+#sg-stage .sg-standee { display: block; }
+
+/* 박스: 스탠디 컨테이너 "바로 아래" 절대 배치 (이미지 발끝 = 컨테이너 하단) */
+#sg-stage .sg-line-box {
+  position: absolute !important;
+  top: 100%;
+  bottom: auto !important;
+  left: -9%; right: -9%;
+  width: auto !important;
+  margin: 6px 0 0 !important;
+  height: 122px;
+  overflow-y: auto;
+  pointer-events: auto !important;
+}
+#sg-stage .sg-standee:first-child .sg-line-box { left: 0; }
+#sg-stage .sg-standee:last-child .sg-line-box { right: 0; }
+
+/* 무대 바닥에 박스 높이만큼 자리 확보 (스탠디를 그만큼 위로) */
+#sg-stage .sg-stage-floor { padding-bottom: 136px; }
+
+
+/* ── 47 · 대사 박스 통일: 모든 캐릭터 동일 크기 + 원래 높이 + 글씨 ↑ ── */
+#sg-stage .sg-line-box {
+  width: 340px !important;          /* 이미지 폭과 무관하게 통일 */
+  left: 50% !important; right: auto !important;
+  transform: translateX(-50%);
+  height: 150px;                    /* 원래 크기로 복구 */
+}
+#sg-stage .sg-standee:first-child .sg-line-box {
+  left: 0 !important; transform: none;
+}
+#sg-stage .sg-standee:last-child .sg-line-box {
+  left: auto !important; right: 0 !important; transform: none;
+}
+#sg-stage .sg-line-box .t { font-size: 17px; }
+#sg-stage .sg-line-box .h b { font-size: 18px; }
+/* 바닥 여유도 박스 높이에 맞춰 갱신 */
+#sg-stage .sg-stage-floor { padding-bottom: 164px; }
+
+
+/* ── 48 · 이미지-박스 사이 빈틈 제거 ────────────────────────────────── */
+#sg-stage .sg-line-box {
+  top: calc(100% - 2px) !important;  /* 발끝에 2px 겹쳐 밀착 */
+  margin-top: 0 !important;
+}
+
+
+/* ── 49 · 무대 안정화: 상태 효과를 이미지로 이전 + 슬롯 균일화 ──────── */
+
+/* 컨테이너의 transform/filter 제거 → 대사 박스가 절대 안 움직임 */
+#sg-stage .sg-standee.speaking,
+#sg-stage .sg-standee.dimmed {
+  transform: none !important;
+  filter: none !important;
+}
+/* 발화 발광은 이미지에만 */
+#sg-stage .sg-standee.speaking .sg-standee-img {
+  filter:
+    drop-shadow(0 0 1px rgba(var(--tts-accent-rgb, 232,146,60),0.85))
+    drop-shadow(1px 0 0 rgba(var(--tts-accent-rgb, 232,146,60),0.5))
+    drop-shadow(-1px 0 0 rgba(var(--tts-accent-rgb, 232,146,60),0.5))
+    drop-shadow(0 -1px 0 rgba(245,212,155,0.4))
+    drop-shadow(0 0 11px rgba(var(--tts-accent-rgb, 232,146,60),0.34))
+    brightness(1.04) saturate(1.05) contrast(1.02);
+}
+/* 비발화 어둡기도 이미지에만 */
+#sg-stage .sg-standee.dimmed .sg-standee-img {
+  filter: brightness(0.42) saturate(0.62) contrast(0.96) blur(0.4px)
+          drop-shadow(0 18px 30px rgba(0,0,0,0.55));
+}
+
+/* 슬롯 균일화: 인원이 적어도 박스가 나란히 군집 */
+#sg-stage .sg-stage-floor {
+  justify-content: center !important;
+  gap: 6px !important;
+}
+#sg-stage .sg-standee {
+  flex: 0 0 348px !important;
+  width: 348px;
+  min-width: 348px;
+  margin: 0 !important;
+  justify-content: center;
+}
+
+
+/* ── 50 · 박스 정렬 단순화: transform 충돌 제거 ─────────────────────── */
+#sg-stage .sg-line-box,
+#sg-stage .sg-standee:first-child .sg-line-box,
+#sg-stage .sg-standee:last-child .sg-line-box {
+  left: 4px !important;
+  right: 4px !important;
+  width: auto !important;
+  transform: none !important;
+}
+/* 비발화 "뒤로" 효과는 세로/축소만 (정렬과 무충돌) */
+#sg-stage .sg-line-box.faded {
+  transform: translateY(6px) scale(0.98) !important;
+}
+
+
+/* ── 51 · 인원 증가 시 자동 축소 + 박스 간격 축소 ───────────────────── */
+#sg-stage .sg-stage-floor { gap: 2px !important; }
+#sg-stage .sg-standee {
+  flex: 0 1 348px !important;   /* 348px 기준, 공간이 모자라면 균등 축소 */
+  min-width: 0 !important;
+  width: auto !important;
+}
+#sg-stage .sg-line-box,
+#sg-stage .sg-standee:first-child .sg-line-box,
+#sg-stage .sg-standee:last-child .sg-line-box {
+  left: 2px !important;
+  right: 2px !important;
+}
+/* 인원 많을 때 박스 글씨도 단계 축소 */
+#sg-stage .sg-stage-floor[data-count="6"] .sg-line-box .t,
+#sg-stage .sg-stage-floor[data-count="7"] .sg-line-box .t,
+#sg-stage .sg-stage-floor[data-count="8"] .sg-line-box .t { font-size: 14px; }
+#sg-stage .sg-stage-floor[data-count="6"] .sg-line-box .h b,
+#sg-stage .sg-stage-floor[data-count="7"] .sg-line-box .h b,
+#sg-stage .sg-stage-floor[data-count="8"] .sg-line-box .h b { font-size: 15px; }
+
+
+/* ── 52 · 라이트 모드 대비 보정 (고서 톤 유지 + 공간 구분 복원) ──────── */
+
+/* 선을 또렷하게: 헤어라인 알파 상향 */
+body.tts-mode-light {
+  --tts-hairline: rgba(var(--tts-paper-rgb, 60,50,40), 0.30);
+  --tts-hairline-2: rgba(var(--tts-paper-rgb, 60,50,40), 0.48);
+}
+
+/* 떠 있는 면에는 옅은 그림자 — 지면과 분리 */
+body.tts-mode-light #interface .faded-ui,
+body.tts-mode-light .application,
+body.tts-mode-light #sidebar-content,
+body.tts-mode-light #tts-topbar {
+  box-shadow: 0 3px 14px -6px rgba(50, 38, 30, 0.35);
+}
+body.tts-mode-light .chat-message,
+body.tts-mode-light .directory li.directory-item,
+body.tts-mode-light .sg-line-box,
+body.tts-mode-light .fuh-card, body.tts-mode-light .sg-card {
+  box-shadow: 0 2px 8px -4px rgba(50, 38, 30, 0.3);
+  border-color: var(--tts-hairline-2) !important;
+}
+
+/* 카드류는 지면보다 반 단계 밝게(종이 위 종이), 입력칸은 반 단계 어둡게 */
+body.tts-mode-light .chat-message,
+body.tts-mode-light .sg-line-box {
+  background: rgba(255, 252, 244, 0.75) !important;
+}
+body.tts-mode-light input[type="text"],
+body.tts-mode-light input[type="number"],
+body.tts-mode-light textarea,
+body.tts-mode-light #chat-message {
+  background: rgba(var(--tts-deep-rgb, 60,50,40), 0.10) !important;
+}
+
+/* 본문 글자는 살짝 진하게 (저대비 보상) */
+body.tts-mode-light .chat-message .message-content,
+body.tts-mode-light .sg-line-box .t {
+  text-shadow: none;
+  font-weight: 500;
+}

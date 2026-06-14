@@ -165,12 +165,22 @@ class FateCharacterSheet extends foundry.applications.api.HandlebarsApplicationM
       ASPECT_TYPE_KEYS.map(t => [t, game.i18n.localize(`FATE.Item.Aspect.Type.${t}`)])
     );
 
+    const ASPECT_TYPE_LABELS = { identity: "정체성", trouble: "고민", general: "일반", situation: "상황", longterm: "장기", stack: "스택" };
     return {
       ...context,
       actor,
       system: actor.system,
       onStage: actor.getFlag("fate-core-ko", "onStage") ?? false,
-      aspects:      items.filter(i => i.type === "aspect"),
+      aspects: items.filter(i => i.type === "aspect").map(a => ({
+        id: a.id,
+        name: a.name,
+        system: {
+          label:      a.system.label ?? "",
+          aspectType: a.system.aspectType ?? "general",
+          typeLabel:  ASPECT_TYPE_LABELS[a.system.aspectType ?? "general"] ?? "일반",
+          invoke:     a.system.invoke ?? 0,
+        },
+      })),
       skills:       items.filter(i => i.type === "skill").sort((a, b) => b.system.rank - a.system.rank),
       stunts:       items.filter(i => i.type === "stunt"),
       stressTracks: items.filter(i => i.type === "stress"),
@@ -489,6 +499,7 @@ const EWKSidebar = {
     this._wireWidthPresets();
     this._wireChatInput();
     this._wireChatTools();
+    this._wireChatActions();
 
     // renderChatMessageHTML 이 sidebar 생성 전에 발생한 메시지 처리
     this._flushBuffer();
@@ -955,6 +966,49 @@ const EWKSidebar = {
     });
   },
 
+  _wireChatActions() {
+    const log = document.getElementById("ewk-chat-log");
+    if (!log) return;
+    log.addEventListener("click", async e => {
+      const editBtn = e.target.closest("[data-msg-edit]");
+      const delBtn  = e.target.closest("[data-msg-del]");
+      if (editBtn) {
+        const msgId = editBtn.dataset.msgEdit;
+        const msg   = game.messages?.get(msgId);
+        if (!msg) return;
+        const msgEl     = log.querySelector(`[data-message-id="${msgId}"]`);
+        const contentEl = msgEl?.querySelector(".message-content");
+        if (!contentEl) return;
+        if (contentEl.querySelector(".ewk-msg-ed")) return; // 이미 편집 중
+        const origHtml = contentEl.innerHTML;
+        const rawText  = msg.content.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        contentEl.innerHTML = `<div class="ewk-msg-ed">
+          <textarea class="ewk-msg-ed-ta">${rawText}</textarea>
+          <div class="ewk-msg-ed-bar">
+            <span class="ewk-msg-ed-hint">Ctrl+Enter 저장 · Esc 취소</span>
+            <button class="ewk-msg-ed-cancel">취소</button>
+            <button class="ewk-msg-ed-save">저장</button>
+          </div>
+        </div>`;
+        const ta  = contentEl.querySelector(".ewk-msg-ed-ta");
+        const sav = contentEl.querySelector(".ewk-msg-ed-save");
+        const can = contentEl.querySelector(".ewk-msg-ed-cancel");
+        const doSave = async () => { await msg.update({ content: ta.value }); };
+        sav.addEventListener("click", doSave);
+        can.addEventListener("click", () => { contentEl.innerHTML = origHtml; });
+        ta.addEventListener("keydown", ev => {
+          if (ev.key === "Enter" && ev.ctrlKey) { ev.preventDefault(); doSave(); }
+          if (ev.key === "Escape") { contentEl.innerHTML = origHtml; }
+        });
+        ta.focus();
+      }
+      if (delBtn) {
+        const msgId = delBtn.dataset.msgDel;
+        await game.messages?.get(msgId)?.delete();
+      }
+    });
+  },
+
   _wireWidthPresets() {
     document.getElementById("ewk-wpresets")?.querySelectorAll(".ewk-wpbtn").forEach(btn => {
       btn.addEventListener("click", () => {
@@ -1018,6 +1072,16 @@ const EWKSidebar = {
       const raw = msg.content ?? "";
       const tmp = document.createElement("div");
       tmp.innerHTML = raw;
+
+      // ⓪ 장면 전환 메시지
+      if (tmp.querySelector(".ewk-scene-change-msg")) {
+        const name  = tmp.querySelector(".ewk-scm-name")?.textContent?.trim() ?? "";
+        const bgSrc = tmp.querySelector(".ewk-scene-change-msg")?.dataset?.bg ?? "";
+        return `<div class="scene-break">
+  ${bgSrc ? `<div class="scene-break-img" style="background-image:url('${bgSrc}')"></div>` : ""}
+  <div class="scene-break-title">장면 전환${name ? ` — ${name}` : ""}</div>
+</div>`;
+      }
 
       // ① 롤 카드
       if (tmp.querySelector(".fate-roll-card")) {
@@ -1177,6 +1241,21 @@ body{background:#6b6b6b;padding:24px;font-family:'NotoSerif','Nanum Myeongjo',Ge
   font-family:'NotoSans',sans-serif;font-size:8pt;color:#5b4e38;letter-spacing:.04em;
 }
 
+/* ── 장면 전환 ── */
+.scene-break{margin:14pt 0 10pt;break-before:avoid;}
+.scene-break-img{
+  width:100%;height:45mm;
+  background-size:cover;background-position:center;
+  border-radius:3pt;margin-bottom:5pt;
+}
+.scene-break-title{
+  font-family:'NotoSans',sans-serif;font-size:7pt;font-weight:700;
+  letter-spacing:.12em;color:#97761b;text-align:center;
+  padding:4pt 0;
+  border-top:.5pt solid #cbb588;border-bottom:.5pt solid #cbb588;
+  text-transform:uppercase;
+}
+
 /* ── 툴바 (화면 전용) ── */
 .toolbar{
   position:sticky;top:0;z-index:100;
@@ -1245,6 +1324,169 @@ body{background:#6b6b6b;padding:24px;font-family:'NotoSerif','Nanum Myeongjo',Ge
     a.download = `play-log-${new Date().toISOString().slice(0, 10)}.txt`;
     a.click();
     URL.revokeObjectURL(a.href);
+  },
+};
+
+// ─── Aspect Widget ─────────────────────────────────────────────────────────
+
+const EWKAspectWidget = {
+  _el:   null,
+  _open: true,
+  _drag: null,
+  _resz: null,
+
+  build() {
+    this._el?.remove();
+    const iface = document.getElementById("interface");
+    if (!iface) return;
+    const pos = (() => { try { return JSON.parse(localStorage.getItem("ewk-aw-pos") ?? "{}"); } catch { return {}; } })();
+
+    const el = document.createElement("div");
+    el.id = "ewk-aw";
+    el.style.left = (pos.x ?? 20) + "px";
+    el.style.top  = (pos.y ?? 80) + "px";
+    if (pos.w) el.style.width = pos.w + "px";
+    el.innerHTML = `
+      <div id="ewk-aw-hdr">
+        <span class="ewk-aw-title">현재 면모</span>
+        <button class="ewk-aw-btn" id="ewk-aw-min" title="최소화">−</button>
+      </div>
+      <div id="ewk-aw-body"></div>
+      <div id="ewk-aw-footer">
+        ${game.user?.isGM ? '<button class="ewk-aw-add-btn" id="ewk-aw-add">+ 면모 추가</button>' : ""}
+      </div>
+      <div id="ewk-aw-rsz"></div>`;
+    iface.appendChild(el);
+    this._el = el;
+    this._wire();
+    this.render();
+  },
+
+  render() {
+    const body = document.getElementById("ewk-aw-body");
+    if (!body) return;
+    const scene   = game.scenes?.active;
+    const aspects = scene?.getFlag("fate-core-ko", "sceneAspects") ?? [];
+    const isGM    = game.user?.isGM;
+
+    if (!aspects.length) {
+      body.innerHTML = '<div class="ewk-aw-empty">장면 면모 없음</div>';
+      return;
+    }
+
+    body.innerHTML = aspects.map((a, idx) => {
+      const t = a.type ?? "situation";
+      return `<div class="ewk-aw-asp ewk-aw-asp--${t}" data-aw-idx="${idx}">
+        <span class="ewk-aw-asp-txt">${a.label ?? ""}</span>
+        ${isGM ? `<span class="ewk-aw-asp-acts">
+          <button class="ewk-aw-asp-btn" data-aw-edit="${idx}" title="수정">✏</button>
+          <button class="ewk-aw-asp-btn ewk-aw-asp-del" data-aw-del="${idx}" title="삭제">×</button>
+        </span>` : ""}
+      </div>`;
+    }).join("");
+
+    if (isGM) {
+      body.querySelectorAll("[data-aw-edit]").forEach(btn => {
+        btn.addEventListener("click", e => { e.stopPropagation(); this._editAspect(Number(btn.dataset.awEdit)); });
+      });
+      body.querySelectorAll("[data-aw-del]").forEach(btn => {
+        btn.addEventListener("click", async e => {
+          e.stopPropagation();
+          const sc = game.scenes?.active;
+          if (!sc) return;
+          const list = [...(sc.getFlag("fate-core-ko", "sceneAspects") ?? [])];
+          const removed = list.splice(Number(btn.dataset.awDel), 1)[0];
+          await sc.setFlag("fate-core-ko", "sceneAspects", list);
+          if (removed?.label) {
+            ChatMessage.create({ content: `<div class="ewk-scene-change-msg"><span class="ewk-scm-label">면모 제거</span><em>${removed.label}</em></div>` });
+          }
+        });
+      });
+    }
+  },
+
+  _editAspect(idx) {
+    const body  = document.getElementById("ewk-aw-body");
+    const aspEl = body?.querySelector(`[data-aw-idx="${idx}"]`);
+    if (!aspEl) return;
+    const sc   = game.scenes?.active;
+    const list = [...(sc?.getFlag("fate-core-ko", "sceneAspects") ?? [])];
+    const a    = list[idx];
+    if (!a) return;
+    aspEl.innerHTML = `<input class="ewk-aw-inp" value="${(a.label ?? "").replace(/"/g,"&quot;")}">
+      <button class="ewk-aw-asp-btn" data-aw-ok>✓</button>
+      <button class="ewk-aw-asp-btn" data-aw-cx>✕</button>`;
+    const inp = aspEl.querySelector("input");
+    const ok  = aspEl.querySelector("[data-aw-ok]");
+    const cx  = aspEl.querySelector("[data-aw-cx]");
+    const save = async () => {
+      const val = inp.value.trim();
+      if (!val) return;
+      list[idx].label = val;
+      await sc.setFlag("fate-core-ko", "sceneAspects", list);
+    };
+    ok.addEventListener("click", save);
+    cx.addEventListener("click", () => this.render());
+    inp.addEventListener("keydown", e => {
+      if (e.key === "Enter") save();
+      if (e.key === "Escape") this.render();
+    });
+    inp.focus(); inp.select();
+  },
+
+  _wire() {
+    const el = this._el;
+    if (!el) return;
+    const hdr = document.getElementById("ewk-aw-hdr");
+    const rsz = document.getElementById("ewk-aw-rsz");
+
+    hdr?.addEventListener("mousedown", e => {
+      if (e.target.closest("button")) return;
+      const r = el.getBoundingClientRect();
+      this._drag = { sx: e.clientX, sy: e.clientY, ox: r.left, oy: r.top };
+      e.preventDefault();
+    });
+    rsz?.addEventListener("mousedown", e => {
+      this._resz = { sx: e.clientX, ow: el.getBoundingClientRect().width };
+      e.preventDefault(); e.stopPropagation();
+    });
+    document.addEventListener("mousemove", e => {
+      if (this._drag) {
+        el.style.left = (this._drag.ox + e.clientX - this._drag.sx) + "px";
+        el.style.top  = (this._drag.oy + e.clientY - this._drag.sy) + "px";
+      }
+      if (this._resz) {
+        el.style.width = Math.max(180, Math.min(600, this._resz.ow + e.clientX - this._resz.sx)) + "px";
+      }
+    });
+    document.addEventListener("mouseup", () => {
+      if (this._drag || this._resz) {
+        const pos = (() => { try { return JSON.parse(localStorage.getItem("ewk-aw-pos") ?? "{}"); } catch { return {}; } })();
+        if (this._drag) { pos.x = parseInt(el.style.left); pos.y = parseInt(el.style.top); }
+        if (this._resz) { pos.w = parseInt(el.style.width); }
+        localStorage.setItem("ewk-aw-pos", JSON.stringify(pos));
+      }
+      this._drag = null; this._resz = null;
+    });
+
+    document.getElementById("ewk-aw-min")?.addEventListener("click", () => {
+      this._open = !this._open;
+      document.getElementById("ewk-aw-body").style.display   = this._open ? "" : "none";
+      document.getElementById("ewk-aw-footer").style.display = this._open ? "" : "none";
+      document.getElementById("ewk-aw-rsz").style.display    = this._open ? "" : "none";
+      document.getElementById("ewk-aw-min").textContent      = this._open ? "−" : "+";
+    });
+
+    document.getElementById("ewk-aw-add")?.addEventListener("click", async () => {
+      const sc = game.scenes?.active;
+      if (!sc) return;
+      const label = window.prompt("새 장면 면모 이름:");
+      if (!label?.trim()) return;
+      const list = [...(sc.getFlag("fate-core-ko", "sceneAspects") ?? [])];
+      list.push({ id: foundry.utils.randomID(), label: label.trim(), type: "situation" });
+      await sc.setFlag("fate-core-ko", "sceneAspects", list);
+      ChatMessage.create({ content: `<div class="ewk-scene-change-msg"><span class="ewk-scm-label">면모 추가</span><em>${label.trim()}</em></div>` });
+    });
   },
 };
 
@@ -1589,6 +1831,13 @@ Hooks.once("ready", () => {
   EWKSidebar.build();
   FateStageBar.render();
   FateSceneRail.render();
+  EWKAspectWidget.build();
+
+  // FVTT 기본 컨트롤 버튼 제거
+  setTimeout(() => {
+    document.getElementById("controls")?.remove();
+    document.getElementById("ui-left")?.remove();
+  }, 500);
 
   // FVTT가 사이드바를 재렌더할 때 패널 재채택
   Hooks.on("renderSidebar", () => {
@@ -1605,6 +1854,11 @@ Hooks.once("ready", () => {
     document.querySelector(`#ewk-chat-log [data-message-id="${message.id}"]`)?.remove();
   });
 
+  // 메시지 수정 시 우리 로그도 갱신 (renderChatMessageHTML 이 새 버전 추가)
+  Hooks.on("updateChatMessage", (message) => {
+    document.querySelector(`#ewk-chat-log [data-message-id="${message.id}"]`)?.remove();
+  });
+
   // 배경 이미지 업데이트
   const updateBg = () => {
     const bgSrc = game.scenes?.active?.background?.src;
@@ -1612,6 +1866,26 @@ Hooks.once("ready", () => {
     if (bgEl) bgEl.style.backgroundImage = bgSrc ? `url("${bgSrc}")` : "";
   };
   updateBg(); // 초기 씬 적용
+
+  // 장면 전환 오버레이
+  const doSceneTransition = () => {
+    let ov = document.getElementById("ewk-transition");
+    if (!ov) {
+      ov = document.createElement("div");
+      ov.id = "ewk-transition";
+      document.getElementById("interface")?.appendChild(ov);
+    }
+    ov.style.transition = "none";
+    ov.style.opacity = "1";
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        ov.style.transition = "opacity 0.8s ease 0.3s";
+        ov.style.opacity = "0";
+      });
+    });
+  };
+
+  let _prevSceneId = game.scenes?.active?.id ?? null;
 
   const refreshActors = () => {
     FateStageBar.render();
@@ -1626,15 +1900,36 @@ Hooks.once("ready", () => {
   Hooks.on("createFolder", refreshFolders);
   Hooks.on("updateFolder", refreshFolders);
   Hooks.on("deleteFolder", refreshFolders);
-  Hooks.on("canvasReady", () => {
+  Hooks.on("canvasReady", async () => {
+    const scene    = game.scenes?.active;
+    const sceneId  = scene?.id ?? null;
+    const isChange = _prevSceneId !== null && _prevSceneId !== sceneId;
+    _prevSceneId = sceneId;
+
     updateBg();
     FateSceneRail.render();
     EWKSidebar.updateSceneBadge();
+    EWKAspectWidget.render();
+
+    if (isChange) {
+      doSceneTransition();
+      if (game.user?.isGM && scene) {
+        const bgSrc = scene.background?.src ?? "";
+        await ChatMessage.create({
+          content: `<div class="ewk-scene-change-msg" data-bg="${bgSrc}">
+            <span class="ewk-scm-label">장면 전환</span>
+            <span class="ewk-scm-name">${scene.name}</span>
+          </div>`,
+          speaker: { alias: "내레이터" },
+        });
+      }
+    }
   });
-  Hooks.on("updateScene", () => {
+  Hooks.on("updateScene", (scene) => {
     updateBg();
     FateSceneRail.render();
     EWKSidebar.updateSceneBadge();
+    EWKAspectWidget.render();
     foundry.applications.instances.get("fate-scene-panel")?.render();
   });
   Hooks.on("createScene", () => FateSceneRail.render());
@@ -1718,6 +2013,15 @@ Hooks.on("renderChatMessageHTML", (message, html) => {
     }
   } else {
     el.classList.add("ewk-chat--narration");
+  }
+
+  // 수정/삭제 버튼 (GM 또는 작성자)
+  if (game.user?.isGM || message.isAuthor) {
+    const acts = document.createElement("div");
+    acts.className = "ewk-msg-acts";
+    acts.innerHTML = `<button class="ewk-mact" data-msg-edit="${message.id}" title="수정">✏</button>
+      <button class="ewk-mact ewk-mact--del" data-msg-del="${message.id}" title="삭제">×</button>`;
+    el.appendChild(acts);
   }
 
   // 스타일링 완료 후 우리 로그에 추가

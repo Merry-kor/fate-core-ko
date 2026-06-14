@@ -1073,6 +1073,7 @@
   padding: 12px 16px !important;
   box-shadow: none !important;
   list-style: none;
+  position: relative; /* .ewk-msg-acts 절대배치 기준 */
 }
 #ewk-chat-log li:hover,
 #ewk-chat-log .chat-message:hover { background: rgba(255,255,255,0.03) !important; }
@@ -1263,9 +1264,10 @@
   position: fixed;
   bottom: 0;
   left: 0;
-  right: var(--ewk-sidebar-width, 380px); /* sidebar를 침범하지 않음 */
+  right: var(--ewk-sidebar-width, 380px);
   z-index: 60;
   pointer-events: none;
+  background: transparent; /* 배경이미지 가리지 않도록 */
 }
 .ewk-hud__inner {
   height: 112px;
@@ -1718,4 +1720,219 @@
   color: var(--text-muted);
   font-style: italic;
   text-indent: 1em;
+}
+
+/* ── Stage Bar 반투명 (배경이미지 보이도록) ── */
+.ewk-hud__inner {
+  background: linear-gradient(180deg, rgba(10,11,15,.55) 0%, rgba(10,11,15,.82) 100%) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* ── FVTT 기본 컨트롤 완전 숨김 ── */
+#controls,
+#ui-left,
+#scene-controls,
+.controls,
+.scene-controls,
+.control-tool,
+button.control,
+button.ui-control,
+button.layer,
+[class*="control-icon"],
+button.control.ui-control.layer.icon {
+  display: none !important;
+}
+
+/* ── 장면 전환 오버레이 ── */
+#ewk-transition {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ── 채팅 수정/삭제 버튼 ── */
+.ewk-msg-acts {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.chat-message:hover .ewk-msg-acts,
+li:hover .ewk-msg-acts {
+  opacity: 1;
+}
+.ewk-mact {
+  width: 22px; height: 22px;
+  border-radius: 3px;
+  border: 1px solid var(--border-hairline);
+  background: var(--surface-raised);
+  color: var(--text-faint);
+  cursor: pointer;
+  font-size: 0.65rem;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0;
+  transition: border-color 0.1s, color 0.1s;
+}
+.ewk-mact:hover { border-color: var(--accent-gold); color: var(--accent-gold); }
+.ewk-mact--del:hover { border-color: #c94f4f !important; color: #c94f4f !important; }
+
+/* ── 채팅 인라인 편집기 ── */
+.ewk-msg-ed {
+  display: flex; flex-direction: column; gap: 4px; padding: 4px 0;
+}
+.ewk-msg-ed-ta {
+  width: 100%; min-height: 60px;
+  background: var(--surface-well);
+  border: 1px solid var(--accent-gold);
+  border-radius: var(--radius-xs);
+  color: var(--text-body);
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  padding: 6px 8px;
+  resize: vertical;
+}
+.ewk-msg-ed-bar {
+  display: flex; align-items: center; gap: 5px; justify-content: flex-end;
+}
+.ewk-msg-ed-hint { font-size: 0.65rem; color: var(--text-faint); margin-right: auto; }
+.ewk-msg-ed-save, .ewk-msg-ed-cancel {
+  padding: 3px 10px; border-radius: 3px; cursor: pointer;
+  font-size: 0.75rem; border: 1px solid;
+}
+.ewk-msg-ed-save   { background: var(--accent-gold); border-color: var(--accent-gold); color: #0a0b0f; font-weight: 700; }
+.ewk-msg-ed-cancel { background: transparent; border-color: var(--border-strong); color: var(--text-faint); }
+
+/* ── 장면 전환 채팅 메시지 ── */
+.ewk-scene-change-msg {
+  display: flex; align-items: center; gap: 8px;
+  padding: 5px 10px;
+  background: linear-gradient(90deg, rgba(201,162,39,0.08) 0%, transparent 100%);
+  border-left: 2px solid var(--accent-gold);
+  border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
+}
+.ewk-scm-label {
+  font-family: var(--font-sans);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--accent-gold);
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+.ewk-scm-name {
+  font-family: var(--font-serif);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-strong);
+}
+
+/* ── 면모 위젯 (EWKAspectWidget) ── */
+#ewk-aw {
+  position: fixed;
+  z-index: 70;
+  width: 260px;
+  min-width: 180px;
+  background: var(--surface-card);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 32px rgba(0,0,0,.55);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  user-select: none;
+}
+#ewk-aw-hdr {
+  display: flex; align-items: center;
+  padding: 7px 10px;
+  background: var(--surface-raised);
+  border-bottom: 1px solid var(--border-strong);
+  cursor: move;
+  gap: 6px;
+}
+.ewk-aw-title {
+  flex: 1;
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--accent-gold);
+  text-transform: uppercase;
+}
+.ewk-aw-btn {
+  width: 20px; height: 20px;
+  border-radius: 3px;
+  border: 1px solid var(--border-hairline);
+  background: transparent; color: var(--text-faint);
+  cursor: pointer; font-size: 0.75rem; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.ewk-aw-btn:hover { border-color: var(--accent-gold); color: var(--accent-gold); }
+#ewk-aw-body { flex: 1; overflow-y: auto; padding: 6px 0; max-height: 280px; }
+#ewk-aw-footer {
+  padding: 6px 10px;
+  border-top: 1px solid var(--border-hairline);
+}
+.ewk-aw-add-btn {
+  width: 100%; padding: 5px 0;
+  background: transparent;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-xs);
+  color: var(--text-faint);
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: border-color 0.1s, color 0.1s;
+}
+.ewk-aw-add-btn:hover { border-color: var(--accent-gold); color: var(--accent-gold); }
+.ewk-aw-empty {
+  padding: 12px 12px;
+  font-size: 0.75rem;
+  color: var(--text-faint);
+  font-style: italic;
+  text-align: center;
+}
+.ewk-aw-asp {
+  display: flex; align-items: center; gap: 5px;
+  padding: 6px 10px;
+  border-left: 3px solid transparent;
+  transition: background 0.1s;
+}
+.ewk-aw-asp:hover { background: var(--surface-raised); }
+.ewk-aw-asp--identity  { border-left-color: #4f6bc9; }
+.ewk-aw-asp--trouble   { border-left-color: #c94f4f; }
+.ewk-aw-asp--general   { border-left-color: #c9a227; }
+.ewk-aw-asp--situation { border-left-color: #4fae6b; }
+.ewk-aw-asp--longterm  { border-left-color: #ae6b4f; }
+.ewk-aw-asp--stack     { border-left-color: #6b4fae; }
+.ewk-aw-asp-txt {
+  flex: 1; font-family: var(--font-serif); font-size: 0.82rem;
+  color: var(--text-body); line-height: 1.35;
+}
+.ewk-aw-asp-acts { display: flex; gap: 2px; flex-shrink: 0; opacity: 0; transition: opacity 0.1s; }
+.ewk-aw-asp:hover .ewk-aw-asp-acts { opacity: 1; }
+.ewk-aw-asp-btn {
+  width: 18px; height: 18px; padding: 0;
+  border-radius: 3px; border: 1px solid var(--border-hairline);
+  background: transparent; color: var(--text-faint);
+  cursor: pointer; font-size: 0.6rem;
+  display: flex; align-items: center; justify-content: center;
+}
+.ewk-aw-asp-btn:hover { border-color: var(--accent-gold); color: var(--accent-gold); }
+.ewk-aw-asp-del:hover { border-color: #c94f4f !important; color: #c94f4f !important; }
+.ewk-aw-inp {
+  flex: 1; background: var(--surface-well); border: 1px solid var(--accent-gold);
+  border-radius: 3px; color: var(--text-body); font-family: var(--font-serif);
+  font-size: 0.8rem; padding: 2px 6px; min-width: 0;
+}
+#ewk-aw-rsz {
+  position: absolute; bottom: 0; right: 0;
+  width: 14px; height: 14px;
+  cursor: se-resize;
+  background: linear-gradient(135deg, transparent 50%, var(--border-strong) 50%);
 }

@@ -1,0 +1,586 @@
+/* ════════════════════════════════════════════════════════════════════
+   시공열차 아카이브 — THEATRE STAGE  ·  stage.css
+   ────────────────────────────────────────────────────────────────────
+   Foundry VTT v14 #interface 위에 얹는 absolute 오버레이용 포터블 CSS.
+   여기 정의된 클래스 네이밍을 그대로 DOM에 이식하면 됩니다.
+
+     #sg-stage              무대 오버레이 컨테이너 (씬 캔버스 위)
+     .sg-standee            인물 스탠디
+        .speaking           발화 중 — 엠버 림라이트 + 또렷
+        .dimmed             비발화 — 어둡고 살짝 뒤로
+        .entering / .exiting  등장 / 퇴장 (CSS transition only)
+     .sg-dialogue-bar       하단 대사 바
+     .sg-narrator-bar       GM 전용 와이드 내레이션 바
+     .sg-staging-dock       하단 구석 인물 아이콘 행
+     .sg-emote-menu         스탠디 우클릭 감정 팔레트
+     #sg-stage.sg-duo       1:1 대화 모드
+
+   동기화(소켓)는 구현 측에서. 이 CSS는 "표시 상태"만 책임진다.
+   토큰은 ../../colors_and_type.css 에서 상속(없으면 아래 폴백 사용).
+   ════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* 폴백 — 디자인 시스템 토큰이 없을 때만 적용 */
+  --sg-abyss:      #0A0B14;
+  --sg-ink:        #15192B;
+  --sg-ember:      #E8923C;
+  --sg-ash:        #C46A1E;
+  --sg-afterglow:  #F5D49B;
+  --sg-starlight:  #FFF4E1;
+  --sg-dancheong:  #A03A3E;
+  --sg-parchment:  #D8C9B0;
+  --sg-inkgrey:    #888780;
+  --sg-silence:    #6B6F7A;
+  --sg-serif: "YES24 Myeongjo","Nanum Myeongjo","본명조","Noto Serif KR",serif;
+  --sg-mono:  "JetBrains Mono","YES24 Myeongjo","D2Coding",ui-monospace,monospace;
+
+  /* 무대 전용 */
+  --sg-sidebar-w: 340px;          /* 채팅 사이드바 폭 — 무대 우측 여백 */
+  --sg-standee-h: 58vh;           /* 스탠디 기본 높이 (절제 — 너무 크지 않게) */
+  --sg-hotbar-safe: 132px;        /* 하단 핫바(매크로) 점유 높이 — 대사/독이 피한다 */
+  --sg-ease: cubic-bezier(0.22, 0.61, 0.36, 1);   /* 의식적 페이싱 */
+  --sg-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --sg-t-enter: 640ms;
+  --sg-t-emph:  420ms;
+  --sg-t-fast:  200ms;
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   ① 무대 레이어
+   ════════════════════════════════════════════════════════════════════ */
+#sg-stage {
+  position: absolute;
+  inset: 0;
+  right: var(--sg-sidebar-w);     /* 채팅 사이드바를 피한다 */
+  z-index: 60;
+  overflow: hidden;
+  pointer-events: none;            /* 캔버스 조작 통과; 자식만 클릭 받음 */
+  font-family: var(--sg-serif);
+}
+#sg-stage > * { pointer-events: auto; }
+
+/* 무대 하단을 향한 미묘한 보이드 그라데이션 — 스탠디 발 가림 + 대사 가독 */
+#sg-stage::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    to top,
+    rgba(var(--tts-abyss-rgb, 10,11,20),0.92) 0%,
+    rgba(var(--tts-abyss-rgb, 10,11,20),0.55) 14%,
+    rgba(var(--tts-abyss-rgb, 10,11,20),0.00) 34%,
+    rgba(var(--tts-abyss-rgb, 10,11,20),0.00) 100%);
+}
+
+/* ── 슬롯: 좌 / 중 / 우 ── */
+.sg-slot {
+  position: absolute;
+  bottom: 0;
+  height: var(--sg-standee-h);
+  width: 36%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  transition: transform var(--sg-t-emph) var(--sg-ease),
+              filter var(--sg-t-emph) var(--sg-ease);
+}
+.sg-slot[data-slot="left"]   { left: 0%;   justify-content: flex-start; }
+.sg-slot[data-slot="center"] { left: 50%;  transform: translateX(-50%); }
+.sg-slot[data-slot="right"]  { right: 0%;  justify-content: flex-end; }
+
+/* ── 멀티-슬롯 플렉스 무대 (1~5인 자동 분배) ──────────────────────────
+   .sg-stage-floor 에 .sg-standee 를 N개 넣으면 균등 분배된다.
+   3-슬롯 absolute 방식 대신 가변 인원이 필요할 때 사용.               */
+.sg-stage-floor {
+  position: absolute;
+  left: 2%;
+  right: 2%;
+  bottom: 0;
+  height: var(--sg-standee-h);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: clamp(-4%, 0px, 2%);          /* 인원 많으면 약간 겹침 허용 */
+}
+.sg-stage-floor .sg-standee {
+  flex: 0 1 auto;
+  min-width: 0;
+  margin: 0 -1.5%;                   /* 5인 시 어깨가 살짝 겹쳐 무대감 */
+}
+.sg-stage-floor[data-count="1"] { justify-content: center; }
+.sg-stage-floor[data-count="2"] { justify-content: space-evenly; }
+.sg-stage-floor[data-count="3"],
+.sg-stage-floor[data-count="4"],
+.sg-stage-floor[data-count="5"] { justify-content: space-between; }
+/* 인원이 늘수록 스탠디를 조금씩 줄여 5인까지 한 화면에 */
+.sg-stage-floor[data-count="4"] { --sg-standee-h: 54vh; }
+.sg-stage-floor[data-count="5"] { --sg-standee-h: 50vh; }
+.sg-stage-floor[data-count="6"] { --sg-standee-h: 46vh; }
+.sg-stage-floor[data-count="7"] { --sg-standee-h: 43vh; }
+.sg-stage-floor[data-count="8"] { --sg-standee-h: 40vh; }
+/* 6인 이상은 어깨를 더 겹쳐 한 화면에 (off-screen 방지) */
+.sg-stage-floor[data-count="6"] .sg-standee { margin: 0 -4%; }
+.sg-stage-floor[data-count="7"] .sg-standee { margin: 0 -6%; }
+.sg-stage-floor[data-count="8"] .sg-standee { margin: 0 -7.5%; }
+
+/* ── 스탠디 ── */
+.sg-standee {
+  position: relative;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  /* 기본은 "무대 위·비발화" 상태로 둔다 (.dimmed 가 명시되기 전) */
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transition:
+    opacity   var(--sg-t-enter) var(--sg-ease),
+    transform var(--sg-t-enter) var(--sg-ease),
+    filter    var(--sg-t-emph)  var(--sg-ease);
+  will-change: opacity, transform, filter;
+}
+.sg-standee img,
+.sg-standee .sg-standee-img {
+  height: 100%;
+  width: auto;
+  max-width: none;
+  object-fit: contain;
+  object-position: bottom center;
+  display: block;
+  user-select: none;
+  -webkit-user-drag: none;
+  filter: drop-shadow(0 18px 30px rgba(0,0,0,0.55));
+}
+
+/* 발화 중 — 또렷 + 살짝 앞으로 + 엠버 림라이트 */
+.sg-standee.speaking {
+  z-index: 5;
+  transform: translateY(0) scale(1.03);
+  filter:
+    drop-shadow(0 0 1px rgba(var(--tts-accent-rgb, 232,146,60),0.85))
+    drop-shadow( 1px 0 0 rgba(var(--tts-accent-rgb, 232,146,60),0.5))
+    drop-shadow(-1px 0 0 rgba(var(--tts-accent-rgb, 232,146,60),0.5))
+    drop-shadow(0 -1px 0 rgba(245,212,155,0.4))
+    drop-shadow(0 0 11px rgba(var(--tts-accent-rgb, 232,146,60),0.34))
+    brightness(1.04) saturate(1.05) contrast(1.02);
+}
+
+/* 비발화 — 어둡고 살짝 뒤로 + 채도 down */
+.sg-standee.dimmed {
+  z-index: 1;
+  transform: translateY(6px) scale(0.965);
+  filter: brightness(0.42) saturate(0.62) contrast(0.96) blur(0.4px);
+}
+
+/* 등장 / 퇴장 — CSS transition 전용 (GSAP 금지) */
+.sg-standee.entering { opacity: 0; transform: translateY(46px) scale(0.97); }
+.sg-standee.exiting  { opacity: 0; transform: translateY(30px) scale(0.985); }
+
+/* 무대 위 인물에 미세한 엠버 호흡(발화자에 한해, 절제) */
+@media (prefers-reduced-motion: no-preference) {
+  .sg-standee.speaking::after {
+    content: "";
+    position: absolute;
+    left: 50%; bottom: 2%;
+    width: 42%; height: 15%;
+    transform: translateX(-50%);
+    background: radial-gradient(60% 100% at 50% 100%,
+                rgba(var(--tts-accent-rgb, 232,146,60),0.18), transparent 72%);
+    filter: blur(8px);
+    pointer-events: none;
+    animation: sg-emberpulse 2400ms var(--sg-ease) infinite;
+  }
+}
+@keyframes sg-emberpulse {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 1; }
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   ② 대사 바
+   ════════════════════════════════════════════════════════════════════ */
+.sg-dialogue-bar {
+  position: absolute;
+  left: 4.5%;
+  right: 4.5%;
+  bottom: var(--sg-hotbar-safe);   /* 하단 핫바(매크로)를 피해 그 위로 */
+  z-index: 70;
+  padding: 18px 26px 22px;
+  background:
+    linear-gradient(180deg, rgba(var(--tts-raised-rgb, 26,30,48),0.86), rgba(var(--tts-abyss-rgb, 10,11,20),0.92));
+  border: 1px solid var(--sg-hairline-2, rgba(var(--tts-paper-rgb, 216,201,176),0.18));
+  border-left: 2px solid var(--sg-ember);
+  box-shadow: 0 24px 60px -20px rgba(0,0,0,0.85);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: opacity var(--sg-t-emph) var(--sg-ease),
+              transform var(--sg-t-emph) var(--sg-ease);
+}
+.sg-dialogue-bar.hidden { opacity: 0; transform: translateY(12px); pointer-events: none; }
+
+/* 발화자 식별부 */
+.sg-dialogue-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.sg-speaker-name {
+  font-family: var(--sg-serif);
+  font-weight: 800;
+  font-size: 24px;
+  line-height: 1.1;
+  color: var(--sg-starlight);
+  letter-spacing: 0.01em;
+}
+.sg-speaker-sub {
+  font-family: var(--sg-mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--sg-ember);
+}
+.sg-dialogue-head::after {       /* 발화자명 우측으로 이어지는 가는 선 */
+  content: "";
+  flex: 1;
+  height: 1px;
+  align-self: center;
+  background: linear-gradient(90deg,
+              rgba(245,212,155,0.22), transparent 88%);
+}
+
+/* 대사 본문 — 명조 기록체 */
+.sg-dialogue-text {
+  font-family: var(--sg-serif);
+  font-size: 21px;
+  line-height: 1.66;
+  color: var(--sg-parchment);
+  text-wrap: pretty;
+  min-height: 1.66em;
+}
+
+/* [용어] 꺾쇠 자동 강조 — 구현 측에서 [..] 를 .sg-term 으로 감싼다 */
+.sg-term {
+  font-family: var(--sg-mono);
+  font-size: 0.86em;
+  color: var(--sg-afterglow);
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+.sg-term::before { content: "["; color: var(--sg-ember); margin-right: 1px; }
+.sg-term::after  { content: "]"; color: var(--sg-ember); margin-left: 1px; }
+
+/* 타이핑 인디케이터 — 본문 다 찍히기 전 표시 */
+.sg-typing {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  vertical-align: middle;
+  margin-left: 4px;
+}
+.sg-typing i {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--sg-ember);
+  opacity: 0.35;
+  animation: sg-typedot 1100ms var(--sg-ease) infinite;
+}
+.sg-typing i:nth-child(2) { animation-delay: 160ms; }
+.sg-typing i:nth-child(3) { animation-delay: 320ms; }
+@keyframes sg-typedot {
+  0%, 100% { opacity: 0.30; transform: translateY(0); }
+  40%      { opacity: 1;    transform: translateY(-3px); }
+}
+
+/* "계속 ▾" 어드밴스 힌트 (대사 다 찍힌 후) */
+.sg-advance {
+  position: absolute;
+  right: 18px;
+  bottom: 10px;
+  font-family: var(--sg-mono);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  color: var(--sg-silence);
+  opacity: 0;
+  transition: opacity var(--sg-t-fast) var(--sg-ease-out);
+}
+.sg-advance.show { opacity: 1; animation: sg-advblink 1600ms ease-in-out infinite; }
+@keyframes sg-advblink { 0%,100%{opacity:0.45;} 50%{opacity:1;} }
+
+/* ════════════════════════════════════════════════════════════════════
+   ③ 내레이션 바  (GM 전용, 와이드, 점광 인장 + 단청 포인트)
+   ════════════════════════════════════════════════════════════════════ */
+.sg-narrator-bar {
+  position: absolute;
+  left: 50%;
+  bottom: var(--sg-hotbar-safe);   /* 핫바 위로 */
+  transform: translateX(-50%);
+  z-index: 72;
+  width: min(76%, 880px);
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+  padding: 20px 30px 22px;
+  background:
+    linear-gradient(180deg, rgba(31,27,30,0.84), rgba(var(--tts-abyss-rgb, 10,11,20),0.94));
+  border: 1px solid rgba(160,58,62,0.42);          /* 단청적 테두리 */
+  box-shadow: 0 24px 60px -20px rgba(0,0,0,0.88),
+              inset 0 0 60px rgba(160,58,62,0.06);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: opacity var(--sg-t-emph) var(--sg-ease),
+              transform var(--sg-t-emph) var(--sg-ease);
+}
+.sg-narrator-bar.hidden { opacity: 0; transform: translate(-50%, 12px); pointer-events: none; }
+
+/* 점광 인장 — 붉은 씰(한 줄기 빛), 살짝 기울임. 안의 SVG만 바꾸면 후보 교체 */
+.sg-narrator-seal {
+  flex: 0 0 auto;
+  width: 46px; height: 46px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--sg-serif);
+  font-size: 24px;
+  color: var(--sg-dancheong);
+  border: 1.5px solid rgba(160,58,62,0.6);
+  border-radius: 50%;
+  transform: rotate(-8deg);
+  box-shadow: inset 0 0 14px rgba(160,58,62,0.18);
+  margin-top: 2px;
+}
+.sg-narrator-body { flex: 1; }
+.sg-narrator-label {
+  font-family: var(--sg-mono);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--sg-dancheong);
+  margin-bottom: 6px;
+}
+.sg-narrator-text {
+  font-family: var(--sg-serif);
+  font-style: italic;
+  font-size: 20px;
+  line-height: 1.62;
+  color: var(--sg-afterglow);
+  text-wrap: pretty;
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   ④ 스테이징 독  (하단 구석 인물 아이콘 행)
+   ════════════════════════════════════════════════════════════════════ */
+/* 기본 배치 = 좌측 수직 레일 (하단 핫바를 피하는 가장 안전한 위치).
+   변형: .dock-rail-right(사이드바 옆) · .dock-top(상단) · .dock-bottom(하단 중앙, 핫바 없는 씬용) */
+.sg-staging-dock {
+  position: absolute;
+  z-index: 80;
+  display: flex;
+  flex-direction: column;          /* 수직 레일 */
+  align-items: center;
+  gap: 7px;
+  padding: 9px 8px;
+  background: rgba(var(--tts-abyss-rgb, 10,11,20),0.82);
+  border: 1px solid var(--sg-hairline, rgba(var(--tts-paper-rgb, 216,201,176),0.10));
+  border-radius: 2px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  /* 좌측 상단 정렬 (하단 대사 바 + 핫바를 모두 피해 그 위에서 끝난다) */
+  left: 12px;
+  top: 10px;
+  max-height: calc(100% - var(--sg-hotbar-safe) - 168px);
+  overflow-y: auto;
+}
+.sg-staging-dock::-webkit-scrollbar { width: 0; }
+
+/* ── 배치 변형 ── */
+.sg-staging-dock.dock-rail-right {
+  left: auto; right: 12px; top: 10px; transform: none;
+  flex-direction: column;
+}
+.sg-staging-dock.dock-top {
+  left: 50%; top: 10px; bottom: auto; transform: translateX(-50%);
+  flex-direction: row; align-items: center; max-height: none;
+}
+.sg-staging-dock.dock-bottom {
+  left: 50%; bottom: 14px; top: auto; transform: translateX(-50%);
+  flex-direction: row; align-items: center; max-height: none;
+}
+
+.sg-dock-label {
+  font-family: var(--sg-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--sg-silence);
+  /* 수직 레일 기본: 아래 구분선 */
+  padding-bottom: 6px;
+  margin-bottom: 1px;
+  border-bottom: 1px solid var(--sg-hairline, rgba(var(--tts-paper-rgb, 216,201,176),0.10));
+  writing-mode: horizontal-tb;
+}
+/* 가로 배치(상단/하단)에서는 우측 구분선으로 */
+.sg-staging-dock.dock-top .sg-dock-label,
+.sg-staging-dock.dock-bottom .sg-dock-label {
+  padding: 0 8px 0 0; margin: 0 2px 0 0;
+  border-bottom: none;
+  border-right: 1px solid var(--sg-hairline, rgba(var(--tts-paper-rgb, 216,201,176),0.10));
+}
+.sg-dock-item {
+  position: relative;
+  width: 46px; height: 46px;
+  flex: 0 0 auto;
+  border-radius: 2px;
+  overflow: hidden;
+  cursor: pointer;
+  border: 1px solid var(--sg-hairline-2, rgba(var(--tts-paper-rgb, 216,201,176),0.18));
+  background: var(--sg-ink);
+  filter: grayscale(0.6) brightness(0.7);
+  transition: filter var(--sg-t-fast) var(--sg-ease-out),
+              border-color var(--sg-t-fast) var(--sg-ease-out),
+              box-shadow var(--sg-t-fast) var(--sg-ease-out),
+              transform var(--sg-t-fast) var(--sg-ease-out);
+}
+.sg-dock-item img {
+  width: 100%; height: 130%;
+  object-fit: cover;
+  object-position: top center;          /* 얼굴 위주 크롭 */
+  display: block;
+}
+.sg-dock-item:hover {
+  filter: grayscale(0.2) brightness(0.95);
+  border-color: var(--sg-hairline-2, rgba(var(--tts-paper-rgb, 216,201,176),0.3));
+  transform: translateY(-2px);
+}
+/* 무대 위 인물 — 엠버 발광 */
+.sg-dock-item.on-stage {
+  filter: grayscale(0) brightness(1.02);
+  border-color: rgba(var(--tts-accent-rgb, 232,146,60),0.7);
+  box-shadow: 0 0 0 1px rgba(var(--tts-accent-rgb, 232,146,60),0.35),
+              0 0 18px -4px rgba(var(--tts-accent-rgb, 232,146,60),0.6);
+}
+.sg-dock-item.on-stage::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 3px;
+  background: var(--sg-ember);
+  box-shadow: 0 0 10px rgba(var(--tts-accent-rgb, 232,146,60),0.8);
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   ⑤ 감정 메뉴  (스탠디 우클릭 → 감정별 초상 팔레트)
+   ════════════════════════════════════════════════════════════════════ */
+.sg-emote-menu {
+  position: absolute;
+  z-index: 90;
+  width: 232px;
+  padding: 10px;
+  background: rgba(var(--tts-abyss-rgb, 10,11,20),0.95);
+  border: 1px solid var(--sg-hairline-2, rgba(var(--tts-paper-rgb, 216,201,176),0.18));
+  border-top: 2px solid var(--sg-ember);
+  box-shadow: 0 24px 60px -20px rgba(0,0,0,0.9);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transform-origin: bottom center;
+  animation: sg-emote-in 200ms var(--sg-ease-out);
+}
+@keyframes sg-emote-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)   scale(1); }
+}
+.sg-emote-title {
+  font-family: var(--sg-mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--sg-ember);
+  margin: 2px 2px 9px;
+  display: flex; justify-content: space-between;
+}
+.sg-emote-title b { color: var(--sg-parchment); font-weight: 400; }
+.sg-emote-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+.sg-emote-item {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  border-radius: 2px;
+  overflow: hidden;
+  cursor: pointer;
+  border: 1px solid var(--sg-hairline, rgba(var(--tts-paper-rgb, 216,201,176),0.10));
+  background: var(--sg-ink);
+  filter: brightness(0.78);
+  transition: filter var(--sg-t-fast) var(--sg-ease-out),
+              border-color var(--sg-t-fast) var(--sg-ease-out);
+}
+.sg-emote-item img {
+  width: 100%; height: 150%;
+  object-fit: cover; object-position: top center;
+  display: block;
+}
+.sg-emote-item .sg-emote-name {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  padding: 3px 4px 2px;
+  font-family: var(--sg-mono);
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  text-align: center;
+  color: var(--sg-parchment);
+  background: linear-gradient(transparent, rgba(var(--tts-abyss-rgb, 10,11,20),0.92));
+}
+.sg-emote-item:hover { filter: brightness(1.05); border-color: rgba(var(--tts-accent-rgb, 232,146,60),0.6); }
+.sg-emote-item.active {
+  border-color: var(--sg-ember);
+  box-shadow: inset 0 0 0 1px rgba(var(--tts-accent-rgb, 232,146,60),0.5);
+  filter: brightness(1.05);
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   ⑥ 1:1 대화 모드  (양측 클로즈업 대치)
+   ════════════════════════════════════════════════════════════════════ */
+#sg-stage.sg-duo .sg-slot { display: none; }      /* 일반 슬롯 숨김 */
+#sg-stage.sg-duo .sg-duo-stage { display: flex; }
+
+.sg-duo-stage {
+  display: none;
+  position: absolute;
+  inset: 0;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+.sg-duo-side {
+  position: relative;
+  height: 92vh;
+  display: flex;
+  align-items: flex-end;
+  transition: filter var(--sg-t-emph) var(--sg-ease),
+              transform var(--sg-t-emph) var(--sg-ease),
+              opacity var(--sg-t-enter) var(--sg-ease);
+}
+.sg-duo-side img { height: 100%; width: auto; display: block; object-position: bottom center;
+  filter: drop-shadow(0 18px 34px rgba(0,0,0,0.6)); }
+
+/* 좌측은 좌하단, 우측은 우하단 + 좌우 반전(서로 마주봄) */
+.sg-duo-side.left  { left: -3%;  transform: translateX(0); }
+.sg-duo-side.right { right: -3%; }
+.sg-duo-side.right img { transform: scaleX(-1); }
+
+/* 발화 측 또렷, 청취 측 어둡게 + 더 뒤로 */
+.sg-duo-side.speaking { filter: brightness(1.04) saturate(1.05)
+  drop-shadow(0 0 24px rgba(var(--tts-accent-rgb, 232,146,60),0.34)); z-index: 5; }
+.sg-duo-side.dimmed   { filter: brightness(0.34) saturate(0.6) blur(0.6px);
+  transform: scale(0.97); z-index: 1; }
+.sg-duo-side.right.dimmed { transform: scale(0.97); }
+.sg-duo-side.right.dimmed img { transform: scaleX(-1) scale(1); }
+
+/* 1:1 모드 중앙 사이의 보이드 비네팅 */
+#sg-stage.sg-duo::before {
+  content: "";
+  position: absolute; inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: radial-gradient(120% 80% at 50% 60%,
+              transparent 30%, rgba(var(--tts-abyss-rgb, 10,11,20),0.72) 100%);
+}

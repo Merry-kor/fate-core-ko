@@ -1,0 +1,204 @@
+/* ── 능력/아이템 카드 스타일 ─────────────────────────────────
+   시공열차 테마(foundry.css)가 켜져 있으면 그 변수를 쓰고,
+   없으면 var(..., 폴백색)으로 비슷한 분위기를 냄 */
+
+.fuh-card {
+  border: 1px solid var(--tts-hairline, rgba(var(--tts-paper-rgb, 216,201,176),0.18));
+  border-left: 2px solid var(--tts-ember, #E8923C);
+  background: var(--tts-surface, rgba(var(--tts-surface-rgb, 18,20,31),0.7));
+  padding: 8px 10px;
+  color: var(--tts-parchment, #D8C9B0);
+}
+
+.fuh-card header {
+  display: flex; align-items: center; gap: 8px;
+  border: none; margin-bottom: 4px;
+}
+
+.fuh-card .fuh-glyph {
+  width: 28px; height: 28px; flex: 0 0 28px;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--tts-hairline, rgba(var(--tts-paper-rgb, 216,201,176),0.18));
+  color: var(--tts-ember, #E8923C);
+}
+
+.fuh-card h3 {
+  margin: 0; border: none; font-size: 1rem;
+  color: var(--tts-starlight, #FFF4E1);
+}
+
+.fuh-card .fuh-kind {
+  font-family: var(--tts-font-mono, monospace);
+  font-size: 0.65rem; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--tts-silence, #6B6F7A);
+}
+
+.fuh-card .fuh-desc { font-size: 0.85rem; line-height: 1.6; margin: 6px 0; }
+
+.fuh-card .fuh-stats {
+  display: flex; gap: 12px; flex-wrap: wrap;
+  border-top: 1px solid var(--tts-hairline, rgba(var(--tts-paper-rgb, 216,201,176),0.18));
+  padding-top: 6px; margin-top: 6px;
+}
+.fuh-card .fuh-stats span {
+  font-family: var(--tts-font-mono, monospace);
+  font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--tts-silence, #6B6F7A); display: block;
+}
+.fuh-card .fuh-stats b { font-size: 0.8rem; color: var(--tts-afterglow, #F5D49B); }
+
+/* 카드 관리 창 */
+#fuh-card-manager .fuh-row {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 4px; border-bottom: 1px solid rgba(128,128,128,0.2);
+}
+#fuh-card-manager .fuh-row .fuh-name { flex: 1; font-weight: 600; }
+#fuh-card-manager .fuh-row button { flex: 0 0 auto; width: auto; line-height: 1.4; }
+#fuh-card-manager .fuh-empty { padding: 12px 4px; opacity: 0.7; }
+#fuh-card-manager .fuh-toolbar { margin-top: 8px; }
+
+/* ── 불씨/어둠 게이지 ──────────────────────────────────── */
+.fuh-gauge {
+  display: flex; align-items: center; gap: 8px;
+  margin: 6px 0;
+}
+.fuh-gauge > span {
+  flex: 0 0 90px;
+  font-family: var(--tts-font-mono, monospace);
+  font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--tts-silence, #6B6F7A);
+}
+.fuh-gauge > b {
+  flex: 0 0 auto; font-size: 0.75rem;
+  font-family: var(--tts-font-mono, monospace);
+  color: var(--tts-afterglow, #F5D49B);
+}
+.fuh-bar {
+  flex: 1; height: 6px;
+  background: rgba(var(--tts-deep-rgb, 5,6,12),0.6);
+  border: 1px solid var(--tts-hairline, rgba(var(--tts-paper-rgb, 216,201,176),0.18));
+}
+.fuh-fill { height: 100%; transition: width 0.4s ease; }
+.fuh-fill.ember {
+  background: var(--tts-ember, #E8923C);
+  box-shadow: 0 0 8px rgba(var(--tts-accent-rgb, 232,146,60),0.5);
+}
+.fuh-fill.dark { background: var(--tts-dancheong, #A03A3E); }
+
+/* ── 카드 판정 버튼 ────────────────────────────────────── */
+.fuh-card .fuh-roll {
+  width: 100%; margin-top: 6px; padding: 4px;
+  background: transparent;
+  border: 1px solid var(--tts-hairline, rgba(var(--tts-paper-rgb, 216,201,176),0.18));
+  border-radius: 0;
+  color: var(--tts-ember, #E8923C);
+  font-family: var(--tts-font-mono, monospace);
+  font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase;
+  cursor: pointer;
+}
+.fuh-card .fuh-roll:hover {
+  border-color: var(--tts-ember, #E8923C);
+  background: rgba(var(--tts-accent-rgb, 232,146,60),0.08);
+}
+
+/* ── 인물 기록 (DOSSIER) 창 ────────────────────────────── */
+.fuh-dossier { padding: 4px 2px; color: var(--tts-parchment, #D8C9B0); }
+
+.fuh-do-hero { display: flex; gap: 14px; margin-bottom: 10px; }
+
+.fuh-do-portrait {
+  width: 110px; height: 140px; flex: 0 0 110px;
+  background-size: cover; background-position: top center;
+  background-color: rgba(var(--tts-deep-rgb, 5,6,12),0.6);
+  border: 1px solid var(--tts-hairline-2, rgba(var(--tts-paper-rgb, 216,201,176),0.18));
+  position: relative;
+}
+.fuh-do-portrait .seal {
+  position: absolute; top: 6px; right: 6px;
+  width: 22px; height: 22px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--tts-font-serif, serif);
+  font-size: 0.85rem; font-weight: 700;
+  color: rgba(160,58,62,0.8);
+  border: 1px solid rgba(160,58,62,0.5);
+  transform: rotate(10deg);
+}
+
+.fuh-do-id { flex: 1; min-width: 0; }
+.fuh-do-id .eyebrow {
+  font-family: var(--tts-font-mono, monospace);
+  font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--tts-ember, #E8923C);
+}
+.fuh-do-id .nm {
+  font-family: var(--tts-font-serif, serif);
+  font-size: 1.6rem; font-weight: 800; line-height: 1.2;
+  color: var(--tts-starlight, #FFF4E1);
+}
+.fuh-do-id .rom {
+  font-family: var(--tts-font-mono, monospace);
+  font-size: 0.65rem; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--tts-silence, #6B6F7A);
+  margin-bottom: 8px;
+}
+
+.fuh-do-res { display: flex; gap: 14px; margin-top: 10px; }
+.fuh-do-res span {
+  display: block;
+  font-family: var(--tts-font-mono, monospace);
+  font-size: 0.55rem; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--tts-silence, #6B6F7A);
+}
+.fuh-do-res b {
+  font-family: var(--tts-font-serif, serif);
+  font-size: 1.15rem;
+  color: var(--tts-parchment, #D8C9B0);
+}
+.fuh-do-res b.ember { color: var(--tts-ember, #E8923C); text-shadow: 0 0 14px rgba(var(--tts-accent-rgb, 232,146,60),0.4); }
+.fuh-do-res b.dark { color: var(--tts-dancheong, #A03A3E); }
+
+.fuh-do-label {
+  font-family: var(--tts-font-mono, monospace);
+  font-size: 0.62rem; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--tts-silence, #6B6F7A);
+  border-top: 1px solid var(--tts-hairline, rgba(var(--tts-paper-rgb, 216,201,176),0.1));
+  padding-top: 8px; margin: 10px 0 6px;
+}
+.fuh-do-label .hint { opacity: 0.6; letter-spacing: 0.08em; }
+
+.fuh-do-aspect { display: flex; gap: 10px; padding: 3px 0; align-items: baseline; }
+.fuh-do-aspect .k {
+  flex: 0 0 110px;
+  font-family: var(--tts-font-mono, monospace);
+  font-size: 0.65rem; letter-spacing: 0.1em;
+  color: var(--tts-afterglow, #F5D49B);
+}
+.fuh-do-aspect .k::before { content: "["; color: var(--tts-ember, #E8923C); }
+.fuh-do-aspect .k::after  { content: "]"; color: var(--tts-ember, #E8923C); }
+.fuh-do-aspect .v { font-family: var(--tts-font-serif, serif); font-size: 0.9rem; }
+
+.fuh-do-skill {
+  display: flex; align-items: center; gap: 8px;
+  padding: 3px 4px; cursor: pointer;
+}
+.fuh-do-skill:hover { background: rgba(var(--tts-accent-rgb, 232,146,60),0.07); }
+.fuh-do-skill .pips { display: flex; gap: 3px; flex: 0 0 auto; }
+.fuh-do-skill .pips i {
+  width: 7px; height: 7px;
+  border: 1px solid var(--tts-hairline-2, rgba(var(--tts-paper-rgb, 216,201,176),0.18));
+}
+.fuh-do-skill .pips i.on {
+  background: var(--tts-ember, #E8923C);
+  border-color: var(--tts-ember, #E8923C);
+  box-shadow: 0 0 6px rgba(var(--tts-accent-rgb, 232,146,60),0.5);
+}
+.fuh-do-skill .sn { flex: 1; font-size: 0.85rem; }
+.fuh-do-skill .sv {
+  font-family: var(--tts-font-mono, monospace);
+  color: var(--tts-afterglow, #F5D49B); font-size: 0.8rem;
+}
+
+.fuh-do-lore {
+  font-family: var(--tts-font-serif, serif);
+  font-size: 0.88rem; line-height: 1.7;
+}

@@ -1,4 +1,18 @@
 {
+  "TYPES": {
+    "Actor": {
+      "character": "캐릭터",
+      "npc": "NPC"
+    },
+    "Item": {
+      "aspect": "면모",
+      "skill": "기능",
+      "stunt": "특기",
+      "stress": "스트레스",
+      "consequence": "타격",
+      "extra": "특수항목"
+    }
+  },
   "FATE": {
     "System": "페이트 코어",
     "Sheet": {
@@ -24,7 +38,15 @@
     "Item": {
       "Aspect": {
         "Label": "면모",
-        "Invoke": "호출 횟수"
+        "Invoke": "호출 횟수",
+        "Type": {
+          "identity": "정체성",
+          "trouble": "고민",
+          "general": "일반",
+          "situation": "상황",
+          "longterm": "장기",
+          "stack": "스택"
+        }
       },
       "Skill": {
         "Label": "기능",
