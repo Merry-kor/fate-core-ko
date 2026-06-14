@@ -21,7 +21,50 @@
 @font-face { font-family: 'IBM Plex Mono'; font-weight: 700; font-style: normal;
   src: url('../design/End-War Knight Design System/assets/fonts/IBMPlexMono-Bold.ttf') format('truetype'); }
 
-/* ── Design Tokens ── */
+/* ── Design Tokens (global: 채팅·roll card 등 .fate-core-ko 밖에서도 필요) ── */
+:root {
+  --surface-app:    #14161e;
+  --surface-card:   #1f2330;
+  --surface-raised: #262b3a;
+  --surface-well:   #0f1117;
+  --surface-input:  #191c26;
+  --text-strong: #e6e9f1;
+  --text-body:   #c3cad9;
+  --text-muted:  #6f7a95;
+  --text-faint:  #525c75;
+  --border-hairline: #3c4459;
+  --border-strong:   #2f3546;
+  --accent-gold:         #c9a227;
+  --accent-gold-bright:  #f0d271;
+  --accent-gold-glow:    rgba(201, 162, 39, 0.30);
+  --accent-crimson:      #b01f33;
+  --accent-crimson-bright: #e3556a;
+  --accent-crimson-glow: rgba(176, 31, 51, 0.32);
+  --outcome-style:   #f0d271;
+  --outcome-succeed: #4fae6b;
+  --outcome-tie:     #d98a2b;
+  --outcome-fail:    #d23148;
+  --aspect-identity: #c9a227;
+  --aspect-trouble:  #b01f33;
+  --aspect-general:  #6f7a95;
+  --aspect-situation:#3f7fae;
+  --aspect-longterm: #8a5cc0;
+  --aspect-stack:    #3f9e9e;
+  --font-serif: 'Noto Serif KR', 'Nanum Myeongjo', Georgia, serif;
+  --font-sans:  'Noto Sans KR', 'Pretendard', system-ui, sans-serif;
+  --font-mono:  'IBM Plex Mono', 'D2Coding', monospace;
+  --sp-1: 0.25rem; --sp-2: 0.5rem; --sp-3: 0.75rem; --sp-4: 1rem;
+  --sp-5: 1.5rem;  --sp-6: 2rem;
+  --radius-xs: 2px; --radius-sm: 4px; --radius-md: 6px;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.4);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.45);
+  --shadow-gold: 0 0 0 1px #97761b, 0 0 18px rgba(201,162,39,0.30);
+  --shadow-crimson: 0 0 0 1px #8a162a, 0 0 18px rgba(176,31,51,0.32);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-fast: 0.12s; --dur-base: 0.2s; --dur-slow: 0.35s;
+}
+
+/* ── Design Tokens (component scope) ── */
 .fate-core-ko {
   /* Surfaces */
   --surface-app:    #14161e;
@@ -98,6 +141,24 @@
   font-family: var(--font-sans);
 }
 
+/* ── Foundry AppV2 오버라이드 ── */
+.fate-core-ko.application {
+  background: var(--surface-app);
+}
+.fate-core-ko.application .window-content {
+  padding: 0;
+  overflow: hidden;
+}
+.fate-core-ko.application .window-header {
+  background: var(--surface-well);
+  border-bottom: 1px solid var(--accent-gold);
+  color: var(--text-strong);
+}
+.fate-core-ko.application .window-title {
+  color: var(--text-strong);
+  font-family: var(--font-serif);
+}
+
 /* =====================================================
    캐릭터 시트 레이아웃
    ===================================================== */
@@ -105,7 +166,8 @@
 .fate-sheet {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
   background: var(--surface-app);
   overflow: hidden;
 }
@@ -148,6 +210,25 @@
   transition: border-color var(--dur-fast);
 }
 .fate-header__name:focus { outline: none; border-bottom-color: var(--accent-gold); }
+
+.fate-header__stage { margin-bottom: var(--sp-2); }
+.fate-stage-toggle {
+  display: inline-flex; align-items: center; gap: var(--sp-2);
+  padding: 3px 10px;
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-sans); font-size: 0.75rem;
+  cursor: pointer;
+  transition: border-color var(--dur-fast), color var(--dur-fast), background var(--dur-fast);
+}
+.fate-stage-toggle:hover { border-color: var(--accent-gold); color: var(--accent-gold); }
+.fate-stage-toggle--active {
+  border-color: var(--accent-gold);
+  color: var(--accent-gold);
+  background: rgba(201,162,39,0.12);
+}
 
 .fate-header__fatepoints { display: flex; gap: var(--sp-5); align-items: center; flex-wrap: wrap; }
 
@@ -195,7 +276,7 @@
 }
 
 .fate-sheet__left {
-  width: 272px;
+  width: 42%;
   flex-shrink: 0;
   overflow-y: auto;
   padding: var(--sp-3) var(--sp-3);
@@ -251,8 +332,9 @@
 
 .fate-aspect {
   display: flex;
-  align-items: center;
-  gap: var(--sp-2);
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 2px;
   background: var(--surface-card);
   border: 1px solid var(--border-hairline);
   border-left: 3px solid var(--aspect-identity);
@@ -278,6 +360,23 @@
 }
 .fate-aspect__value:focus { outline: none; color: var(--text-strong); }
 .fate-aspect__value::placeholder { color: var(--text-faint); font-style: italic; }
+
+.fate-aspect__row { display: flex; align-items: center; gap: var(--sp-2); width: 100%; min-width: 0; }
+.fate-aspect__actions-row { display: flex; align-items: center; justify-content: flex-end; width: 100%; }
+.fate-aspect__type {
+  flex: 0 0 auto;
+  background: transparent;
+  border: 1px solid var(--border-hairline);
+  border-radius: 3px;
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: 0.68rem;
+  padding: 0 2px;
+  height: 20px;
+  max-width: 52px;
+  cursor: pointer;
+}
+.fate-aspect__type:focus { outline: none; border-color: var(--accent-gold); }
 
 /* ── 스트레스 ── */
 .fate-stress {
@@ -449,9 +548,50 @@
   transition: border-left-color var(--dur-fast);
 }
 .fate-stunt:hover { border-left-color: var(--accent-gold); }
-.fate-stunt__header { display: flex; align-items: center; gap: var(--sp-2); margin-bottom: 2px; }
-.fate-stunt__name { flex: 1; font-weight: 600; font-size: 0.875rem; color: var(--text-strong); }
-.fate-stunt__summary { font-size: 0.8125rem; color: var(--text-muted); line-height: 1.5; }
+.fate-stunt__header {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-1);
+}
+.fate-stunt__name {
+  flex: 1;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text-strong);
+  word-break: keep-all;
+  line-height: 1.4;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  padding: 0;
+  font-family: var(--font-sans);
+}
+.fate-stunt__name:focus { outline: none; color: var(--accent-gold); }
+.fate-stunt__name::placeholder { color: var(--text-faint); font-weight: 400; }
+.fate-stunt .fate-item__actions { opacity: 0; flex-shrink: 0; }
+.fate-stunt:hover .fate-item__actions { opacity: 1; }
+.fate-stunt__summary {
+  display: block;
+  width: 100%;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  background: transparent;
+  border: none;
+  border-top: 1px solid var(--border-hairline);
+  padding: var(--sp-1) 0;
+  resize: vertical;
+  font-family: var(--font-sans);
+}
+.fate-stunt__summary:focus { outline: none; color: var(--text-strong); }
+.fate-stunt__summary::placeholder { color: var(--text-faint); font-style: italic; }
+
+.fate-skill__rank-num {
+  font-size: 0.7rem;
+  color: var(--accent-gold);
+  margin-right: 2px;
+}
 
 /* ── 특수항목 (Extras) ── */
 .fate-extra {
@@ -495,6 +635,17 @@
   line-height: 1.6;
 }
 .fate-textarea:focus { outline: none; border-color: var(--accent-gold); }
+.fate-textarea--bio { resize: vertical; min-height: 120px; }
+
+.fate-item__actions--inline {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity var(--dur-fast);
+}
+.fate-aspect:hover .fate-item__actions--inline { opacity: 1; }
 
 /* =====================================================
    아이템 시트
@@ -719,4 +870,666 @@
   background: var(--surface-card);
   border: 1px solid var(--border-hairline);
   border-radius: var(--radius-xs);
+}
+
+/* =====================================================
+   VTT Stage UI
+   ===================================================== */
+
+/* ── Hide / fade Foundry default elements ── */
+#hotbar     { display: none !important; }
+#navigation { display: none !important; }
+#players    { display: none !important; }
+#controls   { opacity: 0.18; transition: opacity 0.2s; pointer-events: none; }
+#controls:hover { opacity: 1; pointer-events: all; }
+
+/* ── Foundry sidebar ── */
+#sidebar {
+  background: var(--surface-app) !important;
+  border-left: 1px solid var(--border-strong) !important;
+  height: calc(100vh - 112px) !important;
+  top: 0 !important;
+  --color-bg: var(--surface-app);
+  --color-bg-chat: transparent;
+  --color-text-primary: var(--text-body);
+  --color-border: var(--border-strong);
+}
+/* ── Foundry sidebar native tabs — EWK restyled vertical strip ── */
+#sidebar-tabs {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  width: 60px !important;
+  min-width: 60px !important;
+  max-width: 60px !important;
+  flex: 0 0 60px !important;
+  background: var(--surface-well) !important;
+  border-right: 1px solid var(--border-strong) !important;
+  border-bottom: none !important;
+  padding: 4px 3px !important;
+  gap: 2px !important;
+  flex-shrink: 0 !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+#sidebar-tabs .item {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 54px !important;
+  min-width: 54px !important;
+  height: 42px !important;
+  padding: 3px 2px !important;
+  border: 1px solid transparent !important;
+  border-radius: var(--radius-sm) !important;
+  background: transparent !important;
+  color: var(--text-faint) !important;
+  text-shadow: none !important;
+  cursor: pointer !important;
+  transition: background 0.15s !important;
+  gap: 2px !important;
+  flex-shrink: 0 !important;
+  writing-mode: horizontal-tb !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+}
+/* Hide native icons, images, and text labels inside tabs */
+#sidebar-tabs .item i,
+#sidebar-tabs .item img,
+#sidebar-tabs .item span,
+#sidebar-tabs .item label,
+#sidebar-tabs .item .label { display: none !important; }
+/* Emoji via ::before */
+#sidebar-tabs [data-tab="chat"]::before       { content: "💬"; font-size: 14px; display: block; line-height: 1; }
+#sidebar-tabs [data-tab="combat"]::before     { content: "⚔️"; font-size: 14px; display: block; line-height: 1; }
+#sidebar-tabs [data-tab="scenes"]::before     { content: "🎭"; font-size: 14px; display: block; line-height: 1; }
+#sidebar-tabs [data-tab="actors"]::before     { content: "👤"; font-size: 14px; display: block; line-height: 1; }
+#sidebar-tabs [data-tab="items"]::before      { content: "🎒"; font-size: 14px; display: block; line-height: 1; }
+#sidebar-tabs [data-tab="journal"]::before    { content: "📖"; font-size: 14px; display: block; line-height: 1; }
+#sidebar-tabs [data-tab="tables"]::before     { content: "🎲"; font-size: 14px; display: block; line-height: 1; }
+#sidebar-tabs [data-tab="playlists"]::before  { content: "🎵"; font-size: 14px; display: block; line-height: 1; }
+#sidebar-tabs [data-tab="compendium"]::before { content: "📚"; font-size: 14px; display: block; line-height: 1; }
+#sidebar-tabs [data-tab="settings"]::before   { content: "⚙️"; font-size: 14px; display: block; line-height: 1; }
+/* Korean label via ::after */
+#sidebar-tabs .item::after {
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--text-faint);
+  line-height: 1;
+  display: block;
+  white-space: nowrap;
+  writing-mode: horizontal-tb;
+}
+#sidebar-tabs [data-tab="chat"]::after       { content: "채팅"; }
+#sidebar-tabs [data-tab="combat"]::after     { content: "전투"; }
+#sidebar-tabs [data-tab="scenes"]::after     { content: "장면"; }
+#sidebar-tabs [data-tab="actors"]::after     { content: "액터"; }
+#sidebar-tabs [data-tab="items"]::after      { content: "아이템"; }
+#sidebar-tabs [data-tab="journal"]::after    { content: "저널"; }
+#sidebar-tabs [data-tab="tables"]::after     { content: "테이블"; }
+#sidebar-tabs [data-tab="playlists"]::after  { content: "음악"; }
+#sidebar-tabs [data-tab="compendium"]::after { content: "컴펜"; }
+#sidebar-tabs [data-tab="settings"]::after   { content: "설정"; }
+#sidebar-tabs .item:hover { background: rgba(255,255,255,.06) !important; }
+#sidebar-tabs .item.active {
+  background: rgba(201,162,39,.1) !important;
+  border-color: var(--accent-gold) !important;
+  color: var(--accent-gold) !important;
+}
+#sidebar-tabs .item.active::after { color: var(--accent-gold) !important; }
+
+/* Width preset buttons — now inside #ewk-chat-hdr */
+#ewk-wpresets { display: flex; gap: 2px; }
+.ewk-wpbtn {
+  height: 20px;
+  padding: 0 4px;
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-xs);
+  color: var(--text-faint);
+  font-size: 0.58rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.ewk-wpbtn:hover { background: rgba(255,255,255,.06); color: var(--text-body); }
+.ewk-wpbtn--on { background: rgba(201,162,39,.1) !important; border-color: var(--accent-gold) !important; color: var(--accent-gold) !important; }
+
+.sidebar-tab { background: transparent !important; }
+
+/* ── EWK Chat Header ── */
+#ewk-chat-hdr {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border-strong);
+  background: var(--surface-well);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  min-height: 36px;
+}
+.ewk-chat-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+.ewk-scene-badge {
+  font-size: 0.63rem;
+  color: var(--accent-gold);
+  background: rgba(201,162,39,.1);
+  border: 1px solid rgba(201,162,39,.35);
+  border-radius: var(--radius-pill);
+  padding: 2px 7px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 130px;
+  margin-right: auto;
+}
+.ewk-hdr-acts { display: flex; gap: 3px; }
+.ewk-hdr-btn {
+  height: 24px;
+  padding: 0 7px;
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 0.63rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.ewk-hdr-btn:hover {
+  background: rgba(201,162,39,.08);
+  color: var(--accent-gold);
+  border-color: rgba(201,162,39,.4);
+}
+
+/* ── EWK Chat Emotion Tools ── */
+#ewk-chat-tools {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 5px 10px;
+  border-top: 1px solid var(--border-strong);
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  background: var(--surface-app);
+}
+.ewk-tool-btn {
+  height: 26px;
+  padding: 0 8px;
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+}
+.ewk-tool-btn:hover { background: rgba(255,255,255,.05); color: var(--text-body); }
+.ewk-tool-sep { width: 1px; height: 16px; background: var(--border-strong); flex-shrink: 0; margin: 0 2px; }
+.ewk-emo-btn {
+  height: 26px;
+  padding: 0 8px;
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.ewk-emo-btn:hover { background: rgba(255,255,255,.05); color: var(--text-body); }
+.ewk-emo-btn--on { background: rgba(201,162,39,.12) !important; border-color: var(--accent-gold) !important; color: var(--accent-gold) !important; }
+
+/* ── Print / PDF ── */
+@media print {
+  body > *:not(#sidebar) { display: none !important; }
+  #sidebar {
+    position: static !important;
+    width: 100% !important;
+    height: auto !important;
+    border: none !important;
+  }
+  #ewk-sidebar-tabs, #ewk-chat-hdr, #chat-controls, #chat-form { display: none !important; }
+  #chat { display: block !important; height: auto !important; overflow: visible !important; }
+  #chat-log { overflow: visible !important; height: auto !important; }
+  .chat-message { page-break-inside: avoid; }
+}
+
+/* Chat messages — cover all Foundry v13 selectors */
+#chat-log li,
+#chat-log .chat-message,
+#chat-log li.chat-message,
+li.chat-message {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid var(--border-strong) !important;
+  margin: 0 !important;
+  padding: 12px 16px !important;
+  box-shadow: none !important;
+}
+#chat-log li:hover,
+#chat-log .chat-message:hover {
+  background: rgba(255,255,255,0.03) !important;
+  background-color: rgba(255,255,255,0.03) !important;
+}
+/* Inner message parts */
+.chat-message .message-header,
+li.chat-message header,
+.message-header { background: transparent !important; background-color: transparent !important; border: none !important; padding: 0 !important; margin-bottom: 4px !important; }
+.chat-message article,
+.chat-message section,
+.chat-message .message-body,
+.chat-message .message-content,
+.message-content { background: transparent !important; background-color: transparent !important; }
+.message-sender { font-family: var(--font-sans) !important; font-weight: 700 !important; font-size: 0.8125rem !important; color: var(--text-muted) !important; }
+.message-timestamp { font-size: 0.6875rem !important; color: var(--text-faint) !important; }
+.message-content { font-size: 0.875rem !important; color: var(--text-body) !important; line-height: 1.6 !important; }
+/* Chat form — make input visible in EWK dark theme (no display:flex on form — that breaks layout) */
+#chat-form {
+  background: var(--surface-app) !important;
+  padding: 4px 8px 8px !important;
+  flex-shrink: 0 !important;
+}
+/* Textarea (Foundry v13 native input element) */
+#chat-form textarea,
+#chat-form #chat-message,
+#chat-form input[type="text"],
+#chat-form input[name="content"] {
+  background: var(--surface-raised) !important;
+  color: var(--text-body) !important;
+  border: 1px solid var(--border-hairline) !important;
+  border-radius: var(--radius-sm) !important;
+  font-family: var(--font-sans) !important;
+  font-size: 0.8125rem !important;
+  padding: 5px 8px !important;
+  resize: none !important;
+  box-sizing: border-box !important;
+}
+/* ProseMirror contenteditable variant */
+#chat-form [contenteditable] {
+  background: var(--surface-raised) !important;
+  color: var(--text-body) !important;
+  border: 1px solid var(--border-hairline) !important;
+  border-radius: var(--radius-sm) !important;
+  min-height: 36px !important;
+  padding: 5px 8px !important;
+  box-sizing: border-box !important;
+}
+/* Focus */
+#chat-form textarea:focus,
+#chat-form #chat-message:focus,
+#chat-form input[type="text"]:focus,
+#chat-form [contenteditable]:focus { border-color: var(--accent-gold) !important; outline: none !important; }
+/* Send button gold */
+#chat-form button[name="submit"],
+#chat-form button[type="submit"],
+#chat-form button.send,
+#chat-form a.send {
+  background: var(--accent-gold) !important;
+  color: #0a0b0f !important;
+  border-color: var(--accent-gold) !important;
+  font-weight: 700 !important;
+}
+
+/* ── Scene Rail (top canvas overlay) ── */
+#fate-scene-rail {
+  position: fixed;
+  top: 0;
+  left: 50px;
+  right: calc(var(--foundry-sidebar-width, 320px) + 4px);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: linear-gradient(180deg, rgba(10,11,15,.88) 0%, transparent 100%);
+  pointer-events: none;
+}
+/* Only label, chapter selector, and individual thumbnails capture clicks — not the thumbs container itself */
+.srl__lbl,
+.srl__chapter,
+.srl__thumb { pointer-events: all; }
+.srl__thumbs { pointer-events: none; overflow-x: auto; }
+.srl__lbl {
+  font-size: 0.6rem; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--text-muted); flex-shrink: 0;
+}
+.srl__chapter {
+  flex-shrink: 0;
+  background: rgba(10,11,15,.85);
+  border: 1px solid var(--accent-gold);
+  border-radius: var(--radius-sm);
+  color: var(--accent-gold);
+  font-family: var(--font-sans); font-size: 0.75rem; font-weight: 700;
+  padding: 3px 7px; cursor: pointer; outline: none;
+}
+.srl__chapter option { background: #14161e; }
+.srl__thumbs { display: flex; gap: 7px; overflow-x: auto; flex: 1; }
+.srl__thumbs::-webkit-scrollbar { height: 3px; }
+.srl__thumbs::-webkit-scrollbar-thumb { background: var(--accent-gold); border-radius: 2px; }
+.srl__thumb {
+  flex-shrink: 0; width: 100px; height: 60px;
+  border-radius: var(--radius-sm); overflow: hidden; cursor: pointer;
+  border: 2px solid transparent;
+  transition: border-color 0.2s, transform 0.15s;
+  position: relative;
+}
+.srl__thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.srl__thumb-ph {
+  width: 100%; height: 100%;
+  background: var(--surface-raised);
+  display: flex; align-items: center; justify-content: center;
+}
+.srl__thumb-ph span {
+  font-size: 8px; color: var(--text-muted); text-align: center;
+  padding: 2px 4px; word-break: keep-all; line-height: 1.3;
+}
+.srl__thumb::after {
+  content: attr(data-name);
+  position: absolute; bottom: 0; left: 0; right: 0;
+  padding: 2px 4px;
+  background: linear-gradient(0deg, rgba(10,11,15,.9) 0%, transparent 100%);
+  font-size: 8px; color: #fff;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.srl__thumb:hover { transform: translateY(-2px); border-color: var(--text-muted); }
+.srl__thumb--active { border-color: var(--accent-gold); }
+.srl__thumb--active::before {
+  content: "ON";
+  position: absolute; top: 3px; left: 3px; z-index: 2;
+  background: var(--accent-gold); color: #0a0b0f;
+  font-size: 8px; font-weight: 900; padding: 1px 4px; border-radius: 2px;
+}
+
+/* ── Token HUD ── */
+.fate-hud {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--surface-card);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 160px;
+  box-shadow: var(--shadow-md);
+  z-index: 1;
+}
+.fate-hud__fp { display: flex; align-items: center; gap: 6px; }
+.fate-hud__btn {
+  width: 22px; height: 22px;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--accent-gold);
+  background: transparent; color: var(--accent-gold);
+  font-size: 1rem; line-height: 1; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.fate-hud__btn:hover { background: rgba(201,162,39,0.15); }
+.fate-hud__fp-val { font-family: var(--font-serif); font-size: 1.1rem; font-weight: 900; color: var(--accent-gold); min-width: 20px; text-align: center; }
+.fate-hud__fp-label { font-size: 0.7rem; color: var(--text-muted); letter-spacing: 0.06em; }
+.fate-hud__stress { display: flex; align-items: center; gap: 4px; }
+.fate-hud__stress-name { font-size: 0.7rem; color: var(--text-muted); min-width: 40px; }
+.fate-hud__stress-pip input { display: none; }
+.fate-hud__stress-pip span { display: block; width: 14px; height: 14px; border: 2px solid var(--border-strong); border-radius: 2px; cursor: pointer; transition: background var(--dur-fast), border-color var(--dur-fast); }
+.fate-hud__stress-pip input:checked + span { background: var(--accent-crimson); border-color: var(--accent-crimson); }
+.fate-hud__stage-btn { width: 100%; padding: 4px 8px; border-radius: var(--radius-xs); border: 1px solid var(--accent-gold); background: transparent; color: var(--accent-gold); font-family: var(--font-sans); font-size: 0.72rem; letter-spacing: 0.05em; cursor: pointer; transition: background var(--dur-fast); }
+.fate-hud__stage-btn:hover { background: rgba(201,162,39,0.15); }
+.fate-hud__stage-btn--exit { border-color: var(--accent-crimson); color: var(--accent-crimson); }
+.fate-hud__stage-btn--exit:hover { background: rgba(176,31,51,0.15); }
+
+/* ── EWK HUD Bar (Stage Bar — full-width bottom) ── */
+#fate-stage-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 60;
+  pointer-events: none;
+}
+.ewk-hud__inner {
+  height: 112px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 16px;
+  overflow-x: auto;
+  background: linear-gradient(180deg, var(--surface-app) 0%, rgba(10,11,15,.97) 100%);
+  border-top: 1px solid var(--accent-gold);
+  pointer-events: all;
+}
+.ewk-hud__inner::-webkit-scrollbar { height: 3px; }
+.ewk-hud__inner::-webkit-scrollbar-thumb { background: var(--accent-gold); border-radius: 2px; }
+
+.ewk-hud__card {
+  flex-shrink: 0;
+  width: 186px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 8px;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: border-color var(--dur-base), box-shadow var(--dur-base), background var(--dur-base);
+}
+.ewk-hud__card--active {
+  border-color: var(--accent-gold);
+  background: linear-gradient(180deg, rgba(201,162,39,.1), var(--surface-raised));
+  box-shadow: var(--shadow-gold);
+}
+.ewk-hud__port {
+  width: 44px; height: 44px;
+  border-radius: var(--radius-xs);
+  border: 2px solid var(--border-strong);
+  object-fit: cover;
+  object-position: top;
+  flex-shrink: 0;
+}
+.ewk-hud__card--active .ewk-hud__port { border-color: var(--accent-gold); }
+.ewk-hud__info { flex: 1; min-width: 0; }
+.ewk-hud__nm { font-size: 0.8rem; font-weight: 700; color: var(--text-strong); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ewk-hud__div { font-size: 0.65rem; color: var(--text-faint); letter-spacing: 0.03em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 3px; }
+.ewk-hud__fp { display: flex; align-items: center; gap: 3px; margin-top: 3px; }
+.ewk-hud__fp-btn {
+  width: 16px; height: 16px;
+  border-radius: 2px;
+  border: 1px solid var(--accent-gold);
+  background: transparent; color: var(--accent-gold);
+  font-size: 0.8rem; line-height: 1; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; padding: 0;
+}
+.ewk-hud__fp-btn:hover { background: rgba(201,162,39,.2); }
+.ewk-hud__fp-n { font-family: var(--font-serif); font-weight: 900; font-size: 0.95rem; color: var(--accent-gold); line-height: 1; min-width: 14px; text-align: center; }
+.ewk-hud__fp-l { font-size: 0.65rem; color: var(--text-muted); }
+.ewk-hud__btns { display: flex; flex-direction: column; gap: 3px; flex-shrink: 0; }
+.ewk-hud__btn {
+  width: 26px; height: 26px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-hairline);
+  background: transparent; color: var(--text-muted);
+  cursor: pointer; font-size: 0.75rem;
+  display: flex; align-items: center; justify-content: center;
+  transition: background var(--dur-fast), color var(--dur-fast), border-color var(--dur-fast);
+}
+.ewk-hud__btn--spk { border-color: var(--border-hairline); color: var(--text-muted); }
+.ewk-hud__btn--spk.ewk-hud__btn--on,
+.ewk-hud__btn--spk:hover { background: var(--accent-gold); color: var(--surface-app); border-color: var(--accent-gold); }
+.ewk-hud__btn--exit:hover { background: rgba(176,31,51,.15); color: var(--accent-crimson-bright); border-color: var(--accent-crimson); }
+
+/* ── VN Speech Box (canvas overlay) ── */
+#fate-vn-box {
+  position: fixed;
+  bottom: 112px;
+  left: 0;
+  right: var(--foundry-sidebar-width, 320px);
+  z-index: 55;
+  padding: 18px 24px 22px 260px;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity var(--dur-slow) var(--ease-out), transform var(--dur-slow) var(--ease-out);
+  pointer-events: none;
+  background: linear-gradient(0deg, rgba(10,11,15,.92) 0%, rgba(10,11,15,.6) 55%, transparent 100%);
+}
+#fate-vn-box.visible { opacity: 1; transform: translateY(0); }
+#fate-vn-portrait-wrap {
+  position: absolute;
+  bottom: 0; left: 0;
+  width: 240px;
+  pointer-events: none;
+}
+#fate-vn-portrait {
+  width: 220px; height: 330px;
+  object-fit: cover;
+  object-position: top center;
+  display: block;
+  filter: drop-shadow(0 4px 28px rgba(0,0,0,.8));
+  border-radius: 0 var(--radius-md) 0 0;
+}
+#fate-vn-name {
+  font-family: var(--font-sans);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  margin-bottom: 5px;
+  color: var(--accent-gold);
+}
+#fate-vn-text {
+  font-family: var(--font-serif);
+  font-size: 1.125rem;
+  line-height: 1.55;
+  color: #f0ece0;
+  max-width: 60ch;
+}
+.fate-vn-cursor {
+  display: inline-block;
+  width: 2px; height: 0.95em;
+  background: currentColor;
+  vertical-align: middle;
+  animation: fate-blink 0.75s step-end infinite;
+  margin-left: 1px;
+}
+@keyframes fate-blink { 50% { opacity: 0; } }
+
+/* ── Scene Panel ── */
+.fate-scene-panel .window-content { padding: 0; }
+.fate-scene-panel__inner { padding: 10px 12px; }
+.fate-scene-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-hairline);
+}
+.fate-scene-panel__scene-name {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  letter-spacing: 0.04em;
+}
+.fate-scene-add {
+  font-size: 0.72rem;
+  padding: 3px 8px;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--accent-gold);
+  background: transparent;
+  color: var(--accent-gold);
+  cursor: pointer;
+}
+.fate-scene-add:hover { background: rgba(201,162,39,0.12); }
+.fate-scene-aspects { list-style: none; display: flex; flex-direction: column; gap: 4px; }
+.fate-scene-aspect {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.fate-scene-aspect__bar {
+  width: 3px;
+  height: 28px;
+  border-radius: 2px;
+  background: var(--accent-gold);
+  flex-shrink: 0;
+  opacity: 0.5;
+}
+.fate-scene-aspect__input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid transparent;
+  color: var(--text-body);
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 0.85rem;
+  padding: 2px 0;
+  min-width: 0;
+}
+.fate-scene-aspect__input:focus { outline: none; border-bottom-color: var(--accent-gold); }
+.fate-scene-aspect__btns { display: flex; gap: 3px; flex-shrink: 0; }
+.fate-scene-aspect__btns button {
+  width: 22px;
+  height: 22px;
+  border-radius: 3px;
+  border: 1px solid var(--border-hairline);
+  background: transparent;
+  color: var(--text-faint);
+  cursor: pointer;
+  font-size: 0.7rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.fate-scene-aspect__btns button:hover { border-color: var(--accent-gold); color: var(--accent-gold); }
+.fate-scene-panel__empty {
+  font-size: 0.8rem;
+  color: var(--text-faint);
+  font-style: italic;
+  text-align: center;
+  padding: 12px 0;
+  line-height: 1.6;
+}
+
+/* ── Chat Styling ── */
+.ewk-chat .message-header { display: flex; align-items: center; gap: 10px; }
+.ewk-speaker-portrait {
+  width: 44px;
+  height: 56px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  object-position: top center;
+  border: 2px solid var(--accent-gold);
+  flex-shrink: 0;
+}
+.ewk-chat--dialogue .message-content {
+  font-family: var(--font-serif);
+  font-size: 0.9rem;
+  line-height: 1.75;
+  color: var(--text-body);
+  border-left: 2px solid rgba(201,162,39,0.3);
+  padding-left: 10px;
+  margin-top: 6px;
+}
+.ewk-chat--narration .message-content {
+  font-family: var(--font-serif);
+  font-size: 0.875rem;
+  line-height: 1.8;
+  color: var(--text-muted);
+  font-style: italic;
+  text-indent: 1em;
 }
