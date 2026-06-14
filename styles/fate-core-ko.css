@@ -1412,8 +1412,9 @@
   width: 25px;
   height: 32px;
   border-radius: var(--radius-xs);
-  object-fit: cover;
-  object-position: top center;
+  object-fit: contain;
+  object-position: center top;
+  background: var(--surface-raised);
   border: 1px solid var(--accent-gold);
   flex-shrink: 0;
 }
