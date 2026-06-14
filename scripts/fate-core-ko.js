@@ -274,7 +274,7 @@ class FateCharacterSheet extends foundry.applications.api.HandlebarsApplicationM
   static async #onToggleStage(event, target) {
     const onStage = this.actor.getFlag("fate-core-ko", "onStage") ?? false;
     await this.actor.setFlag("fate-core-ko", "onStage", !onStage);
-    await FateStageBar.render();
+    FateStageBar.render();
   }
 }
 
@@ -362,7 +362,7 @@ Hooks.on("renderTokenHUD", (hud, html, _data) => {
 
   div.querySelector("[data-stage-toggle]")?.addEventListener("click", async () => {
     await actor.setFlag("fate-core-ko", "onStage", !onStage);
-    await FateStageBar.render();
+    FateStageBar.render();
     hud.render();
   });
 });
@@ -1605,67 +1605,75 @@ const FateSceneRail = {
 
 // ─── Stage Bar ─────────────────────────────────────────────────────────────
 
+// ─── Stage Bar ─────────────────────────────────────────────────────────────
+// render()는 완전 동기 — Handlebars/async 없음, 경쟁조건 불가능
 const FateStageBar = {
-  _el:  null,
-  _dbt: null,  // debounce timer
+  _el: null,
 
-  // render()는 30ms 디바운스 — updateActor 훅이 연속 발생해도 실제 렌더는 한 번만
   render() {
-    clearTimeout(this._dbt);
-    this._dbt = setTimeout(() => this._exec(), 30);
-  },
-
-  async _exec() {
+    // 엘리먼트 최초 1회 생성 + 영구 이벤트 등록
     if (!this._el) {
       this._el = document.createElement("div");
       this._el.id = "fate-stage-bar";
       this._el.className = "fate-core-ko";
       document.getElementById("interface")?.appendChild(this._el);
+      this._bindStatic();
     }
 
     const speakerId = localStorage.getItem(`ewk-speaker-${game.userId}`) ?? null;
 
-    const actors = (game.actors?.contents ?? [])
-      .filter(a => a.getFlag("fate-core-ko", "onStage"))
-      .map(a => {
-        const aspectItems = a.items.filter(i => i.type === "aspect");
-        const identity = aspectItems.find(i => i.system?.aspectType === "identity");
-        const mainAsp  = identity ?? aspectItems[0] ?? null;
-        return {
-          id:          a.id,
-          name:        a.name,
-          img:         a.img,
-          fp:          a.system?.fatepoints ?? { current: 0, refresh: 3 },
-          isSpeaker:   a.id === speakerId,
-          role:        a.getFlag("fate-core-ko", "role") || "",
-          color:       a.getFlag("fate-core-ko", "color") || "var(--accent-gold)",
-          aspectLabel: mainAsp?.system?.label ?? "",
-        };
-      });
+    const onStage = (game.actors?.contents ?? [])
+      .filter(a => a.getFlag("fate-core-ko", "onStage"));
 
-    this._el.innerHTML = await foundry.applications.handlebars.renderTemplate(
-      "systems/fate-core-ko/templates/stage/stage-bar.hbs",
-      { actors }
-    );
+    const cardsHtml = onStage.map(a => {
+      const items    = a.items?.filter(i => i.type === "aspect") ?? [];
+      const identity = items.find(i => i.system?.aspectType === "identity") ?? items[0];
+      const asp      = identity?.system?.label ?? "";
+      const fp       = a.system?.fatepoints ?? { current: 0, refresh: 3 };
+      const color    = a.getFlag("fate-core-ko", "color") || "var(--accent-gold)";
+      const role     = a.getFlag("fate-core-ko", "role")  || "";
+      const spk      = a.id === speakerId;
+      return `
+<div class="ewk-hud__card${spk ? " ewk-hud__card--active" : ""}" data-actor-id="${a.id}">
+  <div class="ewk-hud__top">
+    <div class="ewk-hud__portbox" style="border-color:${color}">
+      <img class="ewk-hud__port" src="${a.img}" alt="">
+    </div>
+    <div class="ewk-hud__info">
+      <div class="ewk-hud__nm">${a.name}</div>
+      ${role ? `<div class="ewk-hud__div">${role}</div>` : ""}
+      <div class="ewk-hud__fp">
+        <button type="button" class="ewk-hud__fp-btn" data-stage-action="fp-minus">−</button>
+        <span class="ewk-hud__fp-n">${fp.current}</span>
+        <button type="button" class="ewk-hud__fp-btn" data-stage-action="fp-plus">+</button>
+        <span class="ewk-hud__fp-l">운명점</span>
+      </div>
+    </div>
+    <div class="ewk-hud__btns">
+      <button type="button" class="ewk-hud__btn ewk-hud__btn--spk${spk ? " ewk-hud__btn--on" : ""}"
+        data-stage-action="speak" title="발언권"><i class="fa fa-comment"></i></button>
+      <button type="button" class="ewk-hud__btn ewk-hud__btn--exit"
+        data-stage-action="remove" title="무대 퇴장"><i class="fa fa-times"></i></button>
+    </div>
+  </div>
+  ${asp ? `<div class="ewk-hud__asp-row">${asp}</div>` : ""}
+</div>`;
+    }).join("");
 
-    // 발언권 상태 DOM 직접 적용 (Handlebars 이중화)
-    const curSpeaker = localStorage.getItem(`ewk-speaker-${game.userId}`);
-    this._el.querySelectorAll("[data-actor-id]").forEach(card => {
-      const on = card.dataset.actorId === curSpeaker;
-      card.classList.toggle("ewk-hud__card--active", on);
-      card.querySelector("[data-stage-action='speak']")?.classList.toggle("ewk-hud__btn--on", on);
-    });
-
-    // .ewk-hud__inner는 innerHTML 교체로 매번 새 노드 — 리스너 누적 없음
-    this._bindEvents();
+    this._el.innerHTML = `<div class="ewk-hud__inner">${
+      onStage.length
+        ? cardsHtml
+        : `<div class="ewk-hud__empty">출연진 없음 — 출연진 위젯이나 액터 패널에서 드래그</div>`
+    }</div>`;
   },
 
-  _bindEvents() {
-    const inner = this._el?.querySelector(".ewk-hud__inner");
-    const el    = this._el;
-    if (!inner || !el) return;
+  // 이벤트를 document에 캡처 단계에서 등록 — pointer-events:none 우회 완전 보장
+  _bindStatic() {
+    const el = this._el;
 
-    inner.addEventListener("click", async e => {
+    document.addEventListener("click", async e => {
+      // fate-stage-bar 내부가 아니면 무시
+      if (!el.contains(e.target)) return;
       const btn = e.target.closest("button[data-stage-action]");
       if (!btn) return;
       const action = btn.dataset.stageAction;
@@ -1678,18 +1686,10 @@ const FateStageBar = {
         localStorage.getItem(key) === id
           ? localStorage.removeItem(key)
           : localStorage.setItem(key, id);
-        // 즉시 DOM 반영 (체감 반응성)
-        const cur = localStorage.getItem(key);
-        el.querySelectorAll("[data-actor-id]").forEach(c => {
-          const on = c.dataset.actorId === cur;
-          c.classList.toggle("ewk-hud__card--active", on);
-          c.querySelector("[data-stage-action='speak']")?.classList.toggle("ewk-hud__btn--on", on);
-        });
-        this.render();
+        this.render();           // 동기 — 즉시 반영
         EWKQuickDock.render();
         return;
       }
-
       if (action === "remove") {
         const actor = game.actors.get(id);
         if (!actor) return;
@@ -1698,14 +1698,12 @@ const FateStageBar = {
           localStorage.removeItem(`ewk-speaker-${game.userId}`);
         return;
       }
-
       if (action === "fp-minus") {
         const actor = game.actors.get(id);
         if (!actor) return;
         await actor.update({ "system.fatepoints.current": Math.max(0, actor.system.fatepoints.current - 1) });
         return;
       }
-
       if (action === "fp-plus") {
         const actor = game.actors.get(id);
         if (!actor) return;
@@ -1714,11 +1712,17 @@ const FateStageBar = {
       }
     });
 
-    inner.addEventListener("dragover", e => { e.preventDefault(); el.classList.add("ewk-hud--dragover"); });
-    inner.addEventListener("dragleave", e => {
-      if (!inner.contains(e.relatedTarget)) el.classList.remove("ewk-hud--dragover");
+    document.addEventListener("dragover", e => {
+      if (!el.contains(e.target)) return;
+      e.preventDefault();
+      el.classList.add("ewk-hud--dragover");
     });
-    inner.addEventListener("drop", async e => {
+    document.addEventListener("dragleave", e => {
+      if (!el.contains(e.target)) return;
+      if (!el.contains(e.relatedTarget)) el.classList.remove("ewk-hud--dragover");
+    });
+    document.addEventListener("drop", async e => {
+      if (!el.contains(e.target)) return;
       e.preventDefault();
       el.classList.remove("ewk-hud--dragover");
       const actorId = e.dataTransfer?.getData("ewk-actor-id");
@@ -1728,12 +1732,11 @@ const FateStageBar = {
     });
   },
 
-  // 채팅 발언 시 해당 카드 펄스
   pulseSpeaker(actorId) {
     const card = this._el?.querySelector(`[data-actor-id="${actorId}"]`);
     if (!card) return;
     card.classList.remove("ewk-hud__card--pulse");
-    void card.offsetWidth;  // reflow로 애니메이션 재시작
+    void card.offsetWidth;
     card.classList.add("ewk-hud__card--pulse");
     setTimeout(() => card.classList.remove("ewk-hud__card--pulse"), 900);
   },

@@ -1286,7 +1286,7 @@
 
 .ewk-hud__card {
   flex-shrink: 0;
-  width: 248px;
+  width: 252px;
   display: flex;
   flex-direction: column;
   padding: 0;
@@ -1309,23 +1309,30 @@
   40%  { box-shadow: 0 0 0 3px var(--accent-gold),   0 0 36px rgba(201,162,39,.7); }
   100% { box-shadow: 0 0 0 1px rgba(201,162,39,.5), 0 0 18px rgba(201,162,39,.3); }
 }
-.ewk-hud__card--pulse {
-  animation: ewk-hud-pulse 0.9s ease;
-}
+.ewk-hud__card--pulse { animation: ewk-hud-pulse 0.9s ease; }
 .ewk-hud__top {
   display: flex;
   align-items: flex-start;
   gap: 10px;
   padding: 10px 10px 8px;
 }
-.ewk-hud__port {
-  width: 64px; height: 64px;
+/* 포트레잇 박스: 고정 크기, 이미지가 잘리지 않게 contain */
+.ewk-hud__portbox {
+  flex-shrink: 0;
+  width: 66px; height: 66px;
   border-radius: var(--radius-xs);
   border: 2px solid var(--border-strong);
-  object-fit: contain;
-  flex-shrink: 0;
+  overflow: hidden;
+  background: rgba(0,0,0,.35);
+  display: flex; align-items: center; justify-content: center;
 }
-.ewk-hud__card--active .ewk-hud__port { border-color: var(--accent-gold); }
+.ewk-hud__card--active .ewk-hud__portbox { border-color: var(--accent-gold); }
+.ewk-hud__port {
+  width: 100%; height: 100%;
+  object-fit: contain;   /* 가로로 긴 이미지도 잘리지 않음 */
+  object-position: center;
+  display: block;
+}
 .ewk-hud__asp-row {
   border-top: 1px solid rgba(201,162,39,.18);
   padding: 5px 10px 7px;
