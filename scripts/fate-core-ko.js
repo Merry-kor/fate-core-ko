@@ -1637,26 +1637,26 @@ const FateStageBar = {
       const role     = a.getFlag("fate-core-ko", "role")  || "";
       const spk      = a.id === speakerId;
       return `
-<div class="ewk-hud__card${spk ? " ewk-hud__card--active" : ""}" data-actor-id="${a.id}">
+<div class="ewk-hud__card${spk ? " ewk-hud__card--active" : ""}" data-actor-id="${a.id}" style="--actor-color:${color}">
   <div class="ewk-hud__top">
-    <div class="ewk-hud__portbox" style="border-color:${color}">
+    <div class="ewk-hud__portbox">
       <img class="ewk-hud__port" src="${a.img}" alt="">
     </div>
     <div class="ewk-hud__info">
       <div class="ewk-hud__nm">${a.name}</div>
       ${role ? `<div class="ewk-hud__div">${role}</div>` : ""}
       <div class="ewk-hud__fp">
-        <button type="button" class="ewk-hud__fp-btn" data-stage-action="fp-minus">−</button>
+        <button type="button" class="ewk-hud__fp-btn" data-stage-action="fp-minus" data-aid="${a.id}">−</button>
         <span class="ewk-hud__fp-n">${fp.current}</span>
-        <button type="button" class="ewk-hud__fp-btn" data-stage-action="fp-plus">+</button>
+        <button type="button" class="ewk-hud__fp-btn" data-stage-action="fp-plus" data-aid="${a.id}">+</button>
         <span class="ewk-hud__fp-l">운명점</span>
       </div>
     </div>
     <div class="ewk-hud__btns">
       <button type="button" class="ewk-hud__btn ewk-hud__btn--spk${spk ? " ewk-hud__btn--on" : ""}"
-        data-stage-action="speak" title="발언권"><i class="fa fa-comment"></i></button>
+        data-stage-action="speak" data-aid="${a.id}" title="발언권"><i class="fa fa-comment"></i></button>
       <button type="button" class="ewk-hud__btn ewk-hud__btn--exit"
-        data-stage-action="remove" title="무대 퇴장"><i class="fa fa-times"></i></button>
+        data-stage-action="remove" data-aid="${a.id}" title="무대 퇴장"><i class="fa fa-times"></i></button>
     </div>
   </div>
   ${asp ? `<div class="ewk-hud__asp-row">${asp}</div>` : ""}
@@ -1681,12 +1681,13 @@ const FateStageBar = {
       btn.addEventListener("click", e => {
         e.stopPropagation();
         e.preventDefault();
-        const id = btn.closest("[data-actor-id]")?.dataset.actorId;
-        if (!id) return;
+        const id = btn.dataset.aid;
+        console.log("[EWK-HUD] speak click | aid=", id, "| target=", e.target.tagName);
+        if (!id) { console.warn("[EWK-HUD] speak: no aid"); return; }
         const key = `ewk-speaker-${game.userId}`;
-        localStorage.getItem(key) === id
-          ? localStorage.removeItem(key)
-          : localStorage.setItem(key, id);
+        const prev = localStorage.getItem(key);
+        prev === id ? localStorage.removeItem(key) : localStorage.setItem(key, id);
+        console.log("[EWK-HUD] speak: prev=", prev, "→ now=", localStorage.getItem(key));
         bar.render();
         EWKQuickDock.render();
       });
@@ -1696,7 +1697,7 @@ const FateStageBar = {
       btn.addEventListener("click", async e => {
         e.stopPropagation();
         e.preventDefault();
-        const id = btn.closest("[data-actor-id]")?.dataset.actorId;
+        const id = btn.dataset.aid;
         if (!id) return;
         const actor = game.actors.get(id);
         if (!actor) return;
@@ -1710,7 +1711,7 @@ const FateStageBar = {
       btn.addEventListener("click", async e => {
         e.stopPropagation();
         e.preventDefault();
-        const id = btn.closest("[data-actor-id]")?.dataset.actorId;
+        const id = btn.dataset.aid;
         if (!id) return;
         const actor = game.actors.get(id);
         if (!actor) return;
@@ -1722,7 +1723,7 @@ const FateStageBar = {
       btn.addEventListener("click", async e => {
         e.stopPropagation();
         e.preventDefault();
-        const id = btn.closest("[data-actor-id]")?.dataset.actorId;
+        const id = btn.dataset.aid;
         if (!id) return;
         const actor = game.actors.get(id);
         if (!actor) return;
@@ -1757,16 +1758,11 @@ const FateStageBar = {
   pulseSpeaker(actorId) {
     const card = this._el?.querySelector(`[data-actor-id="${actorId}"]`);
     if (!card) return;
-    const actor = game.actors?.get(actorId);
-    const color = actor?.getFlag("fate-core-ko", "color") || null;
-    if (color) card.style.setProperty("--ewk-pulse-color", color);
+    // --actor-color は render() でカードに設定済みなので追加設定不要
     card.classList.remove("ewk-hud__card--pulse");
     void card.offsetWidth;
     card.classList.add("ewk-hud__card--pulse");
-    setTimeout(() => {
-      card.classList.remove("ewk-hud__card--pulse");
-      card.style.removeProperty("--ewk-pulse-color");
-    }, 900);
+    setTimeout(() => card.classList.remove("ewk-hud__card--pulse"), 900);
   },
 };
 
@@ -2332,13 +2328,11 @@ Hooks.on("renderChatMessageHTML", (message, html) => {
   if (actor) {
     el.classList.add("ewk-chat--dialogue");
     const actorColor = actor.getFlag("fate-core-ko", "color") || null;
+    if (actorColor) el.style.setProperty("--ewk-sender-color", actorColor);
     const header = el.querySelector(".message-header");
     if (header) {
       const senderEl = header.querySelector(".message-sender");
-      if (senderEl) {
-        senderEl.textContent = actor.name;
-        if (actorColor) senderEl.style.color = actorColor;
-      }
+      if (senderEl) senderEl.textContent = actor.name;
       if (!header.querySelector(".ewk-speaker-portrait")) {
         const img = document.createElement("img");
         img.className = "ewk-speaker-portrait";

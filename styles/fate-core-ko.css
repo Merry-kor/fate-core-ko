@@ -1087,7 +1087,7 @@
 #ewk-chat-log .message-content,
 #ewk-chat-log .chat-message article,
 #ewk-chat-log .chat-message section { background: transparent !important; }
-#ewk-chat-log .message-sender    { font-family: var(--font-sans) !important; font-weight: 700 !important; font-size: 0.8125rem !important; color: var(--text-muted) !important; }
+#ewk-chat-log .message-sender    { font-family: var(--font-sans) !important; font-weight: 700 !important; font-size: 0.8125rem !important; color: var(--ewk-sender-color, var(--text-muted)) !important; }
 #ewk-chat-log .message-timestamp { font-size: 0.6875rem !important; color: var(--text-faint) !important; }
 #ewk-chat-log .message-content   { font-size: 0.875rem !important; color: var(--text-body) !important; line-height: 1.6 !important; }
 
@@ -1305,16 +1305,17 @@
   cursor: default;
   transition: border-color var(--dur-base), box-shadow var(--dur-base), background var(--dur-base);
 }
+.ewk-hud__card { --actor-color: var(--accent-gold); }
 .ewk-hud__card--active {
-  border-color: var(--accent-gold);
+  border-color: var(--actor-color);
   border-width: 2px;
-  background: linear-gradient(180deg, rgba(201,162,39,.14), var(--surface-raised));
-  box-shadow: 0 0 0 1px rgba(201,162,39,.5), 0 0 18px rgba(201,162,39,.3);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--actor-color) 14%, transparent), var(--surface-raised));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--actor-color) 50%, transparent), 0 0 18px color-mix(in srgb, var(--actor-color) 30%, transparent);
 }
 @keyframes ewk-hud-pulse {
-  0%   { box-shadow: 0 0 0 1px color-mix(in srgb, var(--ewk-pulse-color, var(--accent-gold)) 50%, transparent), 0 0 18px color-mix(in srgb, var(--ewk-pulse-color, var(--accent-gold)) 30%, transparent); }
-  40%  { box-shadow: 0 0 0 3px var(--ewk-pulse-color, var(--accent-gold)), 0 0 36px color-mix(in srgb, var(--ewk-pulse-color, var(--accent-gold)) 70%, transparent); }
-  100% { box-shadow: 0 0 0 1px color-mix(in srgb, var(--ewk-pulse-color, var(--accent-gold)) 50%, transparent), 0 0 18px color-mix(in srgb, var(--ewk-pulse-color, var(--accent-gold)) 30%, transparent); }
+  0%   { box-shadow: 0 0 0 1px color-mix(in srgb, var(--actor-color) 50%, transparent), 0 0 18px color-mix(in srgb, var(--actor-color) 30%, transparent); }
+  40%  { box-shadow: 0 0 0 3px var(--actor-color), 0 0 36px color-mix(in srgb, var(--actor-color) 70%, transparent); }
+  100% { box-shadow: 0 0 0 1px color-mix(in srgb, var(--actor-color) 50%, transparent), 0 0 18px color-mix(in srgb, var(--actor-color) 30%, transparent); }
 }
 .ewk-hud__card--pulse { animation: ewk-hud-pulse 0.9s ease; }
 .ewk-hud__top {
@@ -1328,12 +1329,14 @@
   flex-shrink: 0;
   width: 66px; height: 66px;
   border-radius: var(--radius-xs);
-  border: 2px solid var(--border-strong);
+  border: 2px solid var(--actor-color);
   overflow: hidden;
   background: rgba(0,0,0,.35);
   display: flex; align-items: center; justify-content: center;
+  opacity: 0.6;
+  transition: opacity var(--dur-base);
 }
-.ewk-hud__card--active .ewk-hud__portbox { border-color: var(--accent-gold); }
+.ewk-hud__card--active .ewk-hud__portbox { opacity: 1; }
 .ewk-hud__port {
   width: 100%; height: 100%;
   object-fit: contain;   /* 가로로 긴 이미지도 잘리지 않음 */
