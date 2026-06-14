@@ -392,7 +392,9 @@ const EWKSidebar = {
   ],
   _activeTab: "chat",
   _currentEmo: "normal",
-  _currentWrap: null,    // 「」 or "" 토글 상태
+  _currentWrap: null,
+  _textStyles: { bold: false, italic: false, center: false },
+  _messageBuffer: [],   // 사이드바 생성 전 수신된 메시지 임시 보관
 
   TABS: [
     { key: "chat",       icon: "💬", label: "채팅" },
@@ -457,7 +459,9 @@ const EWKSidebar = {
     this._wireChatInput();
     this._wireChatTools();
 
-    // 기존 메시지 복사 (이미 FVTT가 렌더한 것들)
+    // renderChatMessageHTML 이 sidebar 생성 전에 발생한 메시지 처리
+    this._flushBuffer();
+    // FVTT #chat-log 에 이미 렌더된 메시지 복사 (fallback)
     this._loadExistingMessages();
 
     // FVTT 패널 가져오기 (FVTT 렌더 완료 후)
@@ -488,6 +492,10 @@ const EWKSidebar = {
       <div id="ewk-chat-tools">
         <button class="ewk-tool-btn" data-emo-wrap="「」">「 」</button>
         <button class="ewk-tool-btn" data-emo-wrap='""'>" "</button>
+        <div class="ewk-tool-sep"></div>
+        <button class="ewk-fmt-btn" data-fmt="bold"><b>굵</b></button>
+        <button class="ewk-fmt-btn" data-fmt="italic"><i>기</i></button>
+        <button class="ewk-fmt-btn" data-fmt="center">중</button>
         <div class="ewk-tool-sep"></div>
         <button class="ewk-emo-btn ewk-emo-btn--on" data-emo="normal">보통</button>
         <button class="ewk-emo-btn" data-emo="shake">진동</button>
@@ -540,37 +548,46 @@ const EWKSidebar = {
     }
   },
 
-  // 기존 메시지 복사 — FVTT가 #chat-log 를 채우기 전에 호출될 수 있어서 재시도
-  _loadExistingMessages(retries = 0) {
+  // FVTT #chat-log 에서 우리 로그로 복사 (버퍼 방식의 fallback)
+  _loadExistingMessages() {
     const ourLog  = document.getElementById("ewk-chat-log");
-    if (!ourLog) return;
-
     const fvttLog = document.getElementById("chat-log");
-    const total   = game.messages?.size ?? 0;
-
-    // FVTT 로그가 아직 비어있고 메시지가 있다면 최대 8회 재시도 (400ms 간격)
-    if (total > 0 && (!fvttLog || fvttLog.children.length === 0) && retries < 8) {
-      setTimeout(() => this._loadExistingMessages(retries + 1), 400);
-      return;
-    }
-    if (!fvttLog) return;
-
+    if (!ourLog || !fvttLog) return;
+    let added = false;
     fvttLog.querySelectorAll("li, .chat-message").forEach(child => {
       const msgId = child.dataset?.messageId;
       if (msgId && ourLog.querySelector(`[data-message-id="${msgId}"]`)) return;
       ourLog.appendChild(child.cloneNode(true));
+      added = true;
     });
-    ourLog.scrollTop = ourLog.scrollHeight;
+    if (added) ourLog.scrollTop = ourLog.scrollHeight;
   },
 
   // renderChatMessageHTML 훅에서 호출 — 새 메시지를 우리 로그에 추가
   addMessage(el) {
     const log = document.getElementById("ewk-chat-log");
-    if (!log) return;
-    // 중복 방지: 같은 data-message-id가 이미 있으면 스킵
     const msgId = el.dataset?.messageId;
+    if (!log) {
+      // 사이드바 생성 전 → 버퍼에 보관 (중복 방지)
+      if (msgId && this._messageBuffer.some(e => e.dataset?.messageId === msgId)) return;
+      this._messageBuffer.push(el.cloneNode(true));
+      return;
+    }
     if (msgId && log.querySelector(`[data-message-id="${msgId}"]`)) return;
     log.appendChild(el.cloneNode(true));
+    log.scrollTop = log.scrollHeight;
+  },
+
+  // build() 완료 후 버퍼에 쌓인 메시지를 로그에 일괄 처리
+  _flushBuffer() {
+    const log = document.getElementById("ewk-chat-log");
+    if (!log || this._messageBuffer.length === 0) return;
+    this._messageBuffer.forEach(el => {
+      const msgId = el.dataset?.messageId;
+      if (msgId && log.querySelector(`[data-message-id="${msgId}"]`)) return;
+      log.appendChild(el);
+    });
+    this._messageBuffer = [];
     log.scrollTop = log.scrollHeight;
   },
 
@@ -588,6 +605,10 @@ const EWKSidebar = {
         const close = this._currentWrap[this._currentWrap.length - 1];
         content = open + content + close;
       }
+      // 서식 적용 (중첩 가능)
+      if (this._textStyles.bold)   content = `<strong>${content}</strong>`;
+      if (this._textStyles.italic)  content = `<em>${content}</em>`;
+      if (this._textStyles.center)  content = `<div style="text-align:center">${content}</div>`;
       await ChatMessage.create({ content, speaker: ChatMessage.getSpeaker() });
     };
 
@@ -615,6 +636,15 @@ const EWKSidebar = {
           tools.querySelectorAll(".ewk-tool-btn").forEach(b => b.classList.remove("ewk-emo-btn--on"));
           btn.classList.add("ewk-emo-btn--on");
         }
+      });
+    });
+
+    // 서식 버튼: 독립 토글 (동시에 여러 개 활성 가능)
+    tools.querySelectorAll(".ewk-fmt-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const fmt = btn.dataset.fmt;
+        this._textStyles[fmt] = !this._textStyles[fmt];
+        btn.classList.toggle("ewk-emo-btn--on", this._textStyles[fmt]);
       });
     });
 
@@ -1034,6 +1064,11 @@ Hooks.once("ready", () => {
   // FVTT가 사이드바를 재렌더할 때 패널 재채택
   Hooks.on("renderSidebar", () => {
     setTimeout(() => EWKSidebar._adoptFVTTPanels(), 200);
+  });
+
+  // FVTT ChatLog 렌더 완료 시 우리 로그에 복사 (renderChatMessageHTML 이전에 호출됐을 경우 대비)
+  Hooks.on("renderChatLog", () => {
+    setTimeout(() => EWKSidebar._loadExistingMessages(), 150);
   });
 
   // 개별 메시지 삭제 시 우리 로그에서도 제거

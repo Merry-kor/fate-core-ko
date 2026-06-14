@@ -1063,6 +1063,16 @@
 }
 .ewk-emo-btn:hover { background: rgba(255,255,255,.05); color: var(--text-body); }
 .ewk-emo-btn--on { background: rgba(201,162,39,.12) !important; border-color: var(--accent-gold) !important; color: var(--accent-gold) !important; }
+.ewk-fmt-btn {
+  height: 26px; padding: 0 8px;
+  background: transparent; border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm); cursor: pointer;
+  font-size: 0.72rem; color: var(--text-muted); white-space: nowrap;
+  font-family: var(--font-sans);
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.ewk-fmt-btn:hover { background: rgba(255,255,255,.05); color: var(--text-body); }
+.ewk-fmt-btn.ewk-emo-btn--on { background: rgba(79,174,214,.12) !important; border-color: #4faedf !important; color: #4faedf !important; }
 
 /* 채팅 입력 폼 */
 #ewk-chat-form {
