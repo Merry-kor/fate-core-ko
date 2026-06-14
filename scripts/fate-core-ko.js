@@ -382,8 +382,10 @@ const FateVNBox = {
       <div id="fate-vn-portrait-wrap">
         <img id="fate-vn-portrait" src="" alt="">
       </div>
-      <div id="fate-vn-name"></div>
-      <div id="fate-vn-text"></div>`;
+      <div id="fate-vn-textbox">
+        <div id="fate-vn-name"></div>
+        <div id="fate-vn-text"></div>
+      </div>`;
     document.getElementById("interface")?.appendChild(this._el);
   },
 
