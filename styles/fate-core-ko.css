@@ -894,91 +894,88 @@
   --color-text-primary: var(--text-body);
   --color-border: var(--border-strong);
 }
-/* ── Foundry sidebar native tabs — EWK restyled vertical strip ── */
-#sidebar-tabs {
+/* ── 네이티브 sidebar-tabs 완전 숨김 — EWK 가로 탭 스트립으로 대체 ── */
+#sidebar-tabs { display: none !important; }
+
+/* sidebar-content가 전체 너비를 차지하도록 */
+#sidebar-content {
+  flex: 1 1 auto !important;
+  width: 100% !important;
   display: flex !important;
   flex-direction: column !important;
-  align-items: center !important;
-  width: 60px !important;
-  min-width: 60px !important;
-  max-width: 60px !important;
-  flex: 0 0 60px !important;
+  overflow: hidden !important;
+}
+
+/* ── EWK 가로 탭 스트립 ── */
+#ewk-sidebar-tabstrip {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: stretch !important;
   background: var(--surface-well) !important;
-  border-right: 1px solid var(--border-strong) !important;
-  border-bottom: none !important;
-  padding: 4px 3px !important;
-  gap: 2px !important;
+  border-bottom: 1px solid var(--border-strong) !important;
   flex-shrink: 0 !important;
-  overflow: hidden !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  padding: 0 2px !important;
+  gap: 1px !important;
+  height: 46px !important;
   box-sizing: border-box !important;
+  position: relative !important;
+  z-index: 10 !important;
 }
-#sidebar-tabs .item {
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-  justify-content: center !important;
-  width: 54px !important;
-  min-width: 54px !important;
-  height: 42px !important;
-  padding: 3px 2px !important;
-  border: 1px solid transparent !important;
-  border-radius: var(--radius-sm) !important;
-  background: transparent !important;
-  color: var(--text-faint) !important;
-  text-shadow: none !important;
-  cursor: pointer !important;
-  transition: background 0.15s !important;
-  gap: 2px !important;
-  flex-shrink: 0 !important;
-  writing-mode: horizontal-tb !important;
-  box-sizing: border-box !important;
-  overflow: hidden !important;
+#ewk-sidebar-tabstrip::-webkit-scrollbar { height: 2px; }
+#ewk-sidebar-tabstrip::-webkit-scrollbar-thumb { background: var(--accent-gold); }
+.ewk-stab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 4px 7px;
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  background: transparent;
+  color: var(--text-faint);
+  cursor: pointer;
+  flex-shrink: 0;
+  min-width: 34px;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
-/* Hide native icons, images, and text labels inside tabs */
-#sidebar-tabs .item i,
-#sidebar-tabs .item img,
-#sidebar-tabs .item span,
-#sidebar-tabs .item label,
-#sidebar-tabs .item .label { display: none !important; }
-/* Emoji via ::before */
-#sidebar-tabs [data-tab="chat"]::before       { content: "💬"; font-size: 14px; display: block; line-height: 1; }
-#sidebar-tabs [data-tab="combat"]::before     { content: "⚔️"; font-size: 14px; display: block; line-height: 1; }
-#sidebar-tabs [data-tab="scenes"]::before     { content: "🎭"; font-size: 14px; display: block; line-height: 1; }
-#sidebar-tabs [data-tab="actors"]::before     { content: "👤"; font-size: 14px; display: block; line-height: 1; }
-#sidebar-tabs [data-tab="items"]::before      { content: "🎒"; font-size: 14px; display: block; line-height: 1; }
-#sidebar-tabs [data-tab="journal"]::before    { content: "📖"; font-size: 14px; display: block; line-height: 1; }
-#sidebar-tabs [data-tab="tables"]::before     { content: "🎲"; font-size: 14px; display: block; line-height: 1; }
-#sidebar-tabs [data-tab="playlists"]::before  { content: "🎵"; font-size: 14px; display: block; line-height: 1; }
-#sidebar-tabs [data-tab="compendium"]::before { content: "📚"; font-size: 14px; display: block; line-height: 1; }
-#sidebar-tabs [data-tab="settings"]::before   { content: "⚙️"; font-size: 14px; display: block; line-height: 1; }
-/* Korean label via ::after */
-#sidebar-tabs .item::after {
+.ewk-stab-icon { font-size: 14px; line-height: 1; }
+.ewk-stab-label {
+  font-family: var(--font-sans);
   font-size: 7px;
   font-weight: 700;
-  letter-spacing: 0.01em;
-  color: var(--text-faint);
+  letter-spacing: 0.02em;
+  color: inherit;
   line-height: 1;
-  display: block;
   white-space: nowrap;
-  writing-mode: horizontal-tb;
 }
-#sidebar-tabs [data-tab="chat"]::after       { content: "채팅"; }
-#sidebar-tabs [data-tab="combat"]::after     { content: "전투"; }
-#sidebar-tabs [data-tab="scenes"]::after     { content: "장면"; }
-#sidebar-tabs [data-tab="actors"]::after     { content: "액터"; }
-#sidebar-tabs [data-tab="items"]::after      { content: "아이템"; }
-#sidebar-tabs [data-tab="journal"]::after    { content: "저널"; }
-#sidebar-tabs [data-tab="tables"]::after     { content: "테이블"; }
-#sidebar-tabs [data-tab="playlists"]::after  { content: "음악"; }
-#sidebar-tabs [data-tab="compendium"]::after { content: "컴펜"; }
-#sidebar-tabs [data-tab="settings"]::after   { content: "설정"; }
-#sidebar-tabs .item:hover { background: rgba(255,255,255,.06) !important; }
-#sidebar-tabs .item.active {
-  background: rgba(201,162,39,.1) !important;
-  border-color: var(--accent-gold) !important;
-  color: var(--accent-gold) !important;
+.ewk-stab:hover { background: rgba(255,255,255,0.05); color: var(--text-body); }
+.ewk-stab.active {
+  background: rgba(201,162,39,.08);
+  border-color: var(--accent-gold);
+  color: var(--accent-gold);
 }
-#sidebar-tabs .item.active::after { color: var(--accent-gold) !important; }
+
+/* ── #chat flex 레이아웃 강제 — .chat-scroll이 absolute로 헤더를 덮지 못하게 ── */
+#chat {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+/* chat-scroll 또는 directory-list: position:relative로 강제 (absolute 차단) */
+#chat > .chat-scroll,
+#chat > .directory-list {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  position: relative !important;
+  height: auto !important;
+}
 
 /* Width preset buttons — now inside #ewk-chat-hdr */
 #ewk-wpresets { display: flex; gap: 2px; }
@@ -1008,9 +1005,12 @@
   padding: 6px 10px;
   border-bottom: 1px solid var(--border-strong);
   background: var(--surface-well);
-  flex-shrink: 0;
+  flex-shrink: 0 !important;
   flex-wrap: wrap;
   min-height: 36px;
+  position: relative;
+  z-index: 5;
+  pointer-events: all;
 }
 .ewk-chat-title {
   font-size: 0.72rem;

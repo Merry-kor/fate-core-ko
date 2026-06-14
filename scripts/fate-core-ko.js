@@ -392,34 +392,70 @@ const EWKSidebar = {
   _currentWidth: "normal",
   _currentEmo: "normal",
 
+  TABS: [
+    { key: "chat",       icon: "💬", label: "채팅" },
+    { key: "combat",     icon: "⚔️", label: "전투" },
+    { key: "scenes",     icon: "🎭", label: "장면" },
+    { key: "actors",     icon: "👤", label: "액터" },
+    { key: "items",      icon: "🎒", label: "아이템" },
+    { key: "journal",    icon: "📖", label: "저널" },
+    { key: "tables",     icon: "🎲", label: "테이블" },
+    { key: "playlists",  icon: "🎵", label: "음악" },
+    { key: "compendium", icon: "📚", label: "컴펜" },
+    { key: "settings",   icon: "⚙️", label: "설정" },
+  ],
+
   init() {
     this._currentWidth = localStorage.getItem("ewk-sidebar-width") ?? "normal";
     this._applyWidth();
-    this._styleNativeTabs();
+    this._buildCustomTabs();
     this._injectChatUI();
-    // Retry if DOM not ready yet when ready hook fires
-    setTimeout(() => { if (!document.getElementById("ewk-chat-hdr")) this._injectChatUI(); }, 800);
-    setTimeout(() => { if (!document.getElementById("ewk-chat-hdr")) this._injectChatUI(); }, 2500);
+    setTimeout(() => {
+      this._buildCustomTabs();
+      if (!document.getElementById("ewk-chat-hdr")) this._injectChatUI();
+    }, 800);
+    setTimeout(() => {
+      this._buildCustomTabs();
+      if (!document.getElementById("ewk-chat-hdr")) this._injectChatUI();
+    }, 2500);
   },
 
-  _styleNativeTabs() {
-    const tabs = document.getElementById("sidebar-tabs");
-    if (!tabs) return;
-    // Force width via inline !important — overrides flex-basis from Foundry CSS
-    tabs.style.setProperty("width", "60px", "important");
-    tabs.style.setProperty("min-width", "60px", "important");
-    tabs.style.setProperty("max-width", "60px", "important");
-    tabs.style.setProperty("flex", "0 0 60px", "important");
-    tabs.style.setProperty("flex-basis", "60px", "important");
-    tabs.style.setProperty("flex-direction", "column", "important");
-    tabs.querySelectorAll(".item").forEach(item => {
-      item.style.setProperty("width", "54px", "important");
-      item.style.setProperty("min-width", "54px", "important");
-      item.style.setProperty("flex-shrink", "0", "important");
-      item.querySelectorAll("label, span, i, img").forEach(el => {
-        el.style.setProperty("display", "none", "important");
+  _buildCustomTabs() {
+    // 네이티브 #sidebar-tabs는 CSS에서 display:none — 우리가 직접 가로 탭 스트립 생성
+    document.getElementById("ewk-sidebar-tabstrip")?.remove();
+    const sidebarContent = document.getElementById("sidebar-content");
+    if (!sidebarContent) return;
+
+    const activeTab = ui.sidebar?.activeTab ?? "chat";
+    const strip = document.createElement("nav");
+    strip.id = "ewk-sidebar-tabstrip";
+
+    this.TABS.forEach(({ key, icon, label }) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "ewk-stab" + (key === activeTab ? " active" : "");
+      btn.dataset.tab = key;
+      btn.innerHTML = `<span class="ewk-stab-icon">${icon}</span><span class="ewk-stab-label">${label}</span>`;
+      btn.addEventListener("click", () => {
+        try {
+          ui.sidebar.changeTab(key, "primary");
+          strip.querySelectorAll(".ewk-stab").forEach(b =>
+            b.classList.toggle("active", b.dataset.tab === key));
+        } catch (e) {
+          console.error("EWK | 탭 전환 실패:", e);
+        }
       });
+      strip.appendChild(btn);
     });
+
+    sidebarContent.prepend(strip);
+  },
+
+  _syncTabActive(key) {
+    const strip = document.getElementById("ewk-sidebar-tabstrip");
+    if (!strip) return;
+    strip.querySelectorAll(".ewk-stab").forEach(b =>
+      b.classList.toggle("active", b.dataset.tab === key));
   },
 
   _findChatPanel() {
@@ -919,6 +955,18 @@ Hooks.once("ready", () => {
   EWKSidebar.init();
   FateStageBar.render();
   FateSceneRail.render();
+
+  // 탭 스트립 재적용 (사이드바 렌더 + 탭 전환 시)
+  Hooks.on("renderSidebar", () => {
+    EWKSidebar._buildCustomTabs();
+    if (!document.getElementById("ewk-chat-hdr")) EWKSidebar._injectChatUI();
+  });
+  Hooks.on("renderChatLog", () => {
+    if (!document.getElementById("ewk-chat-hdr")) EWKSidebar._injectChatUI();
+  });
+  Hooks.on("changeSidebarTab", (sidebar) => {
+    EWKSidebar._syncTabActive(sidebar.activeTab ?? sidebar.tabName ?? "chat");
+  });
 
   Hooks.on("updateActor", () => FateStageBar.render());
   Hooks.on("deleteActor", () => FateStageBar.render());
