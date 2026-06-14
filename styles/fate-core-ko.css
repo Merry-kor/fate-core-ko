@@ -1409,12 +1409,12 @@
 /* ── Chat Styling ── */
 .ewk-chat .message-header { display: flex; align-items: center; gap: 10px; }
 .ewk-speaker-portrait {
-  width: 44px;
-  height: 56px;
-  border-radius: var(--radius-sm);
+  width: 25px;
+  height: 32px;
+  border-radius: var(--radius-xs);
   object-fit: cover;
   object-position: top center;
-  border: 2px solid var(--accent-gold);
+  border: 1px solid var(--accent-gold);
   flex-shrink: 0;
 }
 .ewk-chat--dialogue .message-content {
