@@ -1607,147 +1607,103 @@ const FateSceneRail = {
 // ─── Stage Bar ─────────────────────────────────────────────────────────────
 
 // ─── Stage Bar ─────────────────────────────────────────────────────────────
-// render()는 완전 동기 — Handlebars/async 없음, 경쟁조건 불가능
+// ─── Stage Bar (VN Style) ─────────────────────────────────────────────────
+// 완전 재설계: VN식 중앙 배치, onclick 핸들러(addEventListener 대신)
 const FateStageBar = {
   _el: null,
 
   render() {
     if (!this._el) {
       this._el = document.createElement("div");
-      this._el.id = "fate-stage-bar";
+      this._el.id = "ewk-stage-bar";
       this._el.className = "fate-core-ko";
       document.getElementById("interface")?.appendChild(this._el);
-      this._bindDrag();
+      this._bindDrop();
     } else if (!this._el.isConnected) {
-      // FVTT가 #interface를 재생성했을 경우 재삽입
       document.getElementById("interface")?.appendChild(this._el);
     }
 
     const speakerId = localStorage.getItem(`ewk-speaker-${game.userId}`) ?? null;
-
-    const onStage = (game.actors?.contents ?? [])
+    const onStage   = (game.actors?.contents ?? [])
       .filter(a => a.getFlag("fate-core-ko", "onStage"));
+
+    if (!onStage.length) {
+      this._el.innerHTML = `<div class="ewk-sc__empty">출연진 없음 — 드래그하여 무대 등장</div>`;
+      return;
+    }
 
     const cardsHtml = onStage.map(a => {
       const items    = a.items?.filter(i => i.type === "aspect") ?? [];
       const identity = items.find(i => i.system?.aspectType === "identity") ?? items[0];
       const asp      = identity?.system?.label ?? "";
       const fp       = a.system?.fatepoints ?? { current: 0, refresh: 3 };
-      const color    = a.getFlag("fate-core-ko", "color") || "var(--accent-gold)";
-      const role     = a.getFlag("fate-core-ko", "role")  || "";
+      const color    = a.getFlag("fate-core-ko", "color") || "#c9a227";
       const spk      = a.id === speakerId;
-      return `
-<div class="ewk-hud__card${spk ? " ewk-hud__card--active" : ""}" data-actor-id="${a.id}" style="--actor-color:${color}">
-  <div class="ewk-hud__top">
-    <div class="ewk-hud__portbox">
-      <img class="ewk-hud__port" src="${a.img}" alt="">
-    </div>
-    <div class="ewk-hud__info">
-      <div class="ewk-hud__nm">${a.name}</div>
-      ${role ? `<div class="ewk-hud__div">${role}</div>` : ""}
-      <div class="ewk-hud__fp">
-        <button type="button" class="ewk-hud__fp-btn" data-stage-action="fp-minus" data-aid="${a.id}">−</button>
-        <span class="ewk-hud__fp-n">${fp.current}</span>
-        <button type="button" class="ewk-hud__fp-btn" data-stage-action="fp-plus" data-aid="${a.id}">+</button>
-        <span class="ewk-hud__fp-l">운명점</span>
-      </div>
-    </div>
-    <div class="ewk-hud__btns">
-      <button type="button" class="ewk-hud__btn ewk-hud__btn--spk${spk ? " ewk-hud__btn--on" : ""}"
-        data-stage-action="speak" data-aid="${a.id}" title="발언권"><i class="fa fa-comment"></i></button>
-      <button type="button" class="ewk-hud__btn ewk-hud__btn--exit"
-        data-stage-action="remove" data-aid="${a.id}" title="무대 퇴장"><i class="fa fa-times"></i></button>
-    </div>
+      return `<div class="ewk-sc__card${spk ? " ewk-sc__card--spk" : ""}" data-actor-id="${a.id}" style="--ac:${color}">
+  <div class="ewk-sc__port-wrap">
+    <img class="ewk-sc__port" src="${a.img}" alt="${a.name}">
   </div>
-  ${asp ? `<div class="ewk-hud__asp-row">${asp}</div>` : ""}
+  <div class="ewk-sc__footer">
+    <div class="ewk-sc__name">${a.name}</div>
+    <div class="ewk-sc__ctrls">
+      <button class="ewk-sc__fp-btn" data-act="fp-" data-aid="${a.id}">−</button>
+      <span class="ewk-sc__fp">${fp.current}<span class="ewk-sc__fp-r">/${fp.refresh}</span></span>
+      <button class="ewk-sc__fp-btn" data-act="fp+" data-aid="${a.id}">+</button>
+      <button class="ewk-sc__ibtn ewk-sc__ibtn--spk${spk ? " on" : ""}" data-act="spk" data-aid="${a.id}" title="발언권"><i class="fa fa-comment"></i></button>
+      <button class="ewk-sc__ibtn ewk-sc__ibtn--exit" data-act="exit" data-aid="${a.id}" title="퇴장"><i class="fa fa-times"></i></button>
+    </div>
+    ${asp ? `<div class="ewk-sc__asp">${asp}</div>` : ""}
+  </div>
 </div>`;
     }).join("");
 
-    this._el.innerHTML = `<div class="ewk-hud__inner">${
-      onStage.length
-        ? cardsHtml
-        : `<div class="ewk-hud__empty">출연진 없음 — 출연진 위젯이나 액터 패널에서 드래그</div>`
-    }</div>`;
+    this._el.innerHTML = `<div class="ewk-sc__wrap">${cardsHtml}</div>`;
 
-    // innerHTML 교체 후 버튼에 직접 바인딩 (이벤트 위임 방식은 FVTT가 가로채므로 제거)
-    this._bindButtons();
-  },
-
-  _bindButtons() {
-    if (!this._el) return;
-    const bar = this;
-
-    this._el.querySelectorAll("[data-stage-action='speak']").forEach(btn => {
-      btn.addEventListener("click", e => {
+    // onclick 속성 방식 — addEventListener 누적 없음, FVTT 간섭 없음
+    this._el.querySelectorAll("[data-act]").forEach(btn => {
+      btn.onclick = e => {
         e.stopPropagation();
         e.preventDefault();
-        const id = btn.dataset.aid;
-        console.log("[EWK-HUD] speak click | aid=", id, "| target=", e.target.tagName);
-        if (!id) { console.warn("[EWK-HUD] speak: no aid"); return; }
-        const key = `ewk-speaker-${game.userId}`;
-        const prev = localStorage.getItem(key);
-        prev === id ? localStorage.removeItem(key) : localStorage.setItem(key, id);
-        console.log("[EWK-HUD] speak: prev=", prev, "→ now=", localStorage.getItem(key));
-        bar.render();
-        EWKQuickDock.render();
-      });
-    });
-
-    this._el.querySelectorAll("[data-stage-action='remove']").forEach(btn => {
-      btn.addEventListener("click", async e => {
-        e.stopPropagation();
-        e.preventDefault();
-        const id = btn.dataset.aid;
-        if (!id) return;
-        const actor = game.actors.get(id);
-        if (!actor) return;
-        await actor.unsetFlag("fate-core-ko", "onStage");
-        if (localStorage.getItem(`ewk-speaker-${game.userId}`) === id)
-          localStorage.removeItem(`ewk-speaker-${game.userId}`);
-      });
-    });
-
-    this._el.querySelectorAll("[data-stage-action='fp-minus']").forEach(btn => {
-      btn.addEventListener("click", async e => {
-        e.stopPropagation();
-        e.preventDefault();
-        const id = btn.dataset.aid;
-        if (!id) return;
-        const actor = game.actors.get(id);
-        if (!actor) return;
-        await actor.update({ "system.fatepoints.current": Math.max(0, actor.system.fatepoints.current - 1) });
-      });
-    });
-
-    this._el.querySelectorAll("[data-stage-action='fp-plus']").forEach(btn => {
-      btn.addEventListener("click", async e => {
-        e.stopPropagation();
-        e.preventDefault();
-        const id = btn.dataset.aid;
-        if (!id) return;
-        const actor = game.actors.get(id);
-        if (!actor) return;
-        await actor.update({ "system.fatepoints.current": actor.system.fatepoints.current + 1 });
-      });
+        const id  = btn.dataset.aid;
+        const act = btn.dataset.act;
+        if (!id || !act) return;
+        const actor = game.actors?.get(id);
+        if (act === "spk") {
+          const key = `ewk-speaker-${game.userId}`;
+          localStorage.getItem(key) === id
+            ? localStorage.removeItem(key)
+            : localStorage.setItem(key, id);
+          this.render();
+          EWKQuickDock.render();
+        } else if (act === "exit" && actor) {
+          actor.unsetFlag("fate-core-ko", "onStage").then(() => {
+            if (localStorage.getItem(`ewk-speaker-${game.userId}`) === id)
+              localStorage.removeItem(`ewk-speaker-${game.userId}`);
+          });
+        } else if (act === "fp-" && actor) {
+          actor.update({ "system.fatepoints.current": Math.max(0, actor.system.fatepoints.current - 1) });
+        } else if (act === "fp+" && actor) {
+          actor.update({ "system.fatepoints.current": actor.system.fatepoints.current + 1 });
+        }
+      };
     });
   },
 
-  // 드래그 이벤트는 document 레벨에 한 번만 등록
-  _bindDrag() {
+  _bindDrop() {
     const el = this._el;
     document.addEventListener("dragover", e => {
       if (!el.contains(e.target)) return;
       e.preventDefault();
-      el.classList.add("ewk-hud--dragover");
+      el.classList.add("ewk-sc--dragover");
     });
     document.addEventListener("dragleave", e => {
       if (!el.contains(e.target)) return;
-      if (!el.contains(e.relatedTarget)) el.classList.remove("ewk-hud--dragover");
+      if (!el.contains(e.relatedTarget)) el.classList.remove("ewk-sc--dragover");
     });
     document.addEventListener("drop", async e => {
       if (!el.contains(e.target)) return;
       e.preventDefault();
-      el.classList.remove("ewk-hud--dragover");
+      el.classList.remove("ewk-sc--dragover");
       const actorId = e.dataTransfer?.getData("ewk-actor-id");
       if (!actorId) return;
       const actor = game.actors?.get(actorId);
@@ -1758,11 +1714,10 @@ const FateStageBar = {
   pulseSpeaker(actorId) {
     const card = this._el?.querySelector(`[data-actor-id="${actorId}"]`);
     if (!card) return;
-    // --actor-color は render() でカードに設定済みなので追加設定不要
-    card.classList.remove("ewk-hud__card--pulse");
+    card.classList.remove("ewk-sc__card--pulse");
     void card.offsetWidth;
-    card.classList.add("ewk-hud__card--pulse");
-    setTimeout(() => card.classList.remove("ewk-hud__card--pulse"), 900);
+    card.classList.add("ewk-sc__card--pulse");
+    setTimeout(() => card.classList.remove("ewk-sc__card--pulse"), 900);
   },
 };
 
