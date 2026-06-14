@@ -1606,7 +1606,8 @@ const FateSceneRail = {
 // ─── Stage Bar ─────────────────────────────────────────────────────────────
 
 const FateStageBar = {
-  _el: null,
+  _el:    null,
+  _bound: false,  // 이벤트는 최초 한 번만 등록
 
   async render() {
     if (!this._el) {
@@ -1614,62 +1615,85 @@ const FateStageBar = {
       this._el.id = "fate-stage-bar";
       this._el.className = "fate-core-ko";
       document.getElementById("interface")?.appendChild(this._el);
+      // 이벤트는 엘리먼트 생성 직후 한 번만 위임
+      this._bindEvents();
     }
 
     const mySpeakerId = localStorage.getItem(`ewk-speaker-${game.userId}`) ?? null;
 
     const actors = (game.actors?.contents ?? [])
       .filter(a => a.getFlag("fate-core-ko", "onStage"))
-      .map(a => ({
-        id: a.id,
-        name: a.name,
-        img: a.img,
-        fp: a.system?.fatepoints ?? { current: 0, refresh: 3 },
-        isSpeaker: a.id === mySpeakerId,
-        role: a.getFlag("fate-core-ko", "role") || "",
-        color: a.getFlag("fate-core-ko", "color") || "var(--accent-gold)",
-        aspects: a.items.filter(i => i.type === "aspect").slice(0, 2),
-      }));
+      .map(a => {
+        const aspectItems = a.items.filter(i => i.type === "aspect");
+        const identity = aspectItems.find(i => i.system?.aspectType === "identity");
+        const mainAsp  = identity ?? aspectItems[0] ?? null;
+        return {
+          id:          a.id,
+          name:        a.name,
+          img:         a.img,
+          fp:          a.system?.fatepoints ?? { current: 0, refresh: 3 },
+          isSpeaker:   a.id === mySpeakerId,
+          role:        a.getFlag("fate-core-ko", "role") || "",
+          color:       a.getFlag("fate-core-ko", "color") || "var(--accent-gold)",
+          aspectLabel: mainAsp?.system?.label ?? "",
+        };
+      });
 
     this._el.innerHTML = await foundry.applications.handlebars.renderTemplate(
       "systems/fate-core-ko/templates/stage/stage-bar.hbs",
       { actors }
     );
-    this._bindEvents();
+    // 이벤트는 위임으로 처리되므로 innerHTML 교체 후 재등록 불필요
   },
 
+  // 이벤트 위임 — _el 자체에 한 번만 연결, innerHTML 교체에 영향받지 않음
   _bindEvents() {
     const el = this._el;
     if (!el) return;
 
-    el.querySelectorAll("[data-stage-action='remove']").forEach(btn => {
-      btn.addEventListener("click", async e => {
-        const id = e.currentTarget.closest("[data-actor-id]")?.dataset.actorId;
+    el.addEventListener("click", async e => {
+      const card = e.target.closest("[data-actor-id]");
+      if (!card) return;
+      const id = card.dataset.actorId;
+
+      if (e.target.closest("[data-stage-action='speak']")) {
+        const key = `ewk-speaker-${game.userId}`;
+        localStorage.getItem(key) === id
+          ? localStorage.removeItem(key)
+          : localStorage.setItem(key, id);
+        this.render();
+        EWKQuickDock.render();
+        return;
+      }
+
+      if (e.target.closest("[data-stage-action='remove']")) {
         const actor = game.actors.get(id);
         if (!actor) return;
         await actor.unsetFlag("fate-core-ko", "onStage");
-        // 내 발언 액터였으면 해제
         if (localStorage.getItem(`ewk-speaker-${game.userId}`) === id)
           localStorage.removeItem(`ewk-speaker-${game.userId}`);
         this.render();
-      });
-    });
+        return;
+      }
 
-    // 발언 버튼: 클라이언트 로컬 선택 (토글)
-    el.querySelectorAll("[data-stage-action='speak']").forEach(btn => {
-      btn.addEventListener("click", e => {
-        const id = e.currentTarget.closest("[data-actor-id]")?.dataset.actorId;
-        const key = `ewk-speaker-${game.userId}`;
-        if (localStorage.getItem(key) === id) {
-          localStorage.removeItem(key); // 이미 선택된 경우 해제
-        } else {
-          localStorage.setItem(key, id);
-        }
+      if (e.target.closest("[data-stage-action='fp-minus']")) {
+        const actor = game.actors.get(id);
+        if (!actor) return;
+        await actor.update({ "system.fatepoints.current": Math.max(0, actor.system.fatepoints.current - 1) });
         this.render();
-      });
+        return;
+      }
+
+      if (e.target.closest("[data-stage-action='fp-plus']")) {
+        const actor = game.actors.get(id);
+        if (!actor) return;
+        await actor.update({ "system.fatepoints.current": actor.system.fatepoints.current + 1 });
+        this.render();
+        return;
+      }
     });
 
-    // 스테이지 바 드롭 영역 (액터 패널에서 드래그 → 무대 등장)
+    // 드롭 영역 — 이것도 한 번만 등록
     el.addEventListener("dragover", e => { e.preventDefault(); el.classList.add("ewk-hud--dragover"); });
     el.addEventListener("dragleave", () => el.classList.remove("ewk-hud--dragover"));
     el.addEventListener("drop", async e => {
@@ -1679,28 +1703,6 @@ const FateStageBar = {
       if (!actorId) return;
       const actor = game.actors?.get(actorId);
       if (actor) await actor.setFlag("fate-core-ko", "onStage", true);
-    });
-
-    el.querySelectorAll("[data-stage-action='fp-minus']").forEach(btn => {
-      btn.addEventListener("click", async e => {
-        const id = e.currentTarget.closest("[data-actor-id]")?.dataset.actorId;
-        const actor = game.actors.get(id);
-        if (!actor) return;
-        const cur = actor.system.fatepoints.current;
-        await actor.update({ "system.fatepoints.current": Math.max(0, cur - 1) });
-        this.render();
-      });
-    });
-
-    el.querySelectorAll("[data-stage-action='fp-plus']").forEach(btn => {
-      btn.addEventListener("click", async e => {
-        const id = e.currentTarget.closest("[data-actor-id]")?.dataset.actorId;
-        const actor = game.actors.get(id);
-        if (!actor) return;
-        const cur = actor.system.fatepoints.current;
-        await actor.update({ "system.fatepoints.current": cur + 1 });
-        this.render();
-      });
     });
   },
 };
