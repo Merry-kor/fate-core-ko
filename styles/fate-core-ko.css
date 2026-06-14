@@ -378,6 +378,30 @@
 }
 .fate-aspect__type:focus { outline: none; border-color: var(--accent-gold); }
 
+/* 면모 유형 사이클 버튼 (선택 토글) */
+.fate-aspect__type-pill {
+  flex: 0 0 auto;
+  border: 1px solid;
+  border-radius: 3px;
+  font-family: var(--font-sans);
+  font-size: 0.63rem;
+  font-weight: 600;
+  padding: 1px 5px;
+  height: 20px;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  transition: opacity 0.1s;
+  white-space: nowrap;
+  background: transparent;
+}
+.fate-aspect__type-pill:hover { opacity: 0.75; }
+.fate-aspect__type-pill--identity  { background: rgba(79,107,201,0.12);  border-color: #4f6bc9; color: #4f6bc9; }
+.fate-aspect__type-pill--trouble   { background: rgba(201,79,79,0.12);   border-color: #c94f4f; color: #c94f4f; }
+.fate-aspect__type-pill--general   { background: rgba(201,162,39,0.12);  border-color: #c9a227; color: #c9a227; }
+.fate-aspect__type-pill--situation { background: rgba(79,174,107,0.12);  border-color: #4fae6b; color: #4fae6b; }
+.fate-aspect__type-pill--longterm  { background: rgba(174,107,79,0.12);  border-color: #ae6b4f; color: #ae6b4f; }
+.fate-aspect__type-pill--stack     { background: rgba(107,79,174,0.12);  border-color: #6b4fae; color: #6b4fae; }
+
 /* ── 스트레스 ── */
 .fate-stress {
   background: var(--surface-card);
@@ -523,16 +547,15 @@
 
 .fate-skill__rank {
   min-width: 56px;
-  font-family: var(--font-mono);
-  font-size: 0.6875rem;
-  font-weight: 700;
-  color: var(--accent-gold);
-  text-align: center;
-  padding: 2px var(--sp-2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  padding: 3px var(--sp-2);
   background: rgba(201, 162, 39, 0.1);
   border: 1px solid rgba(201, 162, 39, 0.2);
   border-radius: var(--radius-xs);
-  letter-spacing: 0.04em;
 }
 .fate-skill__name { flex: 1; font-size: 0.875rem; color: var(--text-body); }
 
@@ -588,9 +611,19 @@
 .fate-stunt__summary::placeholder { color: var(--text-faint); font-style: italic; }
 
 .fate-skill__rank-num {
-  font-size: 0.7rem;
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  font-weight: 700;
   color: var(--accent-gold);
-  margin-right: 2px;
+  line-height: 1;
+}
+.fate-skill__rank-label {
+  font-family: var(--font-sans);
+  font-size: 0.55rem;
+  color: var(--accent-gold);
+  opacity: 0.75;
+  letter-spacing: 0.02em;
+  line-height: 1;
 }
 
 /* ── 특수항목 (Extras) ── */
@@ -1430,8 +1463,7 @@
    ═══════════════════════════════════════════════════════ */
 
 .ewk-custom-panel {
-  display: flex;
-  flex-direction: column;
+  /* display 없음 — .ewk-panel { display:none } / .ewk-panel.active { display:flex } 에 위임 */
   overflow: hidden;
   background: var(--surface-app);
 }

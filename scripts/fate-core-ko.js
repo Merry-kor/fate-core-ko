@@ -58,6 +58,10 @@ class FateCharacterSheet extends foundry.applications.api.HandlebarsApplicationM
     sheet: { template: "systems/fate-core-ko/templates/actor/character-sheet.hbs" },
   };
 
+  get title() {
+    return this.actor?.name ?? "캐릭터 시트";
+  }
+
   // ── 렌더 후 이벤트 바인딩 ──────────────────────────────────────────────
 
   _onRender(context, options) {
@@ -108,6 +112,21 @@ class FateCharacterSheet extends foundry.applications.api.HandlebarsApplicationM
         });
       });
 
+      // 면모 유형 사이클 버튼
+      const ASPECT_TYPES = ["identity", "trouble", "general", "situation", "longterm", "stack"];
+      el.querySelectorAll("[data-item-cycle]").forEach(btn => {
+        btn.addEventListener("click", async e => {
+          e.stopPropagation();
+          const item = this.actor.items.get(itemId);
+          if (!item) return;
+          const field = btn.dataset.itemCycle;
+          const current = item.system.aspectType ?? "general";
+          const idx = ASPECT_TYPES.indexOf(current);
+          const next = ASPECT_TYPES[(idx + 1) % ASPECT_TYPES.length];
+          await item.update({ [field]: next });
+        });
+      });
+
       // 스트레스 체크박스 즉시 저장
       el.querySelectorAll("[data-stress-index]").forEach(cb => {
         cb.addEventListener("change", async e => {
@@ -136,11 +155,15 @@ class FateCharacterSheet extends foundry.applications.api.HandlebarsApplicationM
       ladder[k] = game.i18n.localize(v);
     }
 
-    // 면모 타입 목록
-    const aspectTypes = ["identity", "trouble", "general", "situation", "longterm", "stack"].map(t => ({
+    // 면모 타입 목록 및 레이블 맵
+    const ASPECT_TYPE_KEYS = ["identity", "trouble", "general", "situation", "longterm", "stack"];
+    const aspectTypes = ASPECT_TYPE_KEYS.map(t => ({
       value: t,
       label: game.i18n.localize(`FATE.Item.Aspect.Type.${t}`),
     }));
+    const aspectTypeMap = Object.fromEntries(
+      ASPECT_TYPE_KEYS.map(t => [t, game.i18n.localize(`FATE.Item.Aspect.Type.${t}`)])
+    );
 
     return {
       ...context,
@@ -155,6 +178,7 @@ class FateCharacterSheet extends foundry.applications.api.HandlebarsApplicationM
       extras:       items.filter(i => i.type === "extra"),
       ladder,
       aspectTypes,
+      aspectTypeMap,
     };
   }
 
