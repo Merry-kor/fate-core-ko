@@ -1606,10 +1606,12 @@ const FateSceneRail = {
 // ─── Stage Bar ─────────────────────────────────────────────────────────────
 
 const FateStageBar = {
-  _el: null,
-  _ac: null,  // AbortController — 매 렌더마다 이전 리스너 제거 후 재등록
+  _el:  null,
+  _gen: 0,  // 렌더 세대 카운터 — 오래된 비동기 렌더가 최신 결과를 덮어쓰는 것을 방지
 
   async render() {
+    const myGen = ++this._gen;
+
     if (!this._el) {
       this._el = document.createElement("div");
       this._el.id = "fate-stage-bar";
@@ -1617,7 +1619,7 @@ const FateStageBar = {
       document.getElementById("interface")?.appendChild(this._el);
     }
 
-    const mySpeakerId = localStorage.getItem(`ewk-speaker-${game.userId}`) ?? null;
+    const speakerId = localStorage.getItem(`ewk-speaker-${game.userId}`) ?? null;
 
     const actors = (game.actors?.contents ?? [])
       .filter(a => a.getFlag("fate-core-ko", "onStage"))
@@ -1630,39 +1632,40 @@ const FateStageBar = {
           name:        a.name,
           img:         a.img,
           fp:          a.system?.fatepoints ?? { current: 0, refresh: 3 },
-          isSpeaker:   a.id === mySpeakerId,
+          isSpeaker:   a.id === speakerId,
           role:        a.getFlag("fate-core-ko", "role") || "",
           color:       a.getFlag("fate-core-ko", "color") || "var(--accent-gold)",
           aspectLabel: mainAsp?.system?.label ?? "",
         };
       });
 
-    this._el.innerHTML = await foundry.applications.handlebars.renderTemplate(
+    const html = await foundry.applications.handlebars.renderTemplate(
       "systems/fate-core-ko/templates/stage/stage-bar.hbs",
       { actors }
     );
 
-    // innerHTML 교체 후 발언권 상태를 DOM에 직접 적용 (Handlebars 의존 이중화)
-    const speakerId = localStorage.getItem(`ewk-speaker-${game.userId}`);
+    // await 사이에 더 새로운 렌더가 시작됐으면 이 결과를 버림
+    if (myGen !== this._gen) return;
+
+    this._el.innerHTML = html;
+
+    // 발언권 상태 DOM 직접 적용 (Handlebars 이중화)
+    const curSpeaker = localStorage.getItem(`ewk-speaker-${game.userId}`);
     this._el.querySelectorAll("[data-actor-id]").forEach(card => {
-      const active = card.dataset.actorId === speakerId;
-      card.classList.toggle("ewk-hud__card--active", active);
-      card.querySelector("[data-stage-action='speak']")
-        ?.classList.toggle("ewk-hud__btn--on", active);
+      const on = card.dataset.actorId === curSpeaker;
+      card.classList.toggle("ewk-hud__card--active", on);
+      card.querySelector("[data-stage-action='speak']")?.classList.toggle("ewk-hud__btn--on", on);
     });
 
-    // 이전 리스너 제거 후 재등록 (AbortController로 누적 방지)
-    this._ac?.abort();
-    this._ac = new AbortController();
-    this._bindEvents(this._ac.signal);
+    // .ewk-hud__inner는 innerHTML 교체로 매번 새 노드 — 리스너 누적 없음
+    this._bindEvents();
   },
 
-  _bindEvents(signal) {
-    // #fate-stage-bar는 pointer-events:none이므로 inner(pointer-events:all)에 직접 바인딩
+  _bindEvents() {
+    // pointer-events:all 인 inner에 직접 바인딩
     const inner = this._el?.querySelector(".ewk-hud__inner");
     const el    = this._el;
     if (!inner || !el) return;
-    const opts = { signal };
 
     inner.addEventListener("click", async e => {
       const btn = e.target.closest("button[data-stage-action]");
@@ -1677,10 +1680,10 @@ const FateStageBar = {
         localStorage.getItem(key) === id
           ? localStorage.removeItem(key)
           : localStorage.setItem(key, id);
-        // 즉시 DOM 반영 후 풀 렌더
-        const newSpeaker = localStorage.getItem(key);
+        // 즉시 DOM 반영 (렌더 완료 전 체감 반응성)
+        const cur = localStorage.getItem(key);
         el.querySelectorAll("[data-actor-id]").forEach(c => {
-          const on = c.dataset.actorId === newSpeaker;
+          const on = c.dataset.actorId === cur;
           c.classList.toggle("ewk-hud__card--active", on);
           c.querySelector("[data-stage-action='speak']")?.classList.toggle("ewk-hud__btn--on", on);
         });
@@ -1711,13 +1714,12 @@ const FateStageBar = {
         await actor.update({ "system.fatepoints.current": actor.system.fatepoints.current + 1 });
         return;
       }
-    }, opts);
+    });
 
-    // 드롭은 inner 또는 el 모두에서 동작하도록 inner에 등록
-    inner.addEventListener("dragover", e => { e.preventDefault(); el.classList.add("ewk-hud--dragover"); }, opts);
+    inner.addEventListener("dragover", e => { e.preventDefault(); el.classList.add("ewk-hud--dragover"); });
     inner.addEventListener("dragleave", e => {
       if (!inner.contains(e.relatedTarget)) el.classList.remove("ewk-hud--dragover");
-    }, opts);
+    });
     inner.addEventListener("drop", async e => {
       e.preventDefault();
       el.classList.remove("ewk-hud--dragover");
@@ -1725,7 +1727,7 @@ const FateStageBar = {
       if (!actorId) return;
       const actor = game.actors?.get(actorId);
       if (actor) await actor.setFlag("fate-core-ko", "onStage", true);
-    }, opts);
+    });
   },
 
   // 채팅 발언 시 해당 카드 펄스
