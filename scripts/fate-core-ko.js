@@ -658,8 +658,11 @@ const EWKSidebar = {
   },
 
   _applyWidth(px) {
-    const sidebar = document.getElementById("ewk-sidebar");
-    if (sidebar) sidebar.style.width = px + "px";
+    const ewk = document.getElementById("ewk-sidebar");
+    if (ewk) ewk.style.width = px + "px";
+    // FVTT #sidebar 너비도 맞춰서 캔버스 레이아웃 유지
+    const fvtt = document.getElementById("sidebar") ?? document.getElementById("ui-right");
+    if (fvtt) fvtt.style.setProperty("width", px + "px", "important");
     document.documentElement.style.setProperty("--ewk-sidebar-width",    px + "px");
     document.documentElement.style.setProperty("--foundry-sidebar-width", px + "px");
   },

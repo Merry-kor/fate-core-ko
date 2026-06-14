@@ -883,8 +883,16 @@
 #controls   { opacity: 0.18; transition: opacity 0.2s; pointer-events: none; }
 #controls:hover { opacity: 1; pointer-events: all; }
 
-/* FVTT 네이티브 사이드바 완전 숨김 — 기능(API)은 유지, 비주얼은 우리 #ewk-sidebar */
-#sidebar { display: none !important; }
+/* FVTT 네이티브 사이드바 — 렌더링은 유지(로그·패널 정상 동작), 시각적으로만 숨김 */
+/* display:none 하면 FVTT가 #chat-log 렌더를 건너뛰어서 로그가 사라짐           */
+#sidebar {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  position: fixed !important;
+  right: 0 !important;
+  width: var(--ewk-sidebar-width, 380px) !important;
+  z-index: 0 !important;
+}
 
 /* ═══════════════════════════════════════════════════════
    EWK Custom Sidebar — #interface에 직접 붙이는 커스텀 레이어
@@ -1410,14 +1418,17 @@
 /* ── Chat Styling ── */
 .ewk-chat .message-header { display: flex; align-items: center; gap: 10px; }
 .ewk-speaker-portrait {
-  width: 32px;
-  height: 32px;
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  max-width: 32px !important;
   border-radius: var(--radius-xs);
   object-fit: contain;
   object-position: center top;
   background: var(--surface-raised);
   border: 1px solid var(--accent-gold);
-  flex-shrink: 0;
+  flex-shrink: 0 !important;
+  align-self: flex-start;
 }
 .ewk-chat--dialogue .message-content {
   font-family: var(--font-serif);
