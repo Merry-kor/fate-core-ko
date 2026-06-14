@@ -894,16 +894,28 @@
   --color-text-primary: var(--text-body);
   --color-border: var(--border-strong);
 }
-/* ── 네이티브 sidebar-tabs 완전 숨김 — EWK 가로 탭 스트립으로 대체 ── */
-#sidebar-tabs { display: none !important; }
+/* ── 네이티브 sidebar-tabs: 기능은 유지, 시각적으로만 숨김 ──
+   display:none 하면 FVTT 내부 탭 라우팅이 끊김 → absolute off-screen 방식 사용 */
+#sidebar-tabs {
+  position: absolute !important;
+  left: -9999px !important;
+  width: 0 !important;
+  height: 0 !important;
+  overflow: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  flex-shrink: 0 !important;
+}
 
-/* sidebar-content가 전체 너비를 차지하도록 */
+/* sidebar-content가 전체 너비를 차지하도록 (sidebar-tabs는 절대위치라 flow에서 제외됨) */
 #sidebar-content {
   flex: 1 1 auto !important;
   width: 100% !important;
+  min-width: 0 !important;
   display: flex !important;
   flex-direction: column !important;
   overflow: hidden !important;
+  position: relative !important;
 }
 
 /* ── EWK 가로 탭 스트립 ── */

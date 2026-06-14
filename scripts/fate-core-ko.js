@@ -438,7 +438,14 @@ const EWKSidebar = {
       btn.innerHTML = `<span class="ewk-stab-icon">${icon}</span><span class="ewk-stab-label">${label}</span>`;
       btn.addEventListener("click", () => {
         try {
-          ui.sidebar.changeTab(key, "primary");
+          // FVTT v13: changeTab(tabName, group) — group은 "primary" 또는 생략
+          if (typeof ui.sidebar.changeTab === "function") {
+            ui.sidebar.changeTab(key, "primary");
+          } else {
+            // 폴백: 네이티브 탭 버튼 직접 클릭
+            const nativeBtn = document.querySelector(`#sidebar-tabs [data-tab="${key}"]`);
+            nativeBtn?.click();
+          }
           strip.querySelectorAll(".ewk-stab").forEach(b =>
             b.classList.toggle("active", b.dataset.tab === key));
         } catch (e) {
