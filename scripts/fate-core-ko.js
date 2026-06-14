@@ -673,7 +673,7 @@ const EWKSidebar = {
       });
     });
     document.getElementById("ewk-dl-btn")?.addEventListener("click",  () => this._downloadLog());
-    document.getElementById("ewk-print-btn")?.addEventListener("click", () => window.print());
+    document.getElementById("ewk-print-btn")?.addEventListener("click", () => this._printLog());
     document.getElementById("ewk-clear-btn")?.addEventListener("click", () => this._clearLog());
   },
 
@@ -704,6 +704,235 @@ const EWKSidebar = {
   updateSceneBadge() {
     const badge = document.getElementById("ewk-scene-badge");
     if (badge) badge.textContent = game.scenes?.active?.name ?? "장면 없음";
+  },
+
+  _printLog() {
+    const msgs = [...(game.messages?.values() ?? [])];
+    if (!msgs.length) { ui.notifications?.warn("채팅 로그가 비어 있습니다."); return; }
+
+    const worldTitle = game.world?.title ?? "페이트 코어";
+    const sceneName  = game.scenes?.active?.name ?? worldTitle;
+    const today      = new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" });
+
+    // ── 애니메이션 span 제거, 기본 인라인 서식 유지 ──────────
+    const sanitize = (html) => (html ?? "")
+      .replace(/<span[^>]*class="ewk-emo[^"]*"[^>]*>([\s\S]*?)<\/span>/gi, "$1")
+      .replace(/<div style="text-align:\s*center">([\s\S]*?)<\/div>/gi,
+               '<span style="display:block;text-align:center">$1</span>');
+
+    // ── 메시지 → HTML 블록 변환 ──────────────────────────────
+    const parseBlock = (msg) => {
+      const raw = msg.content ?? "";
+      const tmp = document.createElement("div");
+      tmp.innerHTML = raw;
+
+      // ① 롤 카드
+      if (tmp.querySelector(".fate-roll-card")) {
+        const actor   = tmp.querySelector(".fate-roll-card__actor")?.textContent?.trim() ?? "";
+        const skill   = tmp.querySelector(".fate-roll-card__skill")?.textContent?.trim() ?? "";
+        const total   = tmp.querySelector(".fate-roll-card__total")?.textContent?.trim() ?? "";
+        const ladder  = tmp.querySelector(".fate-roll-card__ladder")?.textContent?.trim() ?? "";
+        const outEl   = tmp.querySelector("[class*='fate-outcome']");
+        const outText = outEl?.textContent?.trim() ?? "";
+        let opCls = "op-succeed";
+        const oc = outEl?.className ?? "";
+        if (oc.includes("style"))     opCls = "op-style";
+        else if (oc.includes("tie"))  opCls = "op-tie";
+        else if (oc.includes("fail")) opCls = "op-fail";
+
+        // 면모/특기 발현 (주사위 없음) → sys-note
+        if (!msg.rolls?.length) {
+          const label = tmp.querySelector("p")?.textContent?.trim() ?? "";
+          return `<div class="sys-note"><strong>${actor}</strong> — ${skill}${label ? ` <em>${label}</em>` : ""}</div>`;
+        }
+
+        const roll    = msg.rolls[0];
+        const results = roll.dice?.[0]?.results ?? [];
+        const dieHtml = results.map(r => {
+          if (r.result === 3) return `<span class="print-die pdie-p">+</span>`;
+          if (r.result === 1) return `<span class="print-die pdie-m">−</span>`;
+          return `<span class="print-die pdie-b"></span>`;
+        }).join("");
+        const rank    = (roll.total ?? 0) - (roll.dice?.[0]?.total ?? 0);
+        const modHtml = rank !== 0
+          ? `<span class="rb-mod">${rank > 0 ? "+" : ""}${rank}</span><span class="rb-sep">=</span>`
+          : `<span class="rb-sep">=</span>`;
+
+        return `<div class="roll-block">
+  <div class="roll-block-header">
+    <span class="rb-actor">${actor}</span>
+    <span class="rb-skill">${skill}</span>
+  </div>
+  <div class="roll-block-body">
+    ${dieHtml}${modHtml}<span class="rb-total">${total}</span>
+    <span class="rb-ladder">${ladder}</span>
+    <div class="rb-outcome"><span class="outcome-print ${opCls}">${outText}</span></div>
+  </div>
+</div>`;
+      }
+
+      // ② 대화 (actor가 연결된 메시지)
+      if (msg.speaker?.actor) {
+        const alias = msg.speaker?.alias || tmp.textContent?.trim();
+        if (!alias) return null;
+        return `<div class="dialogue">
+  <span class="dlg-speaker">${alias}</span>
+  <span class="dlg-text">${sanitize(raw)}</span>
+</div>`;
+      }
+
+      // ③ 서술 (화자 없음)
+      const text = tmp.textContent?.trim();
+      if (!text) return null;
+      return `<p class="narration">${sanitize(raw)}</p>`;
+    };
+
+    const blocks = msgs.map(parseBlock).filter(Boolean).join("\n");
+
+    // ── 폰트 경로 (FVTT 정적 파일 서빙 기준) ─────────────────
+    const fontBase = "/systems/fate-core-ko/design/End-War Knight Design System/assets/fonts";
+
+    const html = `<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>${worldTitle} — 플레이 로그</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+@font-face{font-family:'NotoSerif';font-weight:400;src:url('${fontBase}/NotoSerifKR-Regular.ttf') format('truetype');}
+@font-face{font-family:'NotoSerif';font-weight:700;src:url('${fontBase}/NotoSerifKR-Bold.ttf') format('truetype');}
+@font-face{font-family:'NotoSerif';font-weight:900;src:url('${fontBase}/NotoSerifKR-Black.ttf') format('truetype');}
+@font-face{font-family:'NotoSans';font-weight:100 900;src:url('${fontBase}/NotoSansKR-Variable.ttf') format('truetype');}
+
+body{background:#6b6b6b;padding:24px;font-family:'NotoSerif','Nanum Myeongjo',Georgia,serif;}
+
+/* ── 화면 미리보기 카드 ── */
+.page{
+  width:148mm;min-height:210mm;
+  background:#f6efdd;margin:0 auto 28px;
+  padding:16mm 18mm 14mm;
+  color:#2a2317;box-shadow:0 6px 28px rgba(0,0,0,.4);
+  font-size:10pt;line-height:1.9;
+}
+
+/* ── 로그 헤더 ── */
+.log-header{
+  padding-bottom:7pt;border-bottom:1.5pt solid #cbb588;margin-bottom:15pt;
+}
+.log-title{
+  font-family:'NotoSerif',serif;font-size:16pt;font-weight:900;
+  color:#2a2317;line-height:1.2;margin-bottom:3pt;
+}
+.log-meta{
+  font-family:'NotoSans',sans-serif;font-size:7.5pt;
+  color:#8a7a5c;letter-spacing:.1em;
+}
+
+/* ── 서술 ── */
+.narration{
+  margin:7pt 0;
+  font-family:'NotoSerif',serif;font-size:10pt;line-height:1.95;
+  color:#2a2317;text-indent:1.1em;text-align:justify;
+}
+
+/* ── 대화 ── */
+.dialogue{margin:6pt 0 6pt 8pt;display:flex;flex-direction:column;gap:1.5pt;}
+.dlg-speaker{
+  font-family:'NotoSans',sans-serif;font-size:8pt;font-weight:700;
+  color:#5b4e38;letter-spacing:.06em;
+}
+.dlg-text{
+  font-family:'NotoSerif',serif;font-size:10pt;
+  line-height:1.85;color:#2a2317;margin-left:1em;
+}
+
+/* ── 롤 블록 ── */
+.roll-block{margin:8pt 0;border:.75pt solid #cbb588;border-radius:3pt;overflow:hidden;}
+.roll-block-header{
+  background:#efe5cc;padding:3.5pt 8pt;
+  display:flex;align-items:center;gap:7pt;border-bottom:.75pt solid #cbb588;
+}
+.rb-actor{font-family:'NotoSans',sans-serif;font-size:8.5pt;font-weight:700;color:#2a2317;}
+.rb-skill{font-size:7pt;color:#8a7a5c;background:#e3d4af;padding:1pt 6pt;border-radius:20pt;}
+.roll-block-body{padding:5pt 8pt;display:flex;align-items:center;gap:6pt;flex-wrap:wrap;}
+.print-die{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:14.5pt;height:14.5pt;border-radius:2.5pt;
+  font-size:9pt;font-weight:900;border:1.5pt solid;font-family:'NotoSans',sans-serif;
+}
+.pdie-p{border-color:#2e6e44;color:#2e6e44;background:rgba(79,174,107,.1);}
+.pdie-m{border-color:#8a162a;color:#8a162a;background:rgba(138,22,42,.07);}
+.pdie-b{border-color:#cbb588;color:#8a7a5c;}
+.rb-mod{font-size:8.5pt;color:#5b4e38;font-variant-numeric:tabular-nums;}
+.rb-sep{color:#cbb588;font-size:9pt;margin:0 1pt;}
+.rb-total{font-family:'NotoSerif',serif;font-size:17pt;font-weight:900;color:#2a2317;line-height:1;}
+.rb-ladder{font-family:'NotoSerif',serif;font-style:italic;font-size:9pt;color:#5b4e38;}
+.rb-outcome{margin-left:auto;}
+.outcome-print{
+  font-family:'NotoSans',sans-serif;font-size:7pt;font-weight:700;
+  letter-spacing:.1em;padding:2pt 8pt;border-radius:20pt;border:.75pt solid;
+}
+.op-style  {color:#6b5310;background:rgba(201,162,39,.12);border-color:#97761b;}
+.op-succeed{color:#2e6e44;background:rgba(79,174,107,.1);border-color:#2e6e44;}
+.op-tie    {color:#7a4d18;background:rgba(201,130,43,.1);border-color:#c9822b;}
+.op-fail   {color:#8a162a;background:rgba(138,22,42,.07);border-color:#8a162a;}
+
+/* ── 시스템 노트 ── */
+.sys-note{
+  margin:5pt 0;padding:3.5pt 8pt;background:#efe5cc;
+  border-left:2pt solid #97761b;
+  font-family:'NotoSans',sans-serif;font-size:8pt;color:#5b4e38;letter-spacing:.04em;
+}
+
+/* ── 툴바 (화면 전용) ── */
+.toolbar{
+  position:sticky;top:0;z-index:100;
+  background:#2a2317;border-bottom:1px solid #cbb588;
+  padding:10px 22px;display:flex;align-items:center;gap:14px;
+}
+.toolbar button{
+  padding:8px 20px;background:#c9a227;color:#0a0b0f;
+  font-weight:700;border:none;border-radius:3px;cursor:pointer;font-size:13px;
+}
+.toolbar span{color:#8a7a5c;font-size:11px;}
+
+/* ── 인쇄 ── */
+@media print{
+  *,*::before,*::after{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  html,body{background:white!important;padding:0!important;margin:0!important;}
+  .toolbar{display:none!important;}
+  .page{
+    background:white!important;box-shadow:none!important;
+    margin:0!important;padding:0!important;
+    width:100%!important;min-height:0!important;
+  }
+  .roll-block,.dialogue,.sys-note{break-inside:avoid;page-break-inside:avoid;}
+  .pdie-p{color:#2e6e44!important;border-color:#2e6e44!important;}
+  .pdie-m{color:#8a162a!important;border-color:#8a162a!important;}
+}
+@page{size:A5 portrait;margin:16mm 18mm;}
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <button onclick="window.print()">🖨 PDF로 저장</button>
+  <span>인쇄 대화상자 → 대상: <strong style="color:#cbb588">PDF로 저장</strong> &nbsp;·&nbsp; 용지 A5 &nbsp;·&nbsp; 여백 없음 &nbsp;·&nbsp; 배경 그래픽 ✓</span>
+</div>
+<div class="page">
+  <div class="log-header">
+    <div class="log-title">${sceneName}</div>
+    <div class="log-meta">${worldTitle} &nbsp;·&nbsp; ${today}</div>
+  </div>
+  ${blocks}
+</div>
+</body>
+</html>`;
+
+    const win = window.open("", "_blank", "width=960,height=760");
+    if (!win) { ui.notifications?.warn("팝업이 차단되었습니다. 팝업을 허용해 주세요."); return; }
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
   },
 
   _downloadLog() {
