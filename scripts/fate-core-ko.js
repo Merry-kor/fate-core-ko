@@ -467,15 +467,18 @@ const EWKSidebar = {
 
     // ── Emotion Tools (above chat form) ─────────────────────────────────
     document.getElementById("ewk-chat-tools")?.remove();
+    // Foundry v13: form wrapper is .chat-form (class), inner form is #chat-form
+    const chatFormWrapper = chatPanel.querySelector(".chat-form")
+      ?? chatPanel.querySelector("#chat-form")?.parentElement
+      ?? chatPanel.querySelector("form")?.parentElement;
     const chatForm = chatPanel.querySelector("#chat-form")
       ?? chatPanel.querySelector("form")
       ?? document.querySelector("#chat-form");
 
     if (chatForm) {
-      // Style the native input/contenteditable — force visibility via inline !important
-      const chatInput = chatForm.querySelector(
-        "#chat-message, input[name='content'], textarea, input[type='text'], [contenteditable]"
-      );
+      // Force-style the native input via inline !important (beats Foundry dark-mode inline styles)
+      const chatInput = document.getElementById("chat-message")
+        ?? chatForm.querySelector("textarea, input[type='text'], input[name='content'], [contenteditable]");
       if (chatInput) {
         chatInput.style.setProperty("background", "#262b3a", "important");
         chatInput.style.setProperty("color", "#c3cad9", "important");
@@ -497,7 +500,9 @@ const EWKSidebar = {
         <button class="ewk-emo-btn" data-emo="shout" title="분노·절규">외침</button>
         <button class="ewk-emo-btn" data-emo="wave" title="흔들림">파동</button>
         <button class="ewk-emo-btn" data-emo="glow" title="강조">빛남</button>`;
-      chatForm.parentElement.insertBefore(tools, chatForm);
+      // 래퍼(.chat-form) 앞에 삽입 — #chat의 직속 자식으로 추가되어 form을 건드리지 않음
+      const insertTarget = chatFormWrapper ?? chatForm;
+      insertTarget.parentElement.insertBefore(tools, insertTarget);
 
       tools.querySelectorAll(".ewk-tool-btn").forEach(btn => {
         btn.addEventListener("click", () => {

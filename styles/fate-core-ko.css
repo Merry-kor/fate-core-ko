@@ -1137,47 +1137,36 @@ li.chat-message header,
 .message-sender { font-family: var(--font-sans) !important; font-weight: 700 !important; font-size: 0.8125rem !important; color: var(--text-muted) !important; }
 .message-timestamp { font-size: 0.6875rem !important; color: var(--text-faint) !important; }
 .message-content { font-size: 0.875rem !important; color: var(--text-body) !important; line-height: 1.6 !important; }
-/* Chat form — make input visible in EWK dark theme (no display:flex on form — that breaks layout) */
-#chat-form {
-  background: var(--surface-app) !important;
+/* ── Chat form — Foundry v13 DOM: #chat .chat-form (class wrapper) ─────── */
+/* 레퍼런스 방식: .chat-form 래퍼 + #chat-message ID + .ProseMirror 통합 타겟 */
+#chat .chat-form {
+  border-top: 1px solid var(--border-strong) !important;
   padding: 4px 8px 8px !important;
   flex-shrink: 0 !important;
+  background: var(--surface-app) !important;
 }
-/* Textarea (Foundry v13 native input element) */
-#chat-form textarea,
-#chat-form #chat-message,
-#chat-form input[type="text"],
-#chat-form input[name="content"] {
+#chat-message,
+#chat .chat-form textarea,
+#chat .chat-form input[type="text"],
+#chat .ProseMirror {
   background: var(--surface-raised) !important;
-  color: var(--text-body) !important;
   border: 1px solid var(--border-hairline) !important;
   border-radius: var(--radius-sm) !important;
+  color: var(--text-body) !important;
   font-family: var(--font-sans) !important;
   font-size: 0.8125rem !important;
   padding: 5px 8px !important;
   resize: none !important;
   box-sizing: border-box !important;
 }
-/* ProseMirror contenteditable variant */
-#chat-form [contenteditable] {
-  background: var(--surface-raised) !important;
-  color: var(--text-body) !important;
-  border: 1px solid var(--border-hairline) !important;
-  border-radius: var(--radius-sm) !important;
-  min-height: 36px !important;
-  padding: 5px 8px !important;
-  box-sizing: border-box !important;
-}
-/* Focus */
-#chat-form textarea:focus,
-#chat-form #chat-message:focus,
-#chat-form input[type="text"]:focus,
-#chat-form [contenteditable]:focus { border-color: var(--accent-gold) !important; outline: none !important; }
-/* Send button gold */
-#chat-form button[name="submit"],
-#chat-form button[type="submit"],
-#chat-form button.send,
-#chat-form a.send {
+#chat-message:focus,
+#chat .chat-form textarea:focus,
+#chat .ProseMirror:focus { outline: none !important; border-color: var(--accent-gold) !important; }
+/* Send button */
+#chat .chat-form button[name="submit"],
+#chat .chat-form button[type="submit"],
+#chat .chat-form button[data-action="send"],
+#chat .chat-form .send-button {
   background: var(--accent-gold) !important;
   color: #0a0b0f !important;
   border-color: var(--accent-gold) !important;
@@ -1293,12 +1282,12 @@ li.chat-message header,
 .fate-hud__stage-btn--exit { border-color: var(--accent-crimson); color: var(--accent-crimson); }
 .fate-hud__stage-btn--exit:hover { background: rgba(176,31,51,0.15); }
 
-/* ── EWK HUD Bar (Stage Bar — full-width bottom) ── */
+/* ── EWK HUD Bar (Stage Bar — canvas only, avoids sidebar) ── */
 #fate-stage-bar {
   position: fixed;
   bottom: 0;
   left: 0;
-  right: 0;
+  right: var(--foundry-sidebar-width, 320px); /* sidebar를 침범하지 않음 */
   z-index: 60;
   pointer-events: none;
 }
