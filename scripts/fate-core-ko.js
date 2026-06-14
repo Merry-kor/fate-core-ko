@@ -371,8 +371,9 @@ Hooks.on("renderTokenHUD", (hud, html, _data) => {
 // ─── VN Speech Box ─────────────────────────────────────────────────────────
 
 const FateVNBox = {
-  _el: null,
-  _timer: null,
+  _el:        null,
+  _timer:     null,
+  _cropCache: new Map(), // src → cropped data URL
 
   _ensure() {
     if (this._el) return;
@@ -389,15 +390,68 @@ const FateVNBox = {
     document.getElementById("interface")?.appendChild(this._el);
   },
 
+  // 투명 여백을 Canvas로 분석해 제거한 data URL 반환 (캐시)
+  _cropPortrait(src) {
+    if (this._cropCache.has(src)) return Promise.resolve(this._cropCache.get(src));
+    return new Promise(resolve => {
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const w = img.naturalWidth, h = img.naturalHeight;
+          if (!w || !h) { resolve(src); return; }
+          const c = document.createElement("canvas");
+          c.width = w; c.height = h;
+          const ctx = c.getContext("2d", { willReadFrequently: true });
+          ctx.drawImage(img, 0, 0);
+          const px = ctx.getImageData(0, 0, w, h).data;
+
+          let minY = h, maxY = 0;
+          // 위에서 아래로 최초 불투명 행 탐색
+          top: for (let y = 0; y < h; y++)
+            for (let x = 0; x < w; x++)
+              if (px[(y * w + x) * 4 + 3] > 6) { minY = y; break top; }
+          // 아래에서 위로 최초 불투명 행 탐색
+          bot: for (let y = h - 1; y >= minY; y--)
+            for (let x = 0; x < w; x++)
+              if (px[(y * w + x) * 4 + 3] > 6) { maxY = y; break bot; }
+
+          if (maxY > minY && (minY > 2 || maxY < h - 3)) {
+            const ch = maxY - minY + 1;
+            const out = document.createElement("canvas");
+            out.width = w; out.height = ch;
+            out.getContext("2d").drawImage(c, 0, -minY);
+            const url = out.toDataURL("image/png");
+            this._cropCache.set(src, url);
+            resolve(url);
+            return;
+          }
+        } catch { /* tainted canvas (cross-origin) — 원본 사용 */ }
+        this._cropCache.set(src, src);
+        resolve(src);
+      };
+      img.onerror = () => resolve(src);
+      img.src = src;
+    });
+  },
+
   show(actor, text) {
     this._ensure();
     const portrait = document.getElementById("fate-vn-portrait");
     const nameEl   = document.getElementById("fate-vn-name");
     const textEl   = document.getElementById("fate-vn-text");
 
-    portrait.src = actor.img;
+    // 초상화: 즉시 원본 표시 후 크롭 완료 시 교체 (같은 액터일 때만)
+    const src = actor.img;
+    if (portrait.dataset.src !== src) {
+      portrait.dataset.src = src;
+      portrait.src = src;
+      this._cropPortrait(src).then(cropped => {
+        if (portrait.dataset.src === src) portrait.src = cropped;
+      });
+    }
+
     nameEl.textContent = actor.name;
-    nameEl.style.color = actor.getFlag("fate-core-ko", "color") || "var(--accent-gold)";
+    nameEl.style.setProperty("--vn-name-color", actor.getFlag("fate-core-ko", "color") || "var(--accent-gold)");
     textEl.innerHTML = "";
     this._el.classList.add("visible");
 

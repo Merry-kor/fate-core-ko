@@ -1409,7 +1409,7 @@
 }
 #fate-vn-box.visible { opacity: 1; }
 
-/* 초상화: 중앙 배치, 높이 100%, 잘림 없음 */
+/* 초상화: 중앙 배치, 높이 70%, 잘림 없음 */
 #fate-vn-portrait-wrap {
   position: absolute;
   inset: 0;
@@ -1419,40 +1419,53 @@
   overflow: hidden;
 }
 #fate-vn-portrait {
-  height: 100%;
+  max-height: 70%;
   width: auto;
-  max-width: 60%;
-  object-fit: contain;
-  object-position: bottom center;
+  max-width: 55%;
   display: block;
   filter: drop-shadow(0 4px 48px rgba(0,0,0,.75));
 }
 
-/* 텍스트박스: 하단 고정, 그라디언트 오버레이 */
+/* 텍스트박스: 하단 고정, 블러 + 진한 오버레이 */
 #fate-vn-textbox {
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
-  padding: 24px 40px 30px;
-  background: linear-gradient(0deg, rgba(10,11,15,.90) 0%, rgba(10,11,15,.55) 55%, transparent 100%);
+  padding: 32px 40px 28px;
+  background: linear-gradient(0deg, rgba(8,9,13,.94) 0%, rgba(8,9,13,.88) 45%, rgba(8,9,13,.5) 75%, transparent 100%);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 #fate-vn-name {
   font-family: var(--font-sans);
-  font-size: 1.375rem;
+  font-size: 1.25rem;
   font-weight: 700;
-  letter-spacing: 0.05em;
-  margin-bottom: 6px;
-  color: var(--accent-gold);
-  text-shadow: 0 1px 6px rgba(0,0,0,.9);
+  letter-spacing: 0.06em;
+  margin-bottom: 8px;
+  color: var(--vn-name-color, var(--accent-gold));
+  text-shadow: 0 1px 8px rgba(0,0,0,1);
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+#fate-vn-name::before {
+  content: '';
+  display: block;
+  width: 3px;
+  height: 1.1em;
+  background: var(--vn-name-color, var(--accent-gold));
+  border-radius: 2px;
+  flex-shrink: 0;
+  box-shadow: 0 0 8px var(--vn-name-color, var(--accent-gold));
 }
 #fate-vn-text {
   font-family: var(--font-serif);
-  font-size: 1.5rem;
+  font-size: 1.45rem;
   line-height: 1.55;
   color: #f0ece0;
   max-width: 55ch;
-  text-shadow: 0 1px 4px rgba(0,0,0,.8);
+  text-shadow: 0 1px 6px rgba(0,0,0,.9), 0 0 20px rgba(0,0,0,.5);
 }
 .fate-vn-cursor {
   display: inline-block;
