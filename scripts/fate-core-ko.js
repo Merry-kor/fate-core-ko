@@ -171,6 +171,7 @@ class FateCharacterSheet extends foundry.applications.api.HandlebarsApplicationM
       actor,
       system: actor.system,
       onStage: actor.getFlag("fate-core-ko", "onStage") ?? false,
+      actorColor: actor.getFlag("fate-core-ko", "color") || "#c9a227",
       aspects: items.filter(i => i.type === "aspect").map(a => ({
         id: a.id,
         name: a.name,
@@ -1611,13 +1612,15 @@ const FateStageBar = {
   _el: null,
 
   render() {
-    // 엘리먼트 최초 1회 생성 + 영구 이벤트 등록
     if (!this._el) {
       this._el = document.createElement("div");
       this._el.id = "fate-stage-bar";
       this._el.className = "fate-core-ko";
       document.getElementById("interface")?.appendChild(this._el);
-      this._bindStatic();
+      this._bindDrag();
+    } else if (!this._el.isConnected) {
+      // FVTT가 #interface를 재생성했을 경우 재삽입
+      document.getElementById("interface")?.appendChild(this._el);
     }
 
     const speakerId = localStorage.getItem(`ewk-speaker-${game.userId}`) ?? null;
@@ -1665,53 +1668,72 @@ const FateStageBar = {
         ? cardsHtml
         : `<div class="ewk-hud__empty">출연진 없음 — 출연진 위젯이나 액터 패널에서 드래그</div>`
     }</div>`;
+
+    // innerHTML 교체 후 버튼에 직접 바인딩 (이벤트 위임 방식은 FVTT가 가로채므로 제거)
+    this._bindButtons();
   },
 
-  // 이벤트를 document에 캡처 단계에서 등록 — pointer-events:none 우회 완전 보장
-  _bindStatic() {
-    const el = this._el;
+  _bindButtons() {
+    if (!this._el) return;
+    const bar = this;
 
-    document.addEventListener("click", async e => {
-      // fate-stage-bar 내부가 아니면 무시
-      if (!el.contains(e.target)) return;
-      const btn = e.target.closest("button[data-stage-action]");
-      if (!btn) return;
-      const action = btn.dataset.stageAction;
-      const card   = btn.closest("[data-actor-id]");
-      if (!card) return;
-      const id = card.dataset.actorId;
-
-      if (action === "speak") {
+    this._el.querySelectorAll("[data-stage-action='speak']").forEach(btn => {
+      btn.addEventListener("click", e => {
+        e.stopPropagation();
+        e.preventDefault();
+        const id = btn.closest("[data-actor-id]")?.dataset.actorId;
+        if (!id) return;
         const key = `ewk-speaker-${game.userId}`;
         localStorage.getItem(key) === id
           ? localStorage.removeItem(key)
           : localStorage.setItem(key, id);
-        this.render();           // 동기 — 즉시 반영
+        bar.render();
         EWKQuickDock.render();
-        return;
-      }
-      if (action === "remove") {
+      });
+    });
+
+    this._el.querySelectorAll("[data-stage-action='remove']").forEach(btn => {
+      btn.addEventListener("click", async e => {
+        e.stopPropagation();
+        e.preventDefault();
+        const id = btn.closest("[data-actor-id]")?.dataset.actorId;
+        if (!id) return;
         const actor = game.actors.get(id);
         if (!actor) return;
         await actor.unsetFlag("fate-core-ko", "onStage");
         if (localStorage.getItem(`ewk-speaker-${game.userId}`) === id)
           localStorage.removeItem(`ewk-speaker-${game.userId}`);
-        return;
-      }
-      if (action === "fp-minus") {
+      });
+    });
+
+    this._el.querySelectorAll("[data-stage-action='fp-minus']").forEach(btn => {
+      btn.addEventListener("click", async e => {
+        e.stopPropagation();
+        e.preventDefault();
+        const id = btn.closest("[data-actor-id]")?.dataset.actorId;
+        if (!id) return;
         const actor = game.actors.get(id);
         if (!actor) return;
         await actor.update({ "system.fatepoints.current": Math.max(0, actor.system.fatepoints.current - 1) });
-        return;
-      }
-      if (action === "fp-plus") {
+      });
+    });
+
+    this._el.querySelectorAll("[data-stage-action='fp-plus']").forEach(btn => {
+      btn.addEventListener("click", async e => {
+        e.stopPropagation();
+        e.preventDefault();
+        const id = btn.closest("[data-actor-id]")?.dataset.actorId;
+        if (!id) return;
         const actor = game.actors.get(id);
         if (!actor) return;
         await actor.update({ "system.fatepoints.current": actor.system.fatepoints.current + 1 });
-        return;
-      }
+      });
     });
+  },
 
+  // 드래그 이벤트는 document 레벨에 한 번만 등록
+  _bindDrag() {
+    const el = this._el;
     document.addEventListener("dragover", e => {
       if (!el.contains(e.target)) return;
       e.preventDefault();
@@ -1735,10 +1757,16 @@ const FateStageBar = {
   pulseSpeaker(actorId) {
     const card = this._el?.querySelector(`[data-actor-id="${actorId}"]`);
     if (!card) return;
+    const actor = game.actors?.get(actorId);
+    const color = actor?.getFlag("fate-core-ko", "color") || null;
+    if (color) card.style.setProperty("--ewk-pulse-color", color);
     card.classList.remove("ewk-hud__card--pulse");
     void card.offsetWidth;
     card.classList.add("ewk-hud__card--pulse");
-    setTimeout(() => card.classList.remove("ewk-hud__card--pulse"), 900);
+    setTimeout(() => {
+      card.classList.remove("ewk-hud__card--pulse");
+      card.style.removeProperty("--ewk-pulse-color");
+    }, 900);
   },
 };
 
@@ -2303,15 +2331,20 @@ Hooks.on("renderChatMessageHTML", (message, html) => {
 
   if (actor) {
     el.classList.add("ewk-chat--dialogue");
+    const actorColor = actor.getFlag("fate-core-ko", "color") || null;
     const header = el.querySelector(".message-header");
     if (header) {
       const senderEl = header.querySelector(".message-sender");
-      if (senderEl) senderEl.textContent = actor.name;
+      if (senderEl) {
+        senderEl.textContent = actor.name;
+        if (actorColor) senderEl.style.color = actorColor;
+      }
       if (!header.querySelector(".ewk-speaker-portrait")) {
         const img = document.createElement("img");
         img.className = "ewk-speaker-portrait";
         img.src = actor.img;
         img.alt = actor.name;
+        if (actorColor) img.style.borderColor = actorColor;
         header.prepend(img);
       }
     }

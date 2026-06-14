@@ -269,6 +269,13 @@
 }
 .fate-fp__value:focus, .fate-fp__refresh:focus { outline: none; border-color: var(--accent-gold); }
 
+.fate-fp__color {
+  width: 32px; height: 24px; padding: 0; border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-xs); cursor: pointer; background: none;
+}
+.fate-fp__color::-webkit-color-swatch-wrapper { padding: 2px; }
+.fate-fp__color::-webkit-color-swatch { border: none; border-radius: 2px; }
+
 /* ── 바디 ── */
 .fate-sheet__body {
   display: flex;
@@ -1305,9 +1312,9 @@
   box-shadow: 0 0 0 1px rgba(201,162,39,.5), 0 0 18px rgba(201,162,39,.3);
 }
 @keyframes ewk-hud-pulse {
-  0%   { box-shadow: 0 0 0 1px rgba(201,162,39,.5), 0 0 18px rgba(201,162,39,.3); }
-  40%  { box-shadow: 0 0 0 3px var(--accent-gold),   0 0 36px rgba(201,162,39,.7); }
-  100% { box-shadow: 0 0 0 1px rgba(201,162,39,.5), 0 0 18px rgba(201,162,39,.3); }
+  0%   { box-shadow: 0 0 0 1px color-mix(in srgb, var(--ewk-pulse-color, var(--accent-gold)) 50%, transparent), 0 0 18px color-mix(in srgb, var(--ewk-pulse-color, var(--accent-gold)) 30%, transparent); }
+  40%  { box-shadow: 0 0 0 3px var(--ewk-pulse-color, var(--accent-gold)), 0 0 36px color-mix(in srgb, var(--ewk-pulse-color, var(--accent-gold)) 70%, transparent); }
+  100% { box-shadow: 0 0 0 1px color-mix(in srgb, var(--ewk-pulse-color, var(--accent-gold)) 50%, transparent), 0 0 18px color-mix(in srgb, var(--ewk-pulse-color, var(--accent-gold)) 30%, transparent); }
 }
 .ewk-hud__card--pulse { animation: ewk-hud-pulse 0.9s ease; }
 .ewk-hud__top {
