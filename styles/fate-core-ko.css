@@ -1425,6 +1425,132 @@
   line-height: 1.6;
 }
 
+/* ═══════════════════════════════════════════════════════
+   EWK 커스텀 패널 (액터 / 아이템)
+   ═══════════════════════════════════════════════════════ */
+
+.ewk-custom-panel {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--surface-app);
+}
+
+/* 툴바 */
+.ewk-panel-toolbar {
+  display: flex;
+  gap: 4px;
+  padding: 7px 10px;
+  background: var(--surface-well);
+  border-bottom: 1px solid var(--border-strong);
+  flex-shrink: 0;
+  min-height: 38px;
+  align-items: center;
+}
+.ewk-panel-new {
+  height: 24px; padding: 0 10px;
+  background: transparent; border: 1px solid var(--accent-gold);
+  border-radius: var(--radius-sm); cursor: pointer;
+  color: var(--accent-gold); font-family: var(--font-sans);
+  font-size: 0.7rem; font-weight: 700; white-space: nowrap;
+  transition: background 0.15s;
+}
+.ewk-panel-new:hover { background: rgba(201,162,39,.12); }
+
+/* 스크롤 영역 */
+.ewk-panel-scroll {
+  flex: 1; overflow-y: auto; overflow-x: hidden;
+}
+.ewk-panel-scroll::-webkit-scrollbar { width: 3px; }
+.ewk-panel-scroll::-webkit-scrollbar-thumb { background: var(--border-hairline); border-radius: 2px; }
+
+/* 그룹 */
+.ewk-panel-group { margin-bottom: 0; }
+.ewk-panel-group-hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 5px 12px 4px;
+  font-family: var(--font-sans); font-size: 0.62rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .14em;
+  color: var(--accent-gold);
+  background: var(--surface-well);
+  border-bottom: 1px solid var(--border-strong);
+  position: sticky; top: 0; z-index: 1;
+}
+.ewk-panel-group-count {
+  font-size: 0.58rem; font-weight: 400; color: var(--text-faint);
+  background: var(--surface-raised); border: 1px solid var(--border-strong);
+  border-radius: var(--radius-pill); padding: 0 5px;
+}
+.ewk-panel-empty {
+  padding: 32px 16px; text-align: center;
+  font-size: 0.8rem; color: var(--text-faint); font-style: italic;
+}
+
+/* ── 액터 카드 ── */
+.ewk-acard {
+  display: flex; align-items: center; gap: 9px;
+  padding: 8px 10px 8px 12px;
+  border-bottom: 1px solid var(--border-strong);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.ewk-acard:hover { background: rgba(255,255,255,.04); }
+.ewk-acard-port {
+  width: 38px; height: 38px; flex-shrink: 0;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--border-hairline);
+  object-fit: cover; object-position: top;
+}
+.ewk-acard-body { flex: 1; min-width: 0; }
+.ewk-acard-name {
+  font-family: var(--font-sans); font-size: 0.8125rem; font-weight: 700;
+  color: var(--text-strong); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  display: flex; align-items: center; gap: 5px; margin-bottom: 3px;
+}
+.ewk-on-air {
+  font-size: 0.52rem; font-weight: 900; letter-spacing: .08em;
+  background: var(--accent-gold); color: #0a0b0f;
+  border-radius: 2px; padding: 1px 4px; flex-shrink: 0;
+}
+.ewk-acard-fp {
+  display: flex; align-items: baseline; gap: 2px;
+  font-family: var(--font-mono); font-size: 0.72rem;
+}
+.ewk-acard-fp-n { font-weight: 700; color: var(--accent-gold); font-size: 0.875rem; }
+.ewk-acard-fp-sep { color: var(--text-faint); font-size: 0.65rem; }
+.ewk-acard-fp-r { color: var(--text-muted); }
+.ewk-acard-fp-l { font-family: var(--font-sans); font-size: 0.6rem; color: var(--text-faint); margin-left: 3px; }
+.ewk-acard-open {
+  width: 24px; height: 24px; flex-shrink: 0;
+  background: transparent; border: 1px solid transparent;
+  border-radius: var(--radius-xs); cursor: pointer;
+  color: var(--text-faint); font-size: 0.6rem;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.ewk-acard:hover .ewk-acard-open { border-color: var(--accent-gold); color: var(--accent-gold); }
+
+/* ── 아이템 행 ── */
+.ewk-irow {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--border-strong);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.ewk-irow:hover { background: rgba(255,255,255,.04); }
+.ewk-irow-name {
+  flex: 1; font-size: 0.8rem; color: var(--text-body);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.ewk-irow-badge {
+  flex-shrink: 0;
+  font-family: var(--font-mono); font-size: 0.68rem; font-weight: 700;
+  color: var(--accent-gold);
+  background: rgba(201,162,39,.1); border: 1px solid rgba(201,162,39,.2);
+  border-radius: var(--radius-xs); padding: 1px 6px;
+}
+
 /* ── 감정 애니메이션 ── */
 @keyframes ewk-shake {
   0%, 100% { transform: translateX(0); }
