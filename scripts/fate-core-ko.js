@@ -392,6 +392,7 @@ const EWKSidebar = {
   ],
   _activeTab: "chat",
   _currentEmo: "normal",
+  _currentWrap: null,    // 「」 or "" 토글 상태
 
   TABS: [
     { key: "chat",       icon: "💬", label: "채팅" },
@@ -553,6 +554,9 @@ const EWKSidebar = {
   addMessage(el) {
     const log = document.getElementById("ewk-chat-log");
     if (!log) return;
+    // 중복 방지: 같은 data-message-id가 이미 있으면 스킵
+    const msgId = el.dataset?.messageId;
+    if (msgId && log.querySelector(`[data-message-id="${msgId}"]`)) return;
     log.appendChild(el.cloneNode(true));
     log.scrollTop = log.scrollHeight;
   },
@@ -562,9 +566,15 @@ const EWKSidebar = {
     const btn   = document.getElementById("ewk-chat-send");
 
     const send = async () => {
-      const content = input?.value?.trim();
+      let content = input?.value?.trim();
       if (!content) return;
       input.value = "";
+      // 인용 부호 토글이 켜져 있으면 전송 내용 양쪽에 자동 감쌈
+      if (this._currentWrap) {
+        const open  = this._currentWrap[0];
+        const close = this._currentWrap[this._currentWrap.length - 1];
+        content = open + content + close;
+      }
       await ChatMessage.create({ content, speaker: ChatMessage.getSpeaker() });
     };
 
@@ -578,21 +588,24 @@ const EWKSidebar = {
     const tools = document.getElementById("ewk-chat-tools");
     if (!tools) return;
 
+    // 인용 부호 버튼: 토글 방식 — 활성화하면 전송 시 자동 감쌈
     tools.querySelectorAll(".ewk-tool-btn").forEach(btn => {
       btn.addEventListener("click", () => {
-        const wrap  = btn.dataset.emoWrap;
-        const input = document.getElementById("ewk-chat-input");
-        if (!input || !wrap) return;
-        const [open, close] = [wrap[0], wrap[wrap.length - 1]];
-        const s = input.selectionStart, e = input.selectionEnd;
-        const v = input.value;
-        input.value = s !== e
-          ? v.slice(0, s) + open + v.slice(s, e) + close + v.slice(e)
-          : v + open + close;
-        input.focus();
+        const wrap = btn.dataset.emoWrap;
+        if (this._currentWrap === wrap) {
+          // 이미 켜져 있으면 끔
+          this._currentWrap = null;
+          btn.classList.remove("ewk-emo-btn--on");
+        } else {
+          // 새로 켬 (다른 wrap 버튼 끄기)
+          this._currentWrap = wrap;
+          tools.querySelectorAll(".ewk-tool-btn").forEach(b => b.classList.remove("ewk-emo-btn--on"));
+          btn.classList.add("ewk-emo-btn--on");
+        }
       });
     });
 
+    // 감정 버튼: 하나만 활성
     tools.querySelectorAll(".ewk-emo-btn").forEach(btn => {
       btn.addEventListener("click", () => {
         this._currentEmo = btn.dataset.emo;
