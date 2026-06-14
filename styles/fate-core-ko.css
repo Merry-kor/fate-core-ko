@@ -998,6 +998,7 @@
   transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 .ewk-hdr-btn:hover { background: rgba(201,162,39,.08); color: var(--accent-gold); border-color: rgba(201,162,39,.4); }
+.ewk-hdr-btn--danger:hover { background: rgba(176,31,51,.12) !important; color: var(--accent-crimson-bright) !important; border-color: var(--accent-crimson) !important; }
 
 /* 채팅 로그 */
 #ewk-chat-log {
@@ -1409,7 +1410,7 @@
 /* ── Chat Styling ── */
 .ewk-chat .message-header { display: flex; align-items: center; gap: 10px; }
 .ewk-speaker-portrait {
-  width: 25px;
+  width: 32px;
   height: 32px;
   border-radius: var(--radius-xs);
   object-fit: contain;

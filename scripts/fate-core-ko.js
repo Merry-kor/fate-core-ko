@@ -481,6 +481,7 @@ const EWKSidebar = {
           <div id="ewk-wpresets">${widthBtns}</div>
           <button class="ewk-hdr-btn" id="ewk-dl-btn">⬇ 로그</button>
           <button class="ewk-hdr-btn" id="ewk-print-btn">📄 인쇄</button>
+          <button class="ewk-hdr-btn ewk-hdr-btn--danger" id="ewk-clear-btn">🗑 삭제</button>
         </div>
       </div>
       <div id="ewk-chat-log"></div>
@@ -539,12 +540,24 @@ const EWKSidebar = {
     }
   },
 
-  // 기존 메시지 (ready 시점에 이미 렌더된 것) 복사
-  _loadExistingMessages() {
-    const fvttLog = document.getElementById("chat-log");
+  // 기존 메시지 복사 — FVTT가 #chat-log 를 채우기 전에 호출될 수 있어서 재시도
+  _loadExistingMessages(retries = 0) {
     const ourLog  = document.getElementById("ewk-chat-log");
-    if (!fvttLog || !ourLog) return;
+    if (!ourLog) return;
+
+    const fvttLog = document.getElementById("chat-log");
+    const total   = game.messages?.size ?? 0;
+
+    // FVTT 로그가 아직 비어있고 메시지가 있다면 최대 8회 재시도 (400ms 간격)
+    if (total > 0 && (!fvttLog || fvttLog.children.length === 0) && retries < 8) {
+      setTimeout(() => this._loadExistingMessages(retries + 1), 400);
+      return;
+    }
+    if (!fvttLog) return;
+
     fvttLog.querySelectorAll("li, .chat-message").forEach(child => {
+      const msgId = child.dataset?.messageId;
+      if (msgId && ourLog.querySelector(`[data-message-id="${msgId}"]`)) return;
       ourLog.appendChild(child.cloneNode(true));
     });
     ourLog.scrollTop = ourLog.scrollHeight;
@@ -627,6 +640,21 @@ const EWKSidebar = {
     });
     document.getElementById("ewk-dl-btn")?.addEventListener("click",  () => this._downloadLog());
     document.getElementById("ewk-print-btn")?.addEventListener("click", () => window.print());
+    document.getElementById("ewk-clear-btn")?.addEventListener("click", () => this._clearLog());
+  },
+
+  async _clearLog() {
+    const confirmed = await foundry.applications.api.DialogV2.confirm({
+      window: { title: "채팅 로그 전체 삭제" },
+      content: "<p>채팅 로그를 전부 삭제하시겠습니까? 되돌릴 수 없습니다.</p>",
+      yes: { label: "삭제", icon: "fas fa-trash" },
+      no:  { label: "취소" },
+    }).catch(() => false);
+    if (!confirmed) return;
+    const ids = game.messages.map(m => m.id);
+    if (ids.length > 0) await ChatMessage.deleteDocuments(ids);
+    const log = document.getElementById("ewk-chat-log");
+    if (log) log.innerHTML = "";
   },
 
   _applyWidth(px) {
@@ -1003,6 +1031,11 @@ Hooks.once("ready", () => {
   // FVTT가 사이드바를 재렌더할 때 패널 재채택
   Hooks.on("renderSidebar", () => {
     setTimeout(() => EWKSidebar._adoptFVTTPanels(), 200);
+  });
+
+  // 개별 메시지 삭제 시 우리 로그에서도 제거
+  Hooks.on("deleteChatMessage", (message) => {
+    document.querySelector(`#ewk-chat-log [data-message-id="${message.id}"]`)?.remove();
   });
 
   Hooks.on("updateActor", () => FateStageBar.render());
