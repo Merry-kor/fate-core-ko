@@ -3,32 +3,34 @@
   {{#each actors as |actor|}}
   <div class="ewk-hud__card {{#if actor.isSpeaker}}ewk-hud__card--active{{/if}}"
     data-actor-id="{{actor.id}}">
-    <img class="ewk-hud__port" src="{{actor.img}}" alt="{{actor.name}}"
-      style="border-color: {{actor.color}}">
-    <div class="ewk-hud__info">
-      <div class="ewk-hud__nm">{{actor.name}}</div>
-      {{#if actor.role}}<div class="ewk-hud__div">{{actor.role}}</div>{{/if}}
-      <div class="ewk-hud__fp">
-        <button type="button" class="ewk-hud__fp-btn" data-stage-action="fp-minus">−</button>
-        <span class="ewk-hud__fp-n">{{actor.fp.current}}</span>
-        <button type="button" class="ewk-hud__fp-btn" data-stage-action="fp-plus">+</button>
-        <span class="ewk-hud__fp-l">운명점</span>
+    <div class="ewk-hud__top">
+      <img class="ewk-hud__port" src="{{actor.img}}" alt="{{actor.name}}"
+        style="border-color: {{actor.color}}">
+      <div class="ewk-hud__info">
+        <div class="ewk-hud__nm">{{actor.name}}</div>
+        {{#if actor.role}}<div class="ewk-hud__div">{{actor.role}}</div>{{/if}}
+        <div class="ewk-hud__fp">
+          <button type="button" class="ewk-hud__fp-btn" data-stage-action="fp-minus">−</button>
+          <span class="ewk-hud__fp-n">{{actor.fp.current}}</span>
+          <button type="button" class="ewk-hud__fp-btn" data-stage-action="fp-plus">+</button>
+          <span class="ewk-hud__fp-l">운명점</span>
+        </div>
       </div>
-      {{#if actor.aspectLabel}}
-      <div class="ewk-hud__asp">{{actor.aspectLabel}}</div>
-      {{/if}}
+      <div class="ewk-hud__btns">
+        <button type="button"
+          class="ewk-hud__btn ewk-hud__btn--spk {{#if actor.isSpeaker}}ewk-hud__btn--on{{/if}}"
+          data-stage-action="speak" title="발언권">
+          <i class="fa fa-comment"></i>
+        </button>
+        <button type="button" class="ewk-hud__btn ewk-hud__btn--exit"
+          data-stage-action="remove" title="무대 퇴장">
+          <i class="fa fa-times"></i>
+        </button>
+      </div>
     </div>
-    <div class="ewk-hud__btns">
-      <button type="button"
-        class="ewk-hud__btn ewk-hud__btn--spk {{#if actor.isSpeaker}}ewk-hud__btn--on{{/if}}"
-        data-stage-action="speak" title="발언권">
-        <i class="fa fa-comment"></i>
-      </button>
-      <button type="button" class="ewk-hud__btn ewk-hud__btn--exit"
-        data-stage-action="remove" title="무대 퇴장">
-        <i class="fa fa-times"></i>
-      </button>
-    </div>
+    {{#if actor.aspectLabel}}
+    <div class="ewk-hud__asp-row">{{actor.aspectLabel}}</div>
+    {{/if}}
   </div>
   {{/each}}
   {{else}}

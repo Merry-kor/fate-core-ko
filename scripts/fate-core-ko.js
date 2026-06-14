@@ -1606,8 +1606,8 @@ const FateSceneRail = {
 // ─── Stage Bar ─────────────────────────────────────────────────────────────
 
 const FateStageBar = {
-  _el:    null,
-  _bound: false,  // 이벤트는 최초 한 번만 등록
+  _el: null,
+  _ac: null,  // AbortController — 매 렌더마다 이전 리스너 제거 후 재등록
 
   async render() {
     if (!this._el) {
@@ -1615,8 +1615,6 @@ const FateStageBar = {
       this._el.id = "fate-stage-bar";
       this._el.className = "fate-core-ko";
       document.getElementById("interface")?.appendChild(this._el);
-      // 이벤트는 엘리먼트 생성 직후 한 번만 위임
-      this._bindEvents();
     }
 
     const mySpeakerId = localStorage.getItem(`ewk-speaker-${game.userId}`) ?? null;
@@ -1643,59 +1641,71 @@ const FateStageBar = {
       "systems/fate-core-ko/templates/stage/stage-bar.hbs",
       { actors }
     );
-    // 이벤트는 위임으로 처리되므로 innerHTML 교체 후 재등록 불필요
+
+    // innerHTML 교체 후 발언권 상태를 DOM에 직접 적용 (Handlebars 의존 이중화)
+    const speakerId = localStorage.getItem(`ewk-speaker-${game.userId}`);
+    this._el.querySelectorAll("[data-actor-id]").forEach(card => {
+      const active = card.dataset.actorId === speakerId;
+      card.classList.toggle("ewk-hud__card--active", active);
+      card.querySelector("[data-stage-action='speak']")
+        ?.classList.toggle("ewk-hud__btn--on", active);
+    });
+
+    // 이전 리스너 제거 후 재등록 (AbortController로 누적 방지)
+    this._ac?.abort();
+    this._ac = new AbortController();
+    this._bindEvents(this._ac.signal);
   },
 
-  // 이벤트 위임 — _el 자체에 한 번만 연결, innerHTML 교체에 영향받지 않음
-  _bindEvents() {
+  _bindEvents(signal) {
     const el = this._el;
     if (!el) return;
+    const opts = { signal };
 
     el.addEventListener("click", async e => {
-      const card = e.target.closest("[data-actor-id]");
+      const btn = e.target.closest("button[data-stage-action]");
+      if (!btn) return;
+      const action = btn.dataset.stageAction;
+      const card   = btn.closest("[data-actor-id]");
       if (!card) return;
       const id = card.dataset.actorId;
 
-      if (e.target.closest("[data-stage-action='speak']")) {
+      if (action === "speak") {
         const key = `ewk-speaker-${game.userId}`;
         localStorage.getItem(key) === id
           ? localStorage.removeItem(key)
           : localStorage.setItem(key, id);
-        this.render();
+        await this.render();
         EWKQuickDock.render();
         return;
       }
 
-      if (e.target.closest("[data-stage-action='remove']")) {
+      if (action === "remove") {
         const actor = game.actors.get(id);
         if (!actor) return;
         await actor.unsetFlag("fate-core-ko", "onStage");
         if (localStorage.getItem(`ewk-speaker-${game.userId}`) === id)
           localStorage.removeItem(`ewk-speaker-${game.userId}`);
-        this.render();
         return;
       }
 
-      if (e.target.closest("[data-stage-action='fp-minus']")) {
+      if (action === "fp-minus") {
         const actor = game.actors.get(id);
         if (!actor) return;
         await actor.update({ "system.fatepoints.current": Math.max(0, actor.system.fatepoints.current - 1) });
-        this.render();
         return;
       }
 
-      if (e.target.closest("[data-stage-action='fp-plus']")) {
+      if (action === "fp-plus") {
         const actor = game.actors.get(id);
         if (!actor) return;
         await actor.update({ "system.fatepoints.current": actor.system.fatepoints.current + 1 });
-        this.render();
         return;
       }
-    });
+    }, opts);
 
-    // 드롭 영역 — 이것도 한 번만 등록
-    el.addEventListener("dragover", e => { e.preventDefault(); el.classList.add("ewk-hud--dragover"); });
-    el.addEventListener("dragleave", () => el.classList.remove("ewk-hud--dragover"));
+    el.addEventListener("dragover", e => { e.preventDefault(); el.classList.add("ewk-hud--dragover"); }, opts);
+    el.addEventListener("dragleave", () => el.classList.remove("ewk-hud--dragover"), opts);
     el.addEventListener("drop", async e => {
       e.preventDefault();
       el.classList.remove("ewk-hud--dragover");
@@ -1703,7 +1713,7 @@ const FateStageBar = {
       if (!actorId) return;
       const actor = game.actors?.get(actorId);
       if (actor) await actor.setFlag("fate-core-ko", "onStage", true);
-    });
+    }, opts);
   },
 };
 
@@ -2099,11 +2109,7 @@ Hooks.once("ready", () => {
   EWKAspectWidget.build();
   EWKQuickDock.build();
 
-  // FVTT 기본 컨트롤 버튼 제거
-  setTimeout(() => {
-    document.getElementById("controls")?.remove();
-    document.getElementById("ui-left")?.remove();
-  }, 500);
+  // FVTT 기본 컨트롤 버튼은 CSS로 숨김 (DOM 제거 시 SceneControls.setPosition null 에러 발생)
 
   // FVTT가 사이드바를 재렌더할 때 패널 재채택
   Hooks.on("renderSidebar", () => {

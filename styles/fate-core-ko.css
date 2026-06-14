@@ -1286,30 +1286,50 @@
 
 .ewk-hud__card {
   flex-shrink: 0;
-  width: 240px;
+  width: 248px;
   display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 10px 12px;
+  flex-direction: column;
+  padding: 0;
+  gap: 0;
   background: var(--surface-raised);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-md);
-  cursor: pointer;
+  overflow: hidden;
+  cursor: default;
   transition: border-color var(--dur-base), box-shadow var(--dur-base), background var(--dur-base);
 }
 .ewk-hud__card--active {
   border-color: var(--accent-gold);
-  background: linear-gradient(180deg, rgba(201,162,39,.1), var(--surface-raised));
+  background: linear-gradient(180deg, rgba(201,162,39,.06), var(--surface-raised));
   box-shadow: var(--shadow-gold);
 }
+.ewk-hud__top {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 10px 8px;
+}
 .ewk-hud__port {
-  width: 66px; height: 66px;
+  width: 64px; height: 64px;
   border-radius: var(--radius-xs);
   border: 2px solid var(--border-strong);
   object-fit: contain;
   flex-shrink: 0;
 }
 .ewk-hud__card--active .ewk-hud__port { border-color: var(--accent-gold); }
+.ewk-hud__asp-row {
+  border-top: 1px solid rgba(201,162,39,.18);
+  padding: 5px 10px 7px;
+  font-family: var(--font-serif);
+  font-size: 0.68rem;
+  font-style: italic;
+  color: rgba(201,162,39,.85);
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
 .ewk-hud__empty {
   font-family: var(--font-sans);
   font-size: 0.72rem;
@@ -1319,21 +1339,8 @@
   white-space: nowrap;
   align-self: center;
 }
-.ewk-hud__info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; padding-top: 2px; }
+.ewk-hud__info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; padding-top: 1px; }
 .ewk-hud__nm { font-size: 0.8rem; font-weight: 700; color: var(--text-strong); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ewk-hud__asp {
-  font-family: var(--font-serif);
-  font-size: 0.7rem;
-  font-style: italic;
-  color: var(--text-muted);
-  line-height: 1.3;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  border-left: 2px solid rgba(201,162,39,.35);
-  padding-left: 5px;
-  margin-top: 2px;
-}
 .ewk-hud__div { font-size: 0.65rem; color: var(--text-faint); letter-spacing: 0.03em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 3px; }
 .ewk-hud__fp { display: flex; align-items: center; gap: 3px; margin-top: 3px; }
 .ewk-hud__fp-btn {
