@@ -2929,6 +2929,7 @@ const EWKTyping = {
       this._emit(true);
     }
     this._localTimer = setTimeout(() => this._stopLocal(), 2500);
+    this._applyStageCards();
   },
 
   _stopLocal() {
@@ -2936,6 +2937,7 @@ const EWKTyping = {
     if (!this._localTyping) return;
     this._localTyping = false;
     this._emit(false);
+    this._applyStageCards();
   },
 
   _emit(isTyping) {
@@ -2978,13 +2980,25 @@ const EWKTyping = {
         bar.hidden = false;
       }
     }
-    // ── 스테이지 바 카드 표시 ──
+    this._applyStageCards();
+  },
+
+  _applyStageCards() {
     document.querySelectorAll(".ewk-hud__card--typing")
       .forEach(el => el.classList.remove("ewk-hud__card--typing"));
+    // 다른 사용자
     for (const { actorId } of this._states.values()) {
       if (!actorId) continue;
       document.querySelector(`.ewk-hud__card[data-actor-id="${actorId}"]`)
         ?.classList.add("ewk-hud__card--typing");
+    }
+    // 로컬 사용자 (소켓이 자신에게 돌아오지 않으므로 직접 적용)
+    if (this._localTyping) {
+      const localActorId = localStorage.getItem(`ewk-speaker-${game.userId}`);
+      if (localActorId) {
+        document.querySelector(`.ewk-hud__card[data-actor-id="${localActorId}"]`)
+          ?.classList.add("ewk-hud__card--typing");
+      }
     }
   },
 };
