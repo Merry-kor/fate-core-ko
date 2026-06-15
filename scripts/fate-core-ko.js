@@ -653,7 +653,7 @@ const EWKSidebar = {
 
   // FVTT가 렌더한 패널을 우리 컨테이너로 이동 (커스텀 패널은 건너뜀)
   _adoptFVTTPanels() {
-    const SKIP = new Set(["chat", "actors"]);
+    const SKIP = new Set(["chat", "actors", "scenes"]);
     this.TABS.forEach(({ key }) => {
       if (SKIP.has(key)) return;
       const fvttPanel =
@@ -685,6 +685,7 @@ const EWKSidebar = {
 
     // 커스텀 패널 렌더 or FVTT 패널 채택
     if (key === "actors") this._renderActorPanel();
+    else if (key === "scenes") this._renderScenePanel();
     else if (key !== "chat") {
       try { ui.sidebar?.changeTab(key, "primary"); } catch (_) {}
       setTimeout(() => this._adoptFVTTPanels(), 100);
@@ -914,6 +915,158 @@ const EWKSidebar = {
         el.classList.remove("ewk-acard--dragging");
         setTimeout(() => { _didDrag = false; }, 100);
       });
+    });
+  },
+
+  // ── 장면 패널 ────────────────────────────────────────────────
+  _renderScenePanel() {
+    const panel = document.getElementById("ewk-panel-scenes");
+    if (!panel) return;
+    const isGM  = game.user?.isGM;
+    const active = game.scenes?.active;
+
+    // 폴더별 그룹화
+    const byFolder = {};
+    (game.scenes?.contents ?? []).forEach(s => {
+      const fid = s.folder?.id ?? "__none__";
+      (byFolder[fid] ??= []).push(s);
+    });
+    const folders = (game.folders?.filter(f => f.type === "Scene") ?? [])
+      .sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0) || a.name.localeCompare(b.name, "ko"));
+
+    // 펼침 상태
+    const EXP_KEY = "ewk-scene-exp";
+    let expState = {};
+    try { expState = JSON.parse(localStorage.getItem(EXP_KEY) ?? "{}"); } catch (_) {}
+    const isExp    = id => expState[id] !== false;
+    const toggleExp = id => {
+      expState[id] = !isExp(id);
+      localStorage.setItem(EXP_KEY, JSON.stringify(expState));
+      this._renderScenePanel();
+    };
+
+    const mkCard = (s) => {
+      const isActive = s.id === active?.id;
+      const thumb    = s.thumb || s.background?.src || "";
+      return `<div class="ewk-scard${isActive ? " ewk-scard--active" : ""}" data-scene-id="${s.id}">
+  <div class="ewk-scard-thumb">
+    ${thumb ? `<img src="${thumb}" alt="">` : `<div class="ewk-scard-thumb-ph"></div>`}
+    ${isActive ? `<span class="ewk-scard-badge">활성</span>` : ""}
+  </div>
+  <div class="ewk-scard-body">
+    <div class="ewk-scard-name">${s.name}</div>
+  </div>
+  <div class="ewk-scard-acts">
+    ${isGM && !isActive ? `<button class="ewk-scard-btn ewk-scard-btn--act" data-scene-activate="${s.id}" title="활성화">ON</button>` : ""}
+    <button class="ewk-scard-btn" data-scene-view="${s.id}" title="보기">보기</button>
+    ${isGM ? `<button class="ewk-scard-btn" data-scene-cfg="${s.id}" title="설정">⚙</button>` : ""}
+    ${isGM ? `<button class="ewk-scard-btn ewk-scard-btn--del" data-scene-del="${s.id}" title="삭제">✕</button>` : ""}
+  </div>
+</div>`;
+    };
+
+    const mkGroup = (fid, fname, scenes, isNone = false) => {
+      const exp    = isExp(fid);
+      const sorted = [...scenes].sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0) || a.name.localeCompare(b.name, "ko"));
+      const delBtn = isGM && !isNone
+        ? `<button class="ewk-fldr-btn ewk-fldr-btn--danger" data-sfldr-del="${fid}" title="폴더 삭제">✕</button>` : "";
+      return `<div class="ewk-fldr" data-sfldr-id="${fid}">
+  <div class="ewk-fldr-hdr" data-sfldr-toggle="${fid}">
+    <span class="ewk-fldr-arrow">${exp ? "▾" : "▸"}</span>
+    <span class="ewk-fldr-name">${fname}</span>
+    <span class="ewk-fldr-cnt">${sorted.length}</span>
+    ${delBtn}
+  </div>
+  <div class="ewk-fldr-body${exp ? "" : " ewk-fldr-body--closed"}">
+    ${sorted.map(mkCard).join("") || '<div class="ewk-panel-empty ewk-panel-empty--sm">비어 있음</div>'}
+  </div>
+</div>`;
+    };
+
+    const foldersHtml    = folders.map(f => mkGroup(f.id, f.name, byFolder[f.id] ?? [])).join("");
+    const unfiledScenes  = byFolder["__none__"] ?? [];
+    const unfiledHtml    = (unfiledScenes.length || !folders.length)
+      ? mkGroup("__none__", "미분류", unfiledScenes, true) : "";
+    const allScenes      = game.scenes?.contents ?? [];
+
+    panel.innerHTML = `
+<div class="ewk-panel-toolbar">
+  ${isGM ? `
+    <button class="ewk-panel-new" data-create-sfldr>+ 폴더</button>
+    <button class="ewk-panel-new" data-create-scene>+ 장면</button>` : ""}
+</div>
+<div class="ewk-panel-scroll">
+  ${foldersHtml}${unfiledHtml}
+  ${!allScenes.length ? '<div class="ewk-panel-empty">장면이 없습니다.</div>' : ""}
+</div>`;
+
+    // ── 이벤트 바인딩 ──────────────────────────────────────
+    panel.querySelectorAll("[data-sfldr-toggle]").forEach(hdr => {
+      hdr.addEventListener("click", e => {
+        if (e.target.closest("[data-sfldr-del]")) return;
+        toggleExp(hdr.dataset.sfldrToggle);
+      });
+    });
+
+    panel.querySelectorAll("[data-sfldr-del]").forEach(btn => {
+      btn.addEventListener("click", async e => {
+        e.stopPropagation();
+        const folder = game.folders?.get(btn.dataset.sfldrDel);
+        if (!folder) return;
+        const ok = await foundry.applications.api.DialogV2.confirm({
+          content: `<p>"${folder.name}" 폴더를 삭제할까요? (장면은 유지됩니다)</p>`,
+          yes: { label: "삭제" }, no: { label: "취소" },
+        }).catch(() => false);
+        if (ok) await folder.delete({ deleteSubfolders: false, deleteContents: false });
+      });
+    });
+
+    panel.querySelectorAll("[data-scene-activate]").forEach(btn => {
+      btn.addEventListener("click", async e => {
+        e.stopPropagation();
+        const scene = game.scenes?.get(btn.dataset.sceneActivate);
+        if (scene) await scene.activate().catch(() => {});
+      });
+    });
+
+    panel.querySelectorAll("[data-scene-view]").forEach(btn => {
+      btn.addEventListener("click", async e => {
+        e.stopPropagation();
+        const scene = game.scenes?.get(btn.dataset.sceneView);
+        if (scene) await scene.view().catch(() => {});
+      });
+    });
+
+    panel.querySelectorAll("[data-scene-cfg]").forEach(btn => {
+      btn.addEventListener("click", e => {
+        e.stopPropagation();
+        game.scenes?.get(btn.dataset.sceneCfg)?.sheet?.render(true);
+      });
+    });
+
+    panel.querySelectorAll("[data-scene-del]").forEach(btn => {
+      btn.addEventListener("click", async e => {
+        e.stopPropagation();
+        const scene = game.scenes?.get(btn.dataset.sceneDel);
+        if (!scene) return;
+        const ok = await foundry.applications.api.DialogV2.confirm({
+          content: `<p>"${scene.name}"을(를) 삭제할까요?</p>`,
+          yes: { label: "삭제" }, no: { label: "취소" },
+        }).catch(() => false);
+        if (ok) await scene.delete();
+      });
+    });
+
+    panel.querySelector("[data-create-scene]")?.addEventListener("click", async () => {
+      const name = window.prompt("새 장면 이름:", "새 장면");
+      if (!name?.trim()) return;
+      await Scene.create({ name: name.trim() });
+    });
+
+    panel.querySelector("[data-create-sfldr]")?.addEventListener("click", async () => {
+      const name = window.prompt("폴더 이름:", "새 폴더");
+      if (!name?.trim()) return;
+      await Folder.create({ name: name.trim(), type: "Scene" });
     });
   },
 
@@ -2733,11 +2886,18 @@ Hooks.once("ready", () => {
     if (EWKSidebar._activeTab === "actors") EWKSidebar._renderActorPanel();
   };
   const refreshFolders = (folder) => {
-    if (folder?.type === "Actor" && EWKSidebar._activeTab === "actors") EWKSidebar._renderActorPanel();
+    if (folder?.type === "Actor"  && EWKSidebar._activeTab === "actors") EWKSidebar._renderActorPanel();
+    if (folder?.type === "Scene"  && EWKSidebar._activeTab === "scenes") EWKSidebar._renderScenePanel();
+  };
+  const refreshScenes = () => {
+    if (EWKSidebar._activeTab === "scenes") EWKSidebar._renderScenePanel();
   };
   Hooks.on("createActor",  refreshActors);
   Hooks.on("updateActor",  refreshActors);
   Hooks.on("deleteActor",  refreshActors);
+  Hooks.on("createScene",  refreshScenes);
+  Hooks.on("updateScene",  refreshScenes);
+  Hooks.on("deleteScene",  refreshScenes);
   Hooks.on("createFolder", refreshFolders);
   Hooks.on("updateFolder", refreshFolders);
   Hooks.on("deleteFolder", refreshFolders);
