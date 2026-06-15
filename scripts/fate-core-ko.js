@@ -3168,6 +3168,7 @@ Hooks.on("getSceneControlButtons", controls => {
 Hooks.on("preCreateChatMessage", (message, data, options, userId) => {
   if (userId !== game.userId) return;
   if (message.rolls?.length > 0) return;
+  if (message.content?.includes("ewk-scene-change-msg")) return; // 장면 전환은 나레이터 유지
   const speakerId = localStorage.getItem(`ewk-speaker-${game.userId}`);
   if (!speakerId) return;
   const speakerActor = game.actors?.get(speakerId);
