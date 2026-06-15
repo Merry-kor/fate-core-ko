@@ -661,7 +661,8 @@ const EWKSidebar = {
       <div id="ewk-chat-form">
         <textarea id="ewk-chat-input" rows="2" placeholder="대사나 행동 입력… (Enter)"></textarea>
         <button id="ewk-chat-send" type="button">전송</button>
-      </div>`;
+      </div>
+      <div id="ewk-typing-bar" hidden></div>`;
     return panel;
   },
 
@@ -2888,11 +2889,99 @@ Hooks.once("init", () => {
   });
 });
 
+// ─── Typing Indicator ──────────────────────────────────────────────────────
+
+const EWKTyping = {
+  _states:      new Map(), // userId → { userName, actorId, timer }
+  _localTyping: false,
+  _localTimer:  null,
+
+  init() {
+    game.socket?.on("system.fate-core-ko", (data) => {
+      if (data?.type === "typing") this._receive(data);
+    });
+    document.addEventListener("input", (e) => {
+      if (e.target?.id === "ewk-chat-input") this._onLocalInput();
+    });
+    // 전송·포커스 아웃 시 즉시 중단
+    document.addEventListener("focusout", (e) => {
+      if (e.target?.id === "ewk-chat-input") this._stopLocal();
+    });
+  },
+
+  _onLocalInput() {
+    if (this._localTimer) clearTimeout(this._localTimer);
+    if (!this._localTyping) {
+      this._localTyping = true;
+      this._emit(true);
+    }
+    this._localTimer = setTimeout(() => this._stopLocal(), 2500);
+  },
+
+  _stopLocal() {
+    if (this._localTimer) { clearTimeout(this._localTimer); this._localTimer = null; }
+    if (!this._localTyping) return;
+    this._localTyping = false;
+    this._emit(false);
+  },
+
+  _emit(isTyping) {
+    const actorId = localStorage.getItem(`ewk-speaker-${game.userId}`) ?? null;
+    game.socket?.emit("system.fate-core-ko", {
+      type:     "typing",
+      userId:   game.userId,
+      userName: game.user?.name ?? "알 수 없음",
+      actorId,
+      isTyping,
+    });
+  },
+
+  _receive({ userId, userName, actorId, isTyping }) {
+    if (userId === game.userId) return;
+    const prev = this._states.get(userId);
+    if (prev?.timer) clearTimeout(prev.timer);
+    if (isTyping) {
+      const timer = setTimeout(() => { this._states.delete(userId); this._updateUI(); }, 6000);
+      this._states.set(userId, { userName, actorId, timer });
+    } else {
+      this._states.delete(userId);
+    }
+    this._updateUI();
+  },
+
+  _updateUI() {
+    // ── 타이핑 바 텍스트 ──
+    const bar = document.getElementById("ewk-typing-bar");
+    if (bar) {
+      const users = [...this._states.values()];
+      if (!users.length) {
+        bar.textContent = "";
+        bar.hidden = true;
+      } else {
+        const names = users.map(u => u.userName);
+        bar.textContent = names.length === 1
+          ? `${names[0]}이(가) 대사를 입력하고 있습니다...`
+          : `${names.join(", ")}이(가) 대사를 입력하고 있습니다...`;
+        bar.hidden = false;
+      }
+    }
+    // ── 스테이지 바 카드 표시 ──
+    document.querySelectorAll(".ewk-hud__card--typing")
+      .forEach(el => el.classList.remove("ewk-hud__card--typing"));
+    for (const { actorId } of this._states.values()) {
+      if (!actorId) continue;
+      document.querySelector(`.ewk-hud__card[data-actor-id="${actorId}"]`)
+        ?.classList.add("ewk-hud__card--typing");
+    }
+  },
+};
+
 // ─── Ready ────────────────────────────────────────────────────────────────
 
 Hooks.once("ready", () => {
   // 우리 커스텀 사이드바 빌드 (FVTT #sidebar는 CSS에서 숨김)
   EWKSidebar.build();
+  EWKTyping.init();
   FateStageBar.render();
   FateSceneRail.render();
   EWKAspectWidget.build();

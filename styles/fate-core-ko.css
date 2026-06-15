@@ -2571,6 +2571,29 @@ li:hover .ewk-msg-acts {
 .ewk-fc__cancel-btn:hover { background: rgba(50,55,70,.8); color: #c8c0b0; }
 
 /* 이미지 파일 선택 행 */
+/* ── 타이핑 인디케이터 ── */
+#ewk-typing-bar {
+  padding: 3px 10px 5px;
+  font-size: 0.70rem;
+  color: var(--text-muted);
+  font-style: italic;
+  letter-spacing: 0.01em;
+  min-height: 18px;
+  line-height: 1.4;
+  opacity: 0.85;
+}
+
+@keyframes ewk-typing-pulse {
+  0%, 100% { box-shadow: 0 0 0 1.5px var(--actor-color, var(--accent-gold)),
+             inset 0 0 0 0 transparent; opacity: 1; }
+  50%       { box-shadow: 0 0 10px 3px var(--actor-color, var(--accent-gold));
+             opacity: 0.85; }
+}
+.ewk-hud__card--typing {
+  animation: ewk-typing-pulse 1.4s ease-in-out infinite;
+}
+
+/* ── 이미지 파일 선택 행 ── */
 .ewk-fc__file-row {
   display: flex; gap: 5px; align-items: center;
 }
