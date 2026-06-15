@@ -1659,6 +1659,13 @@
 }
 .ewk-fldr-btn:hover { color: var(--text-body); border-color: var(--border-strong); background: var(--surface-card); }
 .ewk-fldr-btn--danger:hover { color: #c94f4f; border-color: #c94f4f; }
+.ewk-fldr-btn--ren:hover { color: var(--accent-gold); border-color: var(--accent-gold); }
+.ewk-fldr-name-input {
+  font-size: 0.78rem; font-weight: 600;
+  background: var(--surface-input); border: 1px solid var(--accent-gold);
+  color: var(--text-strong); border-radius: var(--radius-xs);
+  padding: 1px 5px; width: 10rem; outline: none;
+}
 
 /* ── 액터 카드 ── */
 .ewk-acard {

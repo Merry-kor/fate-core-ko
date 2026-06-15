@@ -1015,6 +1015,8 @@ const EWKSidebar = {
     const mkGroup = (fid, fname, scenes, isNone = false) => {
       const exp    = isExp(fid);
       const sorted = sortGroup(scenes);
+      const renBtn = isGM && !isNone
+        ? `<button class="ewk-fldr-btn ewk-fldr-btn--ren" data-sfldr-ren="${fid}" title="폴더 이름 수정">✏</button>` : "";
       const delBtn = isGM && !isNone
         ? `<button class="ewk-fldr-btn ewk-fldr-btn--danger" data-sfldr-del="${fid}" title="폴더 삭제">✕</button>` : "";
       return `<div class="ewk-fldr" data-sfldr-id="${fid}">
@@ -1022,7 +1024,7 @@ const EWKSidebar = {
     <span class="ewk-fldr-arrow">${exp ? "▾" : "▸"}</span>
     <span class="ewk-fldr-name">${fname}</span>
     <span class="ewk-fldr-cnt">${sorted.length}</span>
-    ${delBtn}
+    ${renBtn}${delBtn}
   </div>
   <div class="ewk-fldr-body${exp ? "" : " ewk-fldr-body--closed"}">
     ${sorted.map((s, i) => mkCard(s, i, sorted.length)).join("") || '<div class="ewk-panel-empty ewk-panel-empty--sm">비어 있음</div>'}
@@ -1051,6 +1053,7 @@ const EWKSidebar = {
     panel.querySelectorAll("[data-sfldr-toggle]").forEach(hdr => {
       hdr.addEventListener("click", e => {
         if (e.target.closest("[data-sfldr-del]")) return;
+        if (e.target.closest("[data-sfldr-ren]")) return;
         toggleExp(hdr.dataset.sfldrToggle);
       });
     });
@@ -1093,6 +1096,40 @@ const EWKSidebar = {
     });
     panel.querySelectorAll("[data-scene-dn]").forEach(btn => {
       btn.addEventListener("click", async e => { e.stopPropagation(); await reorder(btn.dataset.sceneDn,  1); });
+    });
+
+    // ── 폴더 이름 수정 ────────────────────────────────────
+    panel.querySelectorAll("[data-sfldr-ren]").forEach(btn => {
+      btn.addEventListener("click", async e => {
+        e.stopPropagation();
+        const fid    = btn.dataset.sfldrRen;
+        const folder = game.folders?.get(fid);
+        if (!folder) return;
+        const nameEl = btn.closest(".ewk-fldr-hdr")?.querySelector(".ewk-fldr-name");
+        if (!nameEl) return;
+
+        const input = document.createElement("input");
+        input.type  = "text";
+        input.className = "ewk-fldr-name-input";
+        input.value = folder.name;
+        nameEl.replaceWith(input);
+        input.focus();
+        input.select();
+
+        let saved = false;
+        const save = async () => {
+          if (saved) return;
+          saved = true;
+          const newName = input.value.trim();
+          if (newName && newName !== folder.name) await folder.update({ name: newName });
+          else this._renderScenePanel();
+        };
+        input.addEventListener("keydown", async e => {
+          if (e.key === "Enter")  { e.preventDefault(); await save(); }
+          if (e.key === "Escape") { saved = true; this._renderScenePanel(); }
+        });
+        input.addEventListener("blur", save);
+      });
     });
 
     // ── 나머지 액션 ────────────────────────────────────────
