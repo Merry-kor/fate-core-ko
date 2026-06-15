@@ -2083,6 +2083,7 @@ const EWKFlowchart = {
   _el:            null,
   _activeSceneId: null,
   _editingNodeId: null,
+  _currentMusic:  null,
 
   _key()  { return "ewk-flowcharts"; },
   _uid()  { return `ewk${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`; },
@@ -2106,6 +2107,7 @@ const EWKFlowchart = {
         <div class="ewk-fc__bar-acts">
           <button class="ewk-fc__util" id="ewk-fc-stage-clear" title="무대 전원 퇴장">전원 퇴장</button>
           <button class="ewk-fc__util" id="ewk-fc-vn-clear" title="VN 박스 닫기">VN 닫기</button>
+          <button class="ewk-fc__util" id="ewk-fc-music-stop" title="음악 정지">음악 정지</button>
           <button class="ewk-fc__util ewk-fc__util--close" id="ewk-fc-close">✕</button>
         </div>
       </div>
@@ -2123,6 +2125,7 @@ const EWKFlowchart = {
             <button class="ewk-fc__add-type" data-type="narration">묘사</button>
             <button class="ewk-fc__add-type" data-type="image">이미지</button>
             <button class="ewk-fc__add-type" data-type="aspect">면모</button>
+            <button class="ewk-fc__add-type" data-type="music">음악</button>
             <button class="ewk-fc__add-type" data-type="memo">메모</button>
           </div>
         </main>
@@ -2149,6 +2152,8 @@ const EWKFlowchart = {
     this._el.querySelector("#ewk-fc-vn-clear").onclick = () => {
       document.getElementById("fate-vn-box")?.classList.remove("visible");
     };
+
+    this._el.querySelector("#ewk-fc-music-stop").onclick = () => this.stopMusic();
 
     this._el.querySelector("#ewk-fc-new-scene").onclick = () => {
       const data = this.getData();
@@ -2249,8 +2254,15 @@ const EWKFlowchart = {
     });
   },
 
-  _ico(t)  { return { dialogue:"💬", narration:"📖", image:"🖼️", aspect:"⚡", memo:"📝" }[t] ?? "?"; },
-  _lbl(t)  { return { dialogue:"대사", narration:"묘사", image:"이미지", aspect:"면모", memo:"메모" }[t] ?? t; },
+  _ico(t)  { return { dialogue:"💬", narration:"📖", image:"🖼️", aspect:"⚡", music:"🎵", memo:"📝" }[t] ?? "?"; },
+  _lbl(t)  { return { dialogue:"대사", narration:"묘사", image:"이미지", aspect:"면모", music:"음악", memo:"메모" }[t] ?? t; },
+
+  stopMusic() {
+    if (this._currentMusic) {
+      this._currentMusic.stop();
+      this._currentMusic = null;
+    }
+  },
 
   _buildNodeEl(node, idx, total) {
     const actor = node.actorId ? game.actors?.get(node.actorId) : null;
@@ -2307,16 +2319,26 @@ const EWKFlowchart = {
           <div class="ewk-fc__file-row">
             <input class="ewk-fc__field ewk-fc__file-input" type="text" name="src"
               value="${node.src ?? ""}" placeholder="파일 경로 또는 URL" readonly>
-            <button type="button" class="ewk-fc__file-pick">📁 찾기</button>
+            <button type="button" class="ewk-fc__file-pick" data-picker="image">파일 선택</button>
           </div>
         </label>
         ${node.src ? `<img class="ewk-fc__img-preview" src="${node.src}" alt="">` : `<div class="ewk-fc__img-preview ewk-fc__img-preview--empty"></div>`}`;
+    } else if (node.type === "music") {
+      fields = `
+        <label>음악 파일
+          <div class="ewk-fc__file-row">
+            <input class="ewk-fc__field ewk-fc__file-input" type="text" name="src"
+              value="${node.src ?? ""}" placeholder="파일 경로 또는 URL" readonly>
+            <button type="button" class="ewk-fc__file-pick" data-picker="audio">파일 선택</button>
+          </div>
+        </label>
+        <div class="ewk-fc__music-name">${node.src ? node.src.split("/").pop() : ""}</div>`;
     } else {
       const rows = node.type === "memo" ? 2 : 3;
       fields = `<label>내용<textarea class="ewk-fc__field ewk-fc__ta" name="text" rows="${rows}">${node.text ?? ""}</textarea></label>`;
     }
 
-    const hasLabel = node.type === "image" || node.type === "memo";
+    const hasLabel = node.type === "image" || node.type === "music" || node.type === "memo";
     const div = document.createElement("div");
     div.className = `ewk-fc__edit-form ewk-fc__node--${node.type}`;
     div.innerHTML = `
@@ -2328,16 +2350,22 @@ const EWKFlowchart = {
         <button class="ewk-fc__cancel-btn">취소</button>
       </div>`;
 
-    if (node.type === "image") {
+    if (node.type === "image" || node.type === "music") {
       div.querySelector(".ewk-fc__file-pick")?.addEventListener("click", () => {
-        const srcInput = div.querySelector("[name='src']");
-        const preview  = div.querySelector(".ewk-fc__img-preview");
+        const srcInput   = div.querySelector("[name='src']");
+        const pickerType = div.querySelector(".ewk-fc__file-pick")?.dataset.picker ?? "image";
         new FilePicker({
-          type: "image",
+          type: pickerType,
           current: srcInput?.value ?? "",
           callback: (path) => {
             if (srcInput) srcInput.value = path;
-            if (preview) { preview.src = path; preview.style.display = "block"; }
+            if (node.type === "image") {
+              const preview = div.querySelector(".ewk-fc__img-preview");
+              if (preview) { preview.src = path; preview.style.display = "block"; }
+            } else {
+              const nm = div.querySelector(".ewk-fc__music-name");
+              if (nm) nm.textContent = path.split("/").pop();
+            }
           },
         }).browse();
       });
@@ -2352,7 +2380,7 @@ const EWKFlowchart = {
       if (node.type === "dialogue") {
         n.actorId = div.querySelector("[name='actorId']")?.value ?? "";
         n.text    = div.querySelector("[name='text']")?.value.trim() ?? "";
-      } else if (node.type === "image") {
+      } else if (node.type === "image" || node.type === "music") {
         n.src = div.querySelector("[name='src']")?.value.trim() ?? "";
       } else {
         n.text = div.querySelector("[name='text']")?.value.trim() ?? "";
@@ -2363,7 +2391,7 @@ const EWKFlowchart = {
     };
     div.querySelector(".ewk-fc__cancel-btn").onclick = () => {
       // 새로 추가했는데 저장 안 한 경우 삭제
-      const isEmpty = !node.text && !node.src && !node.actorId;
+      const isEmpty = !node.text && !node.src && !node.actorId && !node.label;
       if (isEmpty) this._delete(node.id);
       else { this._editingNodeId = null; this.renderNodeList(); }
     };
@@ -2425,6 +2453,12 @@ const EWKFlowchart = {
       await ChatMessage.create({
         content: `<div class="ewk-aspect-invoke">⚡ <strong>${node.text}</strong></div>`,
         speaker: { alias: "나레이터" },
+      });
+    } else if (node.type === "music") {
+      if (!node.src) { ui.notifications?.warn("음악 파일을 선택해주세요."); return; }
+      this.stopMusic();
+      this._currentMusic = await foundry.audio.AudioHelper.play({
+        src: node.src, volume: 0.8, loop: true, autoplay: true,
       });
     }
   },

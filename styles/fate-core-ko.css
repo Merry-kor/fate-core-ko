@@ -2377,6 +2377,7 @@ li:hover .ewk-msg-acts {
 .ewk-fc__node--narration { border-left: 3px solid #7a8a5a; }
 .ewk-fc__node--image     { border-left: 3px solid #8a6aaa; }
 .ewk-fc__node--aspect    { border-left: 3px solid #ca9a3a; }
+.ewk-fc__node--music     { border-left: 3px solid #3a9a7a; }
 .ewk-fc__node--memo      { border-left: 3px solid #4a5a6a; }
 
 .ewk-fc__ord-col { display: flex; flex-direction: column; gap: 1px; flex-shrink: 0; padding-top: 2px; }
@@ -2432,6 +2433,7 @@ li:hover .ewk-msg-acts {
 .ewk-fc__edit-form.ewk-fc__node--narration { border-left: 3px solid #7a8a5a; }
 .ewk-fc__edit-form.ewk-fc__node--image     { border-left: 3px solid #8a6aaa; }
 .ewk-fc__edit-form.ewk-fc__node--aspect    { border-left: 3px solid #ca9a3a; }
+.ewk-fc__edit-form.ewk-fc__node--music     { border-left: 3px solid #3a9a7a; }
 .ewk-fc__edit-form.ewk-fc__node--memo      { border-left: 3px solid #4a5a6a; }
 .ewk-fc__ef-hdr { font-size: 0.82rem; color: #d0c8b8; }
 .ewk-fc__edit-form label {
@@ -2480,3 +2482,11 @@ li:hover .ewk-msg-acts {
   object-fit: contain; background: rgba(8,9,13,.5);
 }
 .ewk-fc__img-preview--empty { display: none; }
+.ewk-fc__music-name {
+  font-size: 0.76rem; color: #7abf9a;
+  margin-top: 4px; word-break: break-all;
+  min-height: 1em;
+}
+
+/* ── 게임 일시정지 오버레이 숨김 ── */
+#pause { display: none !important; }
