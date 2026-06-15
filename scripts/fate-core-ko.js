@@ -1591,8 +1591,10 @@ const EWKAspectWidget = {
     });
     document.addEventListener("mousemove", e => {
       if (this._drag) {
-        el.style.left = (this._drag.ox + e.clientX - this._drag.sx) + "px";
-        el.style.top  = (this._drag.oy + e.clientY - this._drag.sy) + "px";
+        const newX = this._drag.ox + e.clientX - this._drag.sx;
+        const newY = this._drag.oy + e.clientY - this._drag.sy;
+        el.style.left = Math.max(0, Math.min(window.innerWidth  - el.offsetWidth,  newX)) + "px";
+        el.style.top  = Math.max(0, Math.min(window.innerHeight - el.offsetHeight, newY)) + "px";
       }
       if (this._resz) {
         el.style.width = Math.max(180, Math.min(600, this._resz.ow + e.clientX - this._resz.sx)) + "px";
@@ -2177,9 +2179,14 @@ const EWKFlowchart = {
       sx = e.clientX - this._el.offsetLeft;
       sy = e.clientY - this._el.offsetTop;
       const move = ev => {
-        this._el.style.left = `${ev.clientX - sx}px`;
-        this._el.style.top  = `${ev.clientY - sy}px`;
-        this._el.style.right = "auto"; this._el.style.bottom = "auto";
+        const newX = ev.clientX - sx;
+        const newY = ev.clientY - sy;
+        const maxX = window.innerWidth  - this._el.offsetWidth;
+        const maxY = window.innerHeight - this._el.offsetHeight;
+        this._el.style.left   = Math.max(0, Math.min(maxX, newX)) + "px";
+        this._el.style.top    = Math.max(0, Math.min(maxY, newY)) + "px";
+        this._el.style.right  = "auto";
+        this._el.style.bottom = "auto";
       };
       const up = () => { document.removeEventListener("mousemove", move); document.removeEventListener("mouseup", up); };
       document.addEventListener("mousemove", move);
