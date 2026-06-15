@@ -1886,9 +1886,10 @@ const FateSceneRail = {
 
     const chapters = [...byFolder.keys()];
     const activeCh = (active?.folder?.name ?? chapters[0]) ?? "장면";
-    const visible  = byFolder.get(activeCh) ?? scenes;
+    const sortArr  = arr => [...arr].sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0) || a.name.localeCompare(b.name, "ko"));
+    const visible  = sortArr(byFolder.get(activeCh) ?? scenes);
 
-    const thumbsHtml = arr => arr.map(s => {
+    const thumbsHtml = arr => sortArr(arr).map(s => {
       // v13: scene.thumb is the generated thumbnail (base64 or path); fall back to background image
       const imgSrc = s.thumb || s.background?.src || "";
       return `
