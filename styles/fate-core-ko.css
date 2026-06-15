@@ -1434,10 +1434,14 @@
   bottom: 0;
   left: 0;
   right: 0;
+  max-height: 52%;
+  display: flex;
+  flex-direction: column;
   padding: 32px 40px 28px;
   background: linear-gradient(0deg, rgba(8,9,13,.94) 0%, rgba(8,9,13,.88) 45%, rgba(8,9,13,.5) 75%, transparent 100%);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
+  box-sizing: border-box;
 }
 #fate-vn-name {
   font-family: var(--font-sans);
@@ -1468,6 +1472,11 @@
   color: #f0ece0;
   max-width: 55ch;
   text-shadow: 0 1px 6px rgba(0,0,0,.9), 0 0 20px rgba(0,0,0,.5);
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(201,162,39,.3) transparent;
 }
 .fate-vn-cursor {
   display: inline-block;
@@ -2386,7 +2395,19 @@ li:hover .ewk-msg-acts {
 .ewk-fc__ord:hover:not([disabled]) { background: rgba(80,75,65,.4); color: #c8c0b0; }
 .ewk-fc__ord[disabled] { opacity: 0.25; cursor: default; }
 
-.ewk-fc__node-ico { font-size: 0.95rem; flex-shrink: 0; margin-top: 1px; }
+.ewk-fc__node-type {
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #706860;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  padding: 0 3px;
+}
 .ewk-fc__node-body { flex: 1; min-width: 0; overflow: hidden; }
 .ewk-fc__node-lbl  { font-size: 0.72rem; color: #8a8070; margin-bottom: 2px; }
 .ewk-fc__node-prev { font-size: 0.78rem; color: #b0a898; white-space: pre-wrap; word-break: break-word; }

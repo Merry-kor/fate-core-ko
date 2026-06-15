@@ -2142,6 +2142,8 @@ const EWKFlowchart = {
       for (const a of game.actors?.contents ?? [])
         if (a.getFlag("fate-core-ko", "onStage")) await a.unsetFlag("fate-core-ko", "onStage");
       localStorage.removeItem(`ewk-speaker-${game.userId}`);
+      FateStageBar.render();
+      EWKQuickDock.render();
     };
 
     this._el.querySelector("#ewk-fc-vn-clear").onclick = () => {
@@ -2252,9 +2254,16 @@ const EWKFlowchart = {
 
   _buildNodeEl(node, idx, total) {
     const actor = node.actorId ? game.actors?.get(node.actorId) : null;
-    const preview = node.type === "dialogue"
-      ? `<span class="ewk-fc__actor-nm">${actor?.name ?? "(액터 없음)"}</span> ${node.text ?? ""}`
-      : (node.src ?? node.text ?? "");
+    let bodyHtml = "";
+    if (node.type === "dialogue") {
+      bodyHtml = `
+        <div class="ewk-fc__node-lbl">${actor?.name ?? "(액터 없음)"}</div>
+        <div class="ewk-fc__node-prev">${node.text ?? ""}</div>`;
+    } else {
+      bodyHtml = `
+        ${node.label ? `<div class="ewk-fc__node-lbl">${node.label}</div>` : ""}
+        <div class="ewk-fc__node-prev">${node.src ?? node.text ?? ""}</div>`;
+    }
 
     const div = document.createElement("div");
     div.className = `ewk-fc__node ewk-fc__node--${node.type}`;
@@ -2263,11 +2272,8 @@ const EWKFlowchart = {
         <button class="ewk-fc__ord" data-mv="up"  ${idx === 0 ? "disabled" : ""}>▲</button>
         <button class="ewk-fc__ord" data-mv="down" ${idx === total - 1 ? "disabled" : ""}>▼</button>
       </div>
-      <span class="ewk-fc__node-ico">${this._ico(node.type)}</span>
-      <div class="ewk-fc__node-body">
-        ${node.label ? `<div class="ewk-fc__node-lbl">${node.label}</div>` : ""}
-        <div class="ewk-fc__node-prev">${preview}</div>
-      </div>
+      <span class="ewk-fc__node-type">${this._lbl(node.type)}</span>
+      <div class="ewk-fc__node-body">${bodyHtml}</div>
       <div class="ewk-fc__node-acts">
         ${node.type !== "memo" ? `<button class="ewk-fc__run" title="실행">▶</button>` : ""}
         <button class="ewk-fc__edit-btn" title="편집">✎</button>
@@ -2310,13 +2316,12 @@ const EWKFlowchart = {
       fields = `<label>내용<textarea class="ewk-fc__field ewk-fc__ta" name="text" rows="${rows}">${node.text ?? ""}</textarea></label>`;
     }
 
+    const hasLabel = node.type === "image" || node.type === "memo";
     const div = document.createElement("div");
     div.className = `ewk-fc__edit-form ewk-fc__node--${node.type}`;
     div.innerHTML = `
-      <div class="ewk-fc__ef-hdr">${this._ico(node.type)} <strong>${this._lbl(node.type)}</strong></div>
-      <label>레이블 (목록에 표시될 이름, 선택)
-        <input class="ewk-fc__field" type="text" name="label" value="${node.label ?? ""}">
-      </label>
+      <div class="ewk-fc__ef-hdr"><strong>${this._lbl(node.type)}</strong></div>
+      ${hasLabel ? `<label>레이블 (목록에 표시될 이름, 선택)<input class="ewk-fc__field" type="text" name="label" value="${node.label ?? ""}"></label>` : ""}
       ${fields}
       <div class="ewk-fc__ef-acts">
         <button class="ewk-fc__save-btn">저장</button>
