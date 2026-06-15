@@ -5,14 +5,6 @@
     <div class="fate-header__portrait">
       <img class="fate-header__img" src="{{actor.img}}" alt="{{actor.name}}"
         data-action="editImage" data-edit="img">
-      <div class="fate-header__token">
-        {{#if tokenImg}}
-        <img class="fate-header__token-img" src="{{tokenImg}}" alt="토큰">
-        {{else}}
-        <div class="fate-header__token-placeholder"></div>
-        {{/if}}
-        <button class="fate-header__token-btn" type="button" data-action="pickTokenImg" title="토큰 이미지 선택">토큰 이미지</button>
-      </div>
     </div>
     <div class="fate-header__info">
       <input class="fate-header__name" type="text" name="name" value="{{actor.name}}"
@@ -44,6 +36,17 @@
           <label class="fate-fp__label">색상</label>
           <input class="fate-fp__color" type="color" name="flags.fate-core-ko.color"
             value="{{actorColor}}" title="캐릭터 색상 (채팅 이름, HUD 테두리)">
+        </div>
+        <div class="fate-fp__group fate-fp__group--token">
+          <label class="fate-fp__label">토큰 이미지</label>
+          <div class="fate-fp__token-row">
+            {{#if tokenImg}}
+            <img class="fate-fp__token-preview" src="{{tokenImg}}" alt="토큰">
+            {{else}}
+            <div class="fate-fp__token-preview fate-fp__token-preview--empty"></div>
+            {{/if}}
+            <button class="fate-fp__token-btn" type="button" data-action="pickTokenImg" title="토큰 이미지 선택">선택</button>
+          </div>
         </div>
       </div>
     </div>
