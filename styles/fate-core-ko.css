@@ -2445,3 +2445,23 @@ li:hover .ewk-msg-acts {
   border-radius: 4px; cursor: pointer;
 }
 .ewk-fc__cancel-btn:hover { background: rgba(50,55,70,.8); color: #c8c0b0; }
+
+/* 이미지 파일 선택 행 */
+.ewk-fc__file-row {
+  display: flex; gap: 5px; align-items: center;
+}
+.ewk-fc__file-input { flex: 1; cursor: default; }
+.ewk-fc__file-pick {
+  flex-shrink: 0;
+  background: rgba(70,40,100,.55); border: 1px solid rgba(180,120,255,.35);
+  color: #d4aaf8; font-size: 0.75rem; padding: 4px 9px;
+  border-radius: 3px; cursor: pointer; white-space: nowrap;
+}
+.ewk-fc__file-pick:hover { background: rgba(100,60,150,.75); color: #fff; }
+.ewk-fc__img-preview {
+  display: block; max-width: 100%; max-height: 140px;
+  border-radius: 4px; margin-top: 4px;
+  border: 1px solid rgba(80,75,65,.4);
+  object-fit: contain; background: rgba(8,9,13,.5);
+}
+.ewk-fc__img-preview--empty { display: none; }

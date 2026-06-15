@@ -2296,7 +2296,15 @@ const EWKFlowchart = {
           <textarea class="ewk-fc__field ewk-fc__ta" name="text" rows="3">${node.text ?? ""}</textarea>
         </label>`;
     } else if (node.type === "image") {
-      fields = `<label>이미지 경로 / URL<input class="ewk-fc__field" type="text" name="src" value="${node.src ?? ""}"></label>`;
+      fields = `
+        <label>이미지
+          <div class="ewk-fc__file-row">
+            <input class="ewk-fc__field ewk-fc__file-input" type="text" name="src"
+              value="${node.src ?? ""}" placeholder="파일 경로 또는 URL" readonly>
+            <button type="button" class="ewk-fc__file-pick">📁 찾기</button>
+          </div>
+        </label>
+        ${node.src ? `<img class="ewk-fc__img-preview" src="${node.src}" alt="">` : `<div class="ewk-fc__img-preview ewk-fc__img-preview--empty"></div>`}`;
     } else {
       const rows = node.type === "memo" ? 2 : 3;
       fields = `<label>내용<textarea class="ewk-fc__field ewk-fc__ta" name="text" rows="${rows}">${node.text ?? ""}</textarea></label>`;
@@ -2314,6 +2322,21 @@ const EWKFlowchart = {
         <button class="ewk-fc__save-btn">저장</button>
         <button class="ewk-fc__cancel-btn">취소</button>
       </div>`;
+
+    if (node.type === "image") {
+      div.querySelector(".ewk-fc__file-pick")?.addEventListener("click", () => {
+        const srcInput = div.querySelector("[name='src']");
+        const preview  = div.querySelector(".ewk-fc__img-preview");
+        new FilePicker({
+          type: "image",
+          current: srcInput?.value ?? "",
+          callback: (path) => {
+            if (srcInput) srcInput.value = path;
+            if (preview) { preview.src = path; preview.style.display = "block"; }
+          },
+        }).browse();
+      });
+    }
 
     div.querySelector(".ewk-fc__save-btn").onclick = () => {
       const d = this.getData();
