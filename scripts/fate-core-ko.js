@@ -276,7 +276,7 @@ class FateCharacterSheet extends foundry.applications.api.HandlebarsApplicationM
 
   static async #onToggleStage(event, target) {
     const onStage = this.actor.getFlag("fate-core-ko", "onStage") ?? false;
-    await this.actor.setFlag("fate-core-ko", "onStage", !onStage);
+    await setActorOnStage(this.actor, !onStage);
     FateStageBar.render();
   }
 
@@ -374,13 +374,25 @@ Hooks.on("renderTokenHUD", (hud, html, _data) => {
   });
 
   div.querySelector("[data-stage-toggle]")?.addEventListener("click", async () => {
-    await actor.setFlag("fate-core-ko", "onStage", !onStage);
+    await setActorOnStage(actor, !onStage);
     FateStageBar.render();
     hud.render();
   });
 });
 
 const getTokenImg = actor => actor?.getFlag?.("fate-core-ko", "tokenImg") || actor?.img || "";
+
+// 플레이어가 소유하지 않은 액터도 무대에 올릴 수 있도록 GM 소켓 경유
+const setActorOnStage = async (actor, value) => {
+  if (actor.isOwner) {
+    if (value) await actor.setFlag("fate-core-ko", "onStage", true);
+    else       await actor.unsetFlag("fate-core-ko", "onStage");
+  } else {
+    game.socket?.emit("system.fate-core-ko", {
+      type: "setOnStage", actorId: actor.id, value: !!value,
+    });
+  }
+};
 
 // ─── VN Speech Box ─────────────────────────────────────────────────────────
 
@@ -2025,7 +2037,7 @@ const FateStageBar = {
         if (!id) return;
         const actor = game.actors?.get(id);
         if (!actor) return;
-        await actor.unsetFlag("fate-core-ko", "onStage");
+        await setActorOnStage(actor, false);
         if (localStorage.getItem(`ewk-speaker-${game.userId}`) === id)
           localStorage.removeItem(`ewk-speaker-${game.userId}`);
       };
@@ -2074,7 +2086,7 @@ const FateStageBar = {
       const actorId = e.dataTransfer?.getData("ewk-actor-id");
       if (!actorId) return;
       const actor = game.actors?.get(actorId);
-      if (actor) await actor.setFlag("fate-core-ko", "onStage", true);
+      if (actor) await setActorOnStage(actor, true);
     });
   },
 
@@ -2257,11 +2269,11 @@ const EWKQuickDock = {
         if (!actor) return;
         const onStage = actor.getFlag("fate-core-ko", "onStage") ?? false;
         if (onStage) {
-          await actor.unsetFlag("fate-core-ko", "onStage");
+          await setActorOnStage(actor, false);
           if (localStorage.getItem(`ewk-speaker-${game.userId}`) === id)
             localStorage.removeItem(`ewk-speaker-${game.userId}`);
         } else {
-          await actor.setFlag("fate-core-ko", "onStage", true);
+          await setActorOnStage(actor, true);
         }
         this.render(); FateStageBar.render();
       });
@@ -2982,6 +2994,19 @@ Hooks.once("ready", () => {
   // 우리 커스텀 사이드바 빌드 (FVTT #sidebar는 CSS에서 숨김)
   EWKSidebar.build();
   EWKTyping.init();
+
+  // 플레이어 → GM: onStage 권한 위임 처리
+  game.socket?.on("system.fate-core-ko", async (data) => {
+    if (data?.type !== "setOnStage" || !game.user?.isGM) return;
+    const actor = game.actors?.get(data.actorId);
+    if (!actor) return;
+    if (data.value) await actor.setFlag("fate-core-ko", "onStage", true);
+    else            await actor.unsetFlag("fate-core-ko", "onStage");
+    FateStageBar.render();
+    EWKQuickDock.render();
+    if (EWKSidebar._activeTab === "actors") EWKSidebar._renderActorPanel();
+  });
+
   FateStageBar.render();
   FateSceneRail.render();
   EWKAspectWidget.build();
