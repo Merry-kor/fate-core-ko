@@ -1279,6 +1279,7 @@ const EWKSidebar = {
       let content = input?.value?.trim();
       if (!content) return;
       input.value = "";
+      EWKTyping._stopLocal();
       // 인용 부호 토글이 켜져 있으면 전송 내용 양쪽에 자동 감쌈
       if (this._currentWrap) {
         const open  = this._currentWrap[0];
@@ -3203,11 +3204,8 @@ Hooks.on("renderChatMessageHTML", (message, html) => {
         header.prepend(img);
       }
     }
-    const mySpeakerId = localStorage.getItem(`ewk-speaker-${game.userId}`);
-    if (actorId === mySpeakerId) {
-      const msgContent = el.querySelector(".message-content");
-      if (msgContent?.textContent?.trim()) FateVNBox.show(actor, msgContent.innerHTML.trim());
-    }
+    const msgContent = el.querySelector(".message-content");
+    if (msgContent?.textContent?.trim()) FateVNBox.show(actor, msgContent.innerHTML.trim());
   } else {
     el.classList.add("ewk-chat--narration");
   }
