@@ -1434,9 +1434,6 @@
   bottom: 0;
   left: 0;
   right: 0;
-  max-height: 52%;
-  display: flex;
-  flex-direction: column;
   padding: 32px 40px 28px;
   background: linear-gradient(0deg, rgba(8,9,13,.94) 0%, rgba(8,9,13,.88) 45%, rgba(8,9,13,.5) 75%, transparent 100%);
   backdrop-filter: blur(6px);
@@ -1472,9 +1469,11 @@
   color: #f0ece0;
   max-width: 55ch;
   text-shadow: 0 1px 6px rgba(0,0,0,.9), 0 0 20px rgba(0,0,0,.5);
+  word-break: break-word;
+  overflow-wrap: break-word;
+  min-height: calc(1.45rem * 1.55 * 3);
+  max-height: calc(1.45rem * 1.55 * 7);
   overflow-y: auto;
-  flex: 1;
-  min-height: 0;
   scrollbar-width: thin;
   scrollbar-color: rgba(201,162,39,.3) transparent;
 }

@@ -2102,10 +2102,10 @@ const EWKFlowchart = {
     this._el.className = "fate-core-ko ewk-fc--open";
     this._el.innerHTML = `
       <div class="ewk-fc__bar" id="ewk-fc-bar">
-        <span class="ewk-fc__title">📋 대사흐름도</span>
+        <span class="ewk-fc__title">대사흐름도</span>
         <div class="ewk-fc__bar-acts">
-          <button class="ewk-fc__util" id="ewk-fc-stage-clear" title="무대 전원 퇴장">⬜ 전원 퇴장</button>
-          <button class="ewk-fc__util" id="ewk-fc-vn-clear" title="VN 박스 닫기">📺 VN 닫기</button>
+          <button class="ewk-fc__util" id="ewk-fc-stage-clear" title="무대 전원 퇴장">전원 퇴장</button>
+          <button class="ewk-fc__util" id="ewk-fc-vn-clear" title="VN 박스 닫기">VN 닫기</button>
           <button class="ewk-fc__util ewk-fc__util--close" id="ewk-fc-close">✕</button>
         </div>
       </div>
@@ -2119,11 +2119,11 @@ const EWKFlowchart = {
           <div class="ewk-fc__node-list" id="ewk-fc-node-list"></div>
           <div class="ewk-fc__add-row" id="ewk-fc-add-row">
             <span class="ewk-fc__add-label">추가:</span>
-            <button class="ewk-fc__add-type" data-type="dialogue">💬 대사</button>
-            <button class="ewk-fc__add-type" data-type="narration">📖 묘사</button>
-            <button class="ewk-fc__add-type" data-type="image">🖼️ 이미지</button>
-            <button class="ewk-fc__add-type" data-type="aspect">⚡ 면모</button>
-            <button class="ewk-fc__add-type" data-type="memo">📝 메모</button>
+            <button class="ewk-fc__add-type" data-type="dialogue">대사</button>
+            <button class="ewk-fc__add-type" data-type="narration">묘사</button>
+            <button class="ewk-fc__add-type" data-type="image">이미지</button>
+            <button class="ewk-fc__add-type" data-type="aspect">면모</button>
+            <button class="ewk-fc__add-type" data-type="memo">메모</button>
           </div>
         </main>
       </div>`;
