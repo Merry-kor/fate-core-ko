@@ -50,7 +50,8 @@ class FateCharacterSheet extends foundry.applications.api.HandlebarsApplicationM
       addItem:      FateCharacterSheet.#onAddItem,
       deleteItem:   FateCharacterSheet.#onDeleteItem,
       editItem:     FateCharacterSheet.#onEditItem,
-      toggleStage:  FateCharacterSheet.#onToggleStage,
+      toggleStage:    FateCharacterSheet.#onToggleStage,
+      pickTokenImg:   FateCharacterSheet.#onPickTokenImg,
     },
   };
 
@@ -187,6 +188,7 @@ class FateCharacterSheet extends foundry.applications.api.HandlebarsApplicationM
       stressTracks: items.filter(i => i.type === "stress"),
       consequences: items.filter(i => i.type === "consequence"),
       extras:       items.filter(i => i.type === "extra"),
+      tokenImg:     actor.getFlag("fate-core-ko", "tokenImg") || "",
       ladder,
       aspectTypes,
       aspectTypeMap,
@@ -276,6 +278,16 @@ class FateCharacterSheet extends foundry.applications.api.HandlebarsApplicationM
     const onStage = this.actor.getFlag("fate-core-ko", "onStage") ?? false;
     await this.actor.setFlag("fate-core-ko", "onStage", !onStage);
     FateStageBar.render();
+  }
+
+  static async #onPickTokenImg(event, target) {
+    new FilePicker({
+      type: "image",
+      current: this.actor.getFlag("fate-core-ko", "tokenImg") || "",
+      callback: async (path) => {
+        await this.actor.setFlag("fate-core-ko", "tokenImg", path);
+      },
+    }).browse();
   }
 }
 
@@ -367,6 +379,8 @@ Hooks.on("renderTokenHUD", (hud, html, _data) => {
     hud.render();
   });
 });
+
+const getTokenImg = actor => actor?.getFlag?.("fate-core-ko", "tokenImg") || actor?.img || "";
 
 // ─── VN Speech Box ─────────────────────────────────────────────────────────
 
@@ -727,7 +741,7 @@ const EWKSidebar = {
         ? `<div class="ewk-acard-fp"><span class="ewk-acard-fp-n">${fp.current}</span><span class="ewk-acard-fp-sep">/</span><span class="ewk-acard-fp-r">${fp.refresh}</span><span class="ewk-acard-fp-l">운명점</span></div>`
         : "";
       return `<div class="ewk-acard" data-actor-id="${a.id}" draggable="true" title="하단 무대 바로 드래그하여 무대 등장">
-  <img class="ewk-acard-port" src="${a.img}" alt="">
+  <img class="ewk-acard-port" src="${getTokenImg(a)}" alt="">
   <div class="ewk-acard-body">
     <div class="ewk-acard-name">${a.name}${stage ? ' <span class="ewk-on-air">ON</span>' : ""}</div>
     ${fpHtml}
@@ -1951,7 +1965,7 @@ const FateStageBar = {
 <div class="ewk-hud__card${spk ? " ewk-hud__card--active" : ""}" data-actor-id="${a.id}" style="--actor-color:${color}">
   <div class="ewk-hud__top">
     <div class="ewk-hud__portbox">
-      <img class="ewk-hud__port" src="${a.img}" alt="">
+      <img class="ewk-hud__port" src="${getTokenImg(a)}" alt="">
     </div>
     <div class="ewk-hud__info">
       <div class="ewk-hud__nm">${a.name}</div>
@@ -2140,7 +2154,7 @@ const EWKQuickDock = {
       const isSpeaker = id === mySpeakerId;
       return `<div class="ewk-qdock-chip${onStage ? " ewk-qdock-chip--on" : ""}${isSpeaker ? " ewk-qdock-chip--spk" : ""}" data-qdock-id="${id}">
   <div class="ewk-qdock-port-wrap">
-    <img class="ewk-qdock-port" src="${a.img}" alt="${a.name}">
+    <img class="ewk-qdock-port" src="${getTokenImg(a)}" alt="${a.name}">
     ${onStage   ? '<span class="ewk-qdock-badge ewk-qdock-badge--stage">ON</span>'  : ""}
     ${isSpeaker ? '<span class="ewk-qdock-badge ewk-qdock-badge--spk">발언</span>' : ""}
   </div>
@@ -3069,7 +3083,7 @@ Hooks.on("renderChatMessageHTML", (message, html) => {
       if (!header.querySelector(".ewk-speaker-portrait")) {
         const img = document.createElement("img");
         img.className = "ewk-speaker-portrait";
-        img.src = actor.img;
+        img.src = getTokenImg(actor);
         img.alt = actor.name;
         if (actorColor) img.style.borderColor = actorColor;
         header.prepend(img);
