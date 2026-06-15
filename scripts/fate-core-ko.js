@@ -922,15 +922,17 @@ const EWKSidebar = {
   _renderScenePanel() {
     const panel = document.getElementById("ewk-panel-scenes");
     if (!panel) return;
-    const isGM  = game.user?.isGM;
+    const isGM   = game.user?.isGM;
     const active = game.scenes?.active;
 
-    // 폴더별 그룹화
+    // 폴더별 그룹화 (sort 기준 정렬)
     const byFolder = {};
     (game.scenes?.contents ?? []).forEach(s => {
       const fid = s.folder?.id ?? "__none__";
       (byFolder[fid] ??= []).push(s);
     });
+    const sortGroup = arr => [...arr].sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0) || a.name.localeCompare(b.name, "ko"));
+
     const folders = (game.folders?.filter(f => f.type === "Scene") ?? [])
       .sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0) || a.name.localeCompare(b.name, "ko"));
 
@@ -938,17 +940,35 @@ const EWKSidebar = {
     const EXP_KEY = "ewk-scene-exp";
     let expState = {};
     try { expState = JSON.parse(localStorage.getItem(EXP_KEY) ?? "{}"); } catch (_) {}
-    const isExp    = id => expState[id] !== false;
+    const isExp     = id => expState[id] !== false;
     const toggleExp = id => {
       expState[id] = !isExp(id);
       localStorage.setItem(EXP_KEY, JSON.stringify(expState));
       this._renderScenePanel();
     };
 
-    const mkCard = (s) => {
+    // sort 값 재배치 (▲▼ 조작 후 깔끔한 간격 보장)
+    const reorder = async (sceneId, dir) => {
+      const scene = game.scenes?.get(sceneId);
+      if (!scene) return;
+      const fid   = scene.folder?.id ?? "__none__";
+      const arr   = sortGroup(byFolder[fid] ?? []);
+      const idx   = arr.findIndex(s => s.id === sceneId);
+      const nIdx  = idx + dir;
+      if (nIdx < 0 || nIdx >= arr.length) return;
+      const swapped = [...arr];
+      [swapped[idx], swapped[nIdx]] = [swapped[nIdx], swapped[idx]];
+      await Scene.updateDocuments(swapped.map((s, i) => ({ _id: s.id, sort: (i + 1) * 100000 })));
+    };
+
+    const mkCard = (s, idx, total) => {
       const isActive = s.id === active?.id;
       const thumb    = s.thumb || s.background?.src || "";
-      return `<div class="ewk-scard${isActive ? " ewk-scard--active" : ""}" data-scene-id="${s.id}">
+      return `<div class="ewk-scard${isActive ? " ewk-scard--active" : ""}" data-scene-id="${s.id}" draggable="${isGM ? "true" : "false"}">
+  ${isGM ? `<div class="ewk-scard-ord">
+    <button class="ewk-scard-ord-btn" data-scene-up="${s.id}" ${idx === 0 ? "disabled" : ""}>▲</button>
+    <button class="ewk-scard-ord-btn" data-scene-dn="${s.id}" ${idx === total - 1 ? "disabled" : ""}>▼</button>
+  </div>` : ""}
   <div class="ewk-scard-thumb">
     ${thumb ? `<img src="${thumb}" alt="">` : `<div class="ewk-scard-thumb-ph"></div>`}
     ${isActive ? `<span class="ewk-scard-badge">활성</span>` : ""}
@@ -967,27 +987,27 @@ const EWKSidebar = {
 
     const mkGroup = (fid, fname, scenes, isNone = false) => {
       const exp    = isExp(fid);
-      const sorted = [...scenes].sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0) || a.name.localeCompare(b.name, "ko"));
+      const sorted = sortGroup(scenes);
       const delBtn = isGM && !isNone
         ? `<button class="ewk-fldr-btn ewk-fldr-btn--danger" data-sfldr-del="${fid}" title="폴더 삭제">✕</button>` : "";
       return `<div class="ewk-fldr" data-sfldr-id="${fid}">
-  <div class="ewk-fldr-hdr" data-sfldr-toggle="${fid}">
+  <div class="ewk-fldr-hdr" data-sfldr-toggle="${fid}" data-sfldr-drop="${fid}">
     <span class="ewk-fldr-arrow">${exp ? "▾" : "▸"}</span>
     <span class="ewk-fldr-name">${fname}</span>
     <span class="ewk-fldr-cnt">${sorted.length}</span>
     ${delBtn}
   </div>
   <div class="ewk-fldr-body${exp ? "" : " ewk-fldr-body--closed"}">
-    ${sorted.map(mkCard).join("") || '<div class="ewk-panel-empty ewk-panel-empty--sm">비어 있음</div>'}
+    ${sorted.map((s, i) => mkCard(s, i, sorted.length)).join("") || '<div class="ewk-panel-empty ewk-panel-empty--sm">비어 있음</div>'}
   </div>
 </div>`;
     };
 
-    const foldersHtml    = folders.map(f => mkGroup(f.id, f.name, byFolder[f.id] ?? [])).join("");
-    const unfiledScenes  = byFolder["__none__"] ?? [];
-    const unfiledHtml    = (unfiledScenes.length || !folders.length)
+    const foldersHtml   = folders.map(f => mkGroup(f.id, f.name, byFolder[f.id] ?? [])).join("");
+    const unfiledScenes = byFolder["__none__"] ?? [];
+    const unfiledHtml   = (unfiledScenes.length || !folders.length)
       ? mkGroup("__none__", "미분류", unfiledScenes, true) : "";
-    const allScenes      = game.scenes?.contents ?? [];
+    const allScenes     = game.scenes?.contents ?? [];
 
     panel.innerHTML = `
 <div class="ewk-panel-toolbar">
@@ -1000,7 +1020,7 @@ const EWKSidebar = {
   ${!allScenes.length ? '<div class="ewk-panel-empty">장면이 없습니다.</div>' : ""}
 </div>`;
 
-    // ── 이벤트 바인딩 ──────────────────────────────────────
+    // ── 폴더 접기/펼치기 ──────────────────────────────────
     panel.querySelectorAll("[data-sfldr-toggle]").forEach(hdr => {
       hdr.addEventListener("click", e => {
         if (e.target.closest("[data-sfldr-del]")) return;
@@ -1008,6 +1028,47 @@ const EWKSidebar = {
       });
     });
 
+    // ── 드래그앤드롭: 장면 → 폴더 이동 ──────────────────
+    panel.querySelectorAll(".ewk-scard[draggable='true']").forEach(card => {
+      card.addEventListener("dragstart", e => {
+        e.stopPropagation();
+        e.dataTransfer.setData("ewk-scene-id", card.dataset.sceneId);
+        e.dataTransfer.effectAllowed = "move";
+        card.classList.add("ewk-scard--dragging");
+      });
+      card.addEventListener("dragend", () => card.classList.remove("ewk-scard--dragging"));
+    });
+
+    panel.querySelectorAll("[data-sfldr-drop]").forEach(hdr => {
+      hdr.addEventListener("dragover", e => {
+        if (!e.dataTransfer.types.includes("ewk-scene-id")) return;
+        e.preventDefault();
+        hdr.classList.add("ewk-fldr-hdr--over");
+      });
+      hdr.addEventListener("dragleave", () => hdr.classList.remove("ewk-fldr-hdr--over"));
+      hdr.addEventListener("drop", async e => {
+        e.preventDefault();
+        hdr.classList.remove("ewk-fldr-hdr--over");
+        const sceneId = e.dataTransfer.getData("ewk-scene-id");
+        if (!sceneId) return;
+        const scene     = game.scenes?.get(sceneId);
+        if (!scene) return;
+        const targetFid = hdr.dataset.sfldrDrop;
+        const newFolder = targetFid === "__none__" ? null : targetFid;
+        if ((scene.folder?.id ?? null) === newFolder) return;
+        await scene.update({ folder: newFolder });
+      });
+    });
+
+    // ── ▲▼ 순서 조정 ──────────────────────────────────────
+    panel.querySelectorAll("[data-scene-up]").forEach(btn => {
+      btn.addEventListener("click", async e => { e.stopPropagation(); await reorder(btn.dataset.sceneUp, -1); });
+    });
+    panel.querySelectorAll("[data-scene-dn]").forEach(btn => {
+      btn.addEventListener("click", async e => { e.stopPropagation(); await reorder(btn.dataset.sceneDn,  1); });
+    });
+
+    // ── 나머지 액션 ────────────────────────────────────────
     panel.querySelectorAll("[data-sfldr-del]").forEach(btn => {
       btn.addEventListener("click", async e => {
         e.stopPropagation();
@@ -1024,26 +1085,21 @@ const EWKSidebar = {
     panel.querySelectorAll("[data-scene-activate]").forEach(btn => {
       btn.addEventListener("click", async e => {
         e.stopPropagation();
-        const scene = game.scenes?.get(btn.dataset.sceneActivate);
-        if (scene) await scene.activate().catch(() => {});
+        await game.scenes?.get(btn.dataset.sceneActivate)?.activate().catch(() => {});
       });
     });
-
     panel.querySelectorAll("[data-scene-view]").forEach(btn => {
       btn.addEventListener("click", async e => {
         e.stopPropagation();
-        const scene = game.scenes?.get(btn.dataset.sceneView);
-        if (scene) await scene.view().catch(() => {});
+        await game.scenes?.get(btn.dataset.sceneView)?.view().catch(() => {});
       });
     });
-
     panel.querySelectorAll("[data-scene-cfg]").forEach(btn => {
       btn.addEventListener("click", e => {
         e.stopPropagation();
         game.scenes?.get(btn.dataset.sceneCfg)?.sheet?.render(true);
       });
     });
-
     panel.querySelectorAll("[data-scene-del]").forEach(btn => {
       btn.addEventListener("click", async e => {
         e.stopPropagation();
@@ -1062,7 +1118,6 @@ const EWKSidebar = {
       if (!name?.trim()) return;
       await Scene.create({ name: name.trim() });
     });
-
     panel.querySelector("[data-create-sfldr]")?.addEventListener("click", async () => {
       const name = window.prompt("폴더 이름:", "새 폴더");
       if (!name?.trim()) return;
