@@ -439,17 +439,26 @@ const FateVNBox = {
     });
   },
 
-  show(actor, text) {
+  show(actor, html) {
     this._ensure();
     const portrait = document.getElementById("fate-vn-portrait");
     const nameEl   = document.getElementById("fate-vn-name");
     const textEl   = document.getElementById("fate-vn-text");
 
-    // 이름·텍스트 즉시 갱신
+    // 이름 갱신
     nameEl.textContent = actor.name;
     nameEl.style.setProperty("--vn-name-color", actor.getFlag("fate-core-ko", "color") || "var(--accent-gold)");
+
+    // 애니메이션 클래스 추출 후 textEl에 적용
+    const emoMatch = html.match(/ewk-emo--([\w]+)/);
+    textEl.className = emoMatch ? `ewk-emo ewk-emo--${emoMatch[1]}` : "";
     textEl.innerHTML = "";
     this._el.classList.add("visible");
+
+    // plain text 추출 (타이프라이터용)
+    const tmp = document.createElement("div");
+    tmp.innerHTML = html;
+    const text = tmp.textContent ?? html;
 
     if (this._timer) { clearInterval(this._timer); this._timer = null; }
     let i = 0;
@@ -2852,8 +2861,8 @@ Hooks.on("renderChatMessageHTML", (message, html) => {
     }
     const mySpeakerId = localStorage.getItem(`ewk-speaker-${game.userId}`);
     if (actorId === mySpeakerId) {
-      const content = el.querySelector(".message-content")?.textContent?.trim();
-      if (content) FateVNBox.show(actor, content);
+      const msgContent = el.querySelector(".message-content");
+      if (msgContent?.textContent?.trim()) FateVNBox.show(actor, msgContent.innerHTML.trim());
     }
   } else {
     el.classList.add("ewk-chat--narration");

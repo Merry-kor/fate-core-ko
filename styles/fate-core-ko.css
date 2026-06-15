@@ -1746,6 +1746,12 @@
 }
 
 .ewk-emo { display: inline; }
+
+/* VN 텍스트에 직접 emo 클래스가 붙을 때 block 유지 */
+#fate-vn-text.ewk-emo--shake,
+#fate-vn-text.ewk-emo--shout,
+#fate-vn-text.ewk-emo--wave,
+#fate-vn-text.ewk-emo--glow { display: block; }
 .ewk-emo--shake {
   display: inline-block;
   animation: ewk-shake 0.55s ease-in-out 3;
