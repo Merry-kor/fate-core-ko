@@ -381,6 +381,7 @@ const FateVNBox = {
     this._el = document.createElement("div");
     this._el.id = "fate-vn-box";
     this._el.innerHTML = `
+      <button id="fate-vn-close" title="닫기">✕</button>
       <div id="fate-vn-portrait-wrap">
         <img id="fate-vn-portrait" src="" alt="">
       </div>
@@ -389,6 +390,9 @@ const FateVNBox = {
         <div id="fate-vn-text"></div>
       </div>`;
     document.getElementById("interface")?.appendChild(this._el);
+    this._el.querySelector("#fate-vn-close").onclick = () => {
+      this._el.classList.remove("visible");
+    };
   },
 
   // 투명 여백을 Canvas로 분석해 제거한 data URL 반환 (캐시)
@@ -497,7 +501,7 @@ const FateVNBox = {
         applyPortrait(src);
         applyCropAsync();
       }
-    }, 260); // CSS transition 250ms 보다 약간 길게
+    }, 210); // CSS transition 200ms 보다 약간 길게
   },
 };
 
@@ -610,6 +614,7 @@ const EWKSidebar = {
         <span id="ewk-scene-badge" class="ewk-scene-badge">${sceneName}</span>
         <div class="ewk-hdr-acts">
           <div id="ewk-wpresets">${widthBtns}</div>
+          ${game.user?.isGM ? `<button class="ewk-hdr-btn ewk-hdr-btn--fc" id="ewk-fc-btn">📋 흐름도</button>` : ""}
           <button class="ewk-hdr-btn" id="ewk-dl-btn">⬇ 로그</button>
           <button class="ewk-hdr-btn" id="ewk-print-btn">📄 인쇄</button>
           <button class="ewk-hdr-btn ewk-hdr-btn--danger" id="ewk-clear-btn">🗑 삭제</button>
@@ -1148,6 +1153,7 @@ const EWKSidebar = {
           b.classList.toggle("ewk-wpbtn--on", b.dataset.w === btn.dataset.w));
       });
     });
+    document.getElementById("ewk-fc-btn")?.addEventListener("click",   () => EWKFlowchart.toggle());
     document.getElementById("ewk-dl-btn")?.addEventListener("click",  () => this._downloadLog());
     document.getElementById("ewk-print-btn")?.addEventListener("click", () => this._printLog());
     document.getElementById("ewk-clear-btn")?.addEventListener("click", () => this._clearLog());
@@ -2041,6 +2047,358 @@ const EWKQuickDock = {
     el.querySelectorAll("[data-qdock-kick]").forEach(btn => {
       btn.addEventListener("click", e => { e.stopPropagation(); this.removeActor(btn.dataset.qdockKick); });
     });
+  },
+};
+
+// ─── Image Overlay ─────────────────────────────────────────────────────────
+const EWKImageOverlay = {
+  show(src, label) {
+    document.getElementById("ewk-img-overlay")?.remove();
+    const el = document.createElement("div");
+    el.id = "ewk-img-overlay";
+    el.className = "fate-core-ko";
+    el.innerHTML = `
+      <button id="ewk-img-ol-close" title="닫기">✕</button>
+      <img src="${src}" alt="${label ?? ""}" draggable="false">`;
+    document.getElementById("interface")?.appendChild(el);
+    el.querySelector("#ewk-img-ol-close").onclick = () => el.remove();
+    // 드래그 가능
+    el.addEventListener("mousedown", e => {
+      if (e.target.closest("button")) return;
+      const ox = e.clientX - el.offsetLeft, oy = e.clientY - el.offsetTop;
+      const move = ev => {
+        el.style.left = `${ev.clientX - ox}px`;
+        el.style.top  = `${ev.clientY - oy}px`;
+        el.style.right = "auto"; el.style.transform = "none";
+      };
+      const up = () => { document.removeEventListener("mousemove", move); document.removeEventListener("mouseup", up); };
+      document.addEventListener("mousemove", move);
+      document.addEventListener("mouseup", up);
+    });
+  },
+};
+
+// ─── Dialogue Flowchart (대사흐름도) — GM 전용 ──────────────────────────────
+const EWKFlowchart = {
+  _el:            null,
+  _activeSceneId: null,
+  _editingNodeId: null,
+
+  _key()  { return "ewk-flowcharts"; },
+  _uid()  { return `ewk${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`; },
+  getData()   { try { return JSON.parse(localStorage.getItem(this._key()) ?? "[]"); } catch { return []; } },
+  saveData(d) { localStorage.setItem(this._key(), JSON.stringify(d)); },
+
+  toggle() {
+    if (!game.user?.isGM) return;
+    if (!this._el) { this._build(); return; }
+    if (!this._el.isConnected) document.getElementById("interface")?.appendChild(this._el);
+    this._el.classList.toggle("ewk-fc--open");
+  },
+
+  _build() {
+    this._el = document.createElement("div");
+    this._el.id = "ewk-fc-panel";
+    this._el.className = "fate-core-ko ewk-fc--open";
+    this._el.innerHTML = `
+      <div class="ewk-fc__bar" id="ewk-fc-bar">
+        <span class="ewk-fc__title">📋 대사흐름도</span>
+        <div class="ewk-fc__bar-acts">
+          <button class="ewk-fc__util" id="ewk-fc-stage-clear" title="무대 전원 퇴장">⬜ 전원 퇴장</button>
+          <button class="ewk-fc__util" id="ewk-fc-vn-clear" title="VN 박스 닫기">📺 VN 닫기</button>
+          <button class="ewk-fc__util ewk-fc__util--close" id="ewk-fc-close">✕</button>
+        </div>
+      </div>
+      <div class="ewk-fc__body">
+        <aside class="ewk-fc__scenes-col">
+          <div class="ewk-fc__scene-list" id="ewk-fc-scene-list"></div>
+          <button class="ewk-fc__new-scene" id="ewk-fc-new-scene">+ 장면 추가</button>
+        </aside>
+        <main class="ewk-fc__nodes-col">
+          <p class="ewk-fc__hint" id="ewk-fc-hint">← 장면을 선택하세요</p>
+          <div class="ewk-fc__node-list" id="ewk-fc-node-list"></div>
+          <div class="ewk-fc__add-row" id="ewk-fc-add-row">
+            <span class="ewk-fc__add-label">추가:</span>
+            <button class="ewk-fc__add-type" data-type="dialogue">💬 대사</button>
+            <button class="ewk-fc__add-type" data-type="narration">📖 묘사</button>
+            <button class="ewk-fc__add-type" data-type="image">🖼️ 이미지</button>
+            <button class="ewk-fc__add-type" data-type="aspect">⚡ 면모</button>
+            <button class="ewk-fc__add-type" data-type="memo">📝 메모</button>
+          </div>
+        </main>
+      </div>`;
+    document.getElementById("interface")?.appendChild(this._el);
+    this._bind();
+    this._initDrag();
+    this.renderSceneList();
+    this._updateNodeArea();
+  },
+
+  _bind() {
+    this._el.querySelector("#ewk-fc-close").onclick = () => this._el.classList.remove("ewk-fc--open");
+
+    this._el.querySelector("#ewk-fc-stage-clear").onclick = async () => {
+      if (!confirm("무대의 모든 액터를 퇴장시키겠습니까?")) return;
+      for (const a of game.actors?.contents ?? [])
+        if (a.getFlag("fate-core-ko", "onStage")) await a.unsetFlag("fate-core-ko", "onStage");
+      localStorage.removeItem(`ewk-speaker-${game.userId}`);
+    };
+
+    this._el.querySelector("#ewk-fc-vn-clear").onclick = () => {
+      document.getElementById("fate-vn-box")?.classList.remove("visible");
+    };
+
+    this._el.querySelector("#ewk-fc-new-scene").onclick = () => {
+      const data = this.getData();
+      const title = prompt("장면 이름:", `장면 ${data.length + 1}`);
+      if (!title?.trim()) return;
+      data.push({ id: this._uid(), title: title.trim(), nodes: [] });
+      this.saveData(data);
+      this.renderSceneList();
+    };
+
+    this._el.querySelectorAll(".ewk-fc__add-type").forEach(btn => {
+      btn.onclick = () => this._startAdd(btn.dataset.type);
+    });
+  },
+
+  _initDrag() {
+    const bar = this._el.querySelector("#ewk-fc-bar");
+    let sx, sy;
+    bar.addEventListener("mousedown", e => {
+      if (e.target.closest("button")) return;
+      sx = e.clientX - this._el.offsetLeft;
+      sy = e.clientY - this._el.offsetTop;
+      const move = ev => {
+        this._el.style.left = `${ev.clientX - sx}px`;
+        this._el.style.top  = `${ev.clientY - sy}px`;
+        this._el.style.right = "auto"; this._el.style.bottom = "auto";
+      };
+      const up = () => { document.removeEventListener("mousemove", move); document.removeEventListener("mouseup", up); };
+      document.addEventListener("mousemove", move);
+      document.addEventListener("mouseup", up);
+    });
+  },
+
+  // ── Scene 렌더 ──────────────────────────────────────────────────────────
+  renderSceneList() {
+    const list = document.getElementById("ewk-fc-scene-list");
+    if (!list) return;
+    list.innerHTML = "";
+    this.getData().forEach(scene => {
+      const el = document.createElement("div");
+      el.className = "ewk-fc__scene-item" + (scene.id === this._activeSceneId ? " ewk-fc__scene-item--on" : "");
+      el.innerHTML = `
+        <span class="ewk-fc__scene-nm">${scene.title}</span>
+        <div class="ewk-fc__scene-acts">
+          <button class="ewk-fc__s-btn" data-rename="${scene.id}" title="이름 변경">✎</button>
+          <button class="ewk-fc__s-btn ewk-fc__s-btn--del" data-del="${scene.id}" title="삭제">✕</button>
+        </div>`;
+      el.querySelector(".ewk-fc__scene-nm").onclick = () => this.selectScene(scene.id);
+      el.querySelector(`[data-rename]`).onclick = e => {
+        e.stopPropagation();
+        const name = prompt("장면 이름:", scene.title);
+        if (!name?.trim()) return;
+        const d = this.getData(); const s = d.find(x => x.id === scene.id);
+        if (s) { s.title = name.trim(); this.saveData(d); this.renderSceneList(); }
+      };
+      el.querySelector(`[data-del]`).onclick = e => {
+        e.stopPropagation();
+        if (!confirm(`"${scene.title}" 장면을 삭제하시겠습니까?`)) return;
+        const d = this.getData().filter(x => x.id !== scene.id);
+        this.saveData(d);
+        if (this._activeSceneId === scene.id) { this._activeSceneId = null; this._editingNodeId = null; }
+        this.renderSceneList(); this.renderNodeList();
+      };
+      list.appendChild(el);
+    });
+  },
+
+  selectScene(id) {
+    this._activeSceneId = id; this._editingNodeId = null;
+    this.renderSceneList(); this.renderNodeList();
+  },
+
+  _updateNodeArea() {
+    const hint    = document.getElementById("ewk-fc-hint");
+    const nodeList = document.getElementById("ewk-fc-node-list");
+    const addRow  = document.getElementById("ewk-fc-add-row");
+    if (!hint) return;
+    const has = !!this._activeSceneId;
+    hint.style.display     = has ? "none" : "";
+    nodeList.style.display = has ? "" : "none";
+    addRow.style.display   = has ? "" : "none";
+  },
+
+  // ── Node 렌더 ───────────────────────────────────────────────────────────
+  renderNodeList() {
+    this._updateNodeArea();
+    const nodeList = document.getElementById("ewk-fc-node-list");
+    if (!nodeList || !this._activeSceneId) return;
+    const scene = this.getData().find(s => s.id === this._activeSceneId);
+    if (!scene) return;
+    nodeList.innerHTML = "";
+    scene.nodes.forEach((node, idx) => {
+      nodeList.appendChild(
+        node.id === this._editingNodeId
+          ? this._buildEditForm(node)
+          : this._buildNodeEl(node, idx, scene.nodes.length)
+      );
+    });
+  },
+
+  _ico(t)  { return { dialogue:"💬", narration:"📖", image:"🖼️", aspect:"⚡", memo:"📝" }[t] ?? "?"; },
+  _lbl(t)  { return { dialogue:"대사", narration:"묘사", image:"이미지", aspect:"면모", memo:"메모" }[t] ?? t; },
+
+  _buildNodeEl(node, idx, total) {
+    const actor = node.actorId ? game.actors?.get(node.actorId) : null;
+    const preview = node.type === "dialogue"
+      ? `<span class="ewk-fc__actor-nm">${actor?.name ?? "(액터 없음)"}</span> ${node.text ?? ""}`
+      : (node.src ?? node.text ?? "");
+
+    const div = document.createElement("div");
+    div.className = `ewk-fc__node ewk-fc__node--${node.type}`;
+    div.innerHTML = `
+      <div class="ewk-fc__ord-col">
+        <button class="ewk-fc__ord" data-mv="up"  ${idx === 0 ? "disabled" : ""}>▲</button>
+        <button class="ewk-fc__ord" data-mv="down" ${idx === total - 1 ? "disabled" : ""}>▼</button>
+      </div>
+      <span class="ewk-fc__node-ico">${this._ico(node.type)}</span>
+      <div class="ewk-fc__node-body">
+        ${node.label ? `<div class="ewk-fc__node-lbl">${node.label}</div>` : ""}
+        <div class="ewk-fc__node-prev">${preview}</div>
+      </div>
+      <div class="ewk-fc__node-acts">
+        ${node.type !== "memo" ? `<button class="ewk-fc__run" title="실행">▶</button>` : ""}
+        <button class="ewk-fc__edit-btn" title="편집">✎</button>
+        <button class="ewk-fc__del-btn"  title="삭제">✕</button>
+      </div>`;
+
+    div.querySelector("[data-mv='up']")?.addEventListener("click",    () => this._move(node.id, -1));
+    div.querySelector("[data-mv='down']")?.addEventListener("click",  () => this._move(node.id,  1));
+    div.querySelector(".ewk-fc__run")?.addEventListener("click",      () => this._execute(node));
+    div.querySelector(".ewk-fc__edit-btn")?.addEventListener("click", () => { this._editingNodeId = node.id; this.renderNodeList(); });
+    div.querySelector(".ewk-fc__del-btn")?.addEventListener("click",  () => this._delete(node.id));
+    return div;
+  },
+
+  _buildEditForm(node) {
+    const actorOpts = (game.actors?.contents ?? [])
+      .map(a => `<option value="${a.id}"${a.id === node.actorId ? " selected" : ""}>${a.name}</option>`).join("");
+
+    let fields = "";
+    if (node.type === "dialogue") {
+      fields = `
+        <label>액터
+          <select class="ewk-fc__field" name="actorId"><option value="">-- 선택 --</option>${actorOpts}</select>
+        </label>
+        <label>대사
+          <textarea class="ewk-fc__field ewk-fc__ta" name="text" rows="3">${node.text ?? ""}</textarea>
+        </label>`;
+    } else if (node.type === "image") {
+      fields = `<label>이미지 경로 / URL<input class="ewk-fc__field" type="text" name="src" value="${node.src ?? ""}"></label>`;
+    } else {
+      const rows = node.type === "memo" ? 2 : 3;
+      fields = `<label>내용<textarea class="ewk-fc__field ewk-fc__ta" name="text" rows="${rows}">${node.text ?? ""}</textarea></label>`;
+    }
+
+    const div = document.createElement("div");
+    div.className = `ewk-fc__edit-form ewk-fc__node--${node.type}`;
+    div.innerHTML = `
+      <div class="ewk-fc__ef-hdr">${this._ico(node.type)} <strong>${this._lbl(node.type)}</strong></div>
+      <label>레이블 (목록에 표시될 이름, 선택)
+        <input class="ewk-fc__field" type="text" name="label" value="${node.label ?? ""}">
+      </label>
+      ${fields}
+      <div class="ewk-fc__ef-acts">
+        <button class="ewk-fc__save-btn">저장</button>
+        <button class="ewk-fc__cancel-btn">취소</button>
+      </div>`;
+
+    div.querySelector(".ewk-fc__save-btn").onclick = () => {
+      const d = this.getData();
+      const scene = d.find(x => x.id === this._activeSceneId);
+      const n = scene?.nodes.find(x => x.id === node.id);
+      if (!n) return;
+      n.label = div.querySelector("[name='label']")?.value.trim() ?? "";
+      if (node.type === "dialogue") {
+        n.actorId = div.querySelector("[name='actorId']")?.value ?? "";
+        n.text    = div.querySelector("[name='text']")?.value.trim() ?? "";
+      } else if (node.type === "image") {
+        n.src = div.querySelector("[name='src']")?.value.trim() ?? "";
+      } else {
+        n.text = div.querySelector("[name='text']")?.value.trim() ?? "";
+      }
+      this.saveData(d);
+      this._editingNodeId = null;
+      this.renderNodeList();
+    };
+    div.querySelector(".ewk-fc__cancel-btn").onclick = () => {
+      // 새로 추가했는데 저장 안 한 경우 삭제
+      const isEmpty = !node.text && !node.src && !node.actorId;
+      if (isEmpty) this._delete(node.id);
+      else { this._editingNodeId = null; this.renderNodeList(); }
+    };
+    return div;
+  },
+
+  // ── Node 조작 ───────────────────────────────────────────────────────────
+  _startAdd(type) {
+    if (!this._activeSceneId) return;
+    const d = this.getData();
+    const s = d.find(x => x.id === this._activeSceneId);
+    if (!s) return;
+    const node = { id: this._uid(), type, label: "", text: "", src: "", actorId: "" };
+    s.nodes.push(node);
+    this.saveData(d);
+    this._editingNodeId = node.id;
+    this.renderNodeList();
+    document.getElementById("ewk-fc-node-list")?.lastElementChild?.scrollIntoView({ block: "nearest" });
+  },
+
+  _delete(nodeId) {
+    const d = this.getData();
+    const s = d.find(x => x.id === this._activeSceneId);
+    if (!s) return;
+    s.nodes = s.nodes.filter(n => n.id !== nodeId);
+    this.saveData(d);
+    if (this._editingNodeId === nodeId) this._editingNodeId = null;
+    this.renderNodeList();
+  },
+
+  _move(nodeId, dir) {
+    const d = this.getData();
+    const s = d.find(x => x.id === this._activeSceneId);
+    if (!s) return;
+    const i = s.nodes.findIndex(n => n.id === nodeId), j = i + dir;
+    if (j < 0 || j >= s.nodes.length) return;
+    [s.nodes[i], s.nodes[j]] = [s.nodes[j], s.nodes[i]];
+    this.saveData(d);
+    this.renderNodeList();
+  },
+
+  // ── 실행 ───────────────────────────────────────────────────────────────
+  async _execute(node) {
+    if (node.type === "dialogue") {
+      if (!node.actorId || !node.text) { ui.notifications?.warn("액터와 대사를 입력해주세요."); return; }
+      const actor = game.actors?.get(node.actorId);
+      if (!actor) { ui.notifications?.warn("해당 액터를 찾을 수 없습니다."); return; }
+      localStorage.setItem(`ewk-speaker-${game.userId}`, node.actorId);
+      FateStageBar.render(); EWKQuickDock.render();
+      await ChatMessage.create({ content: node.text, speaker: { actor: node.actorId } });
+    } else if (node.type === "narration") {
+      if (!node.text) return;
+      await ChatMessage.create({ content: `<em>${node.text}</em>`, speaker: { alias: "나레이터" } });
+    } else if (node.type === "image") {
+      if (!node.src) { ui.notifications?.warn("이미지 경로를 입력해주세요."); return; }
+      EWKImageOverlay.show(node.src, node.label);
+    } else if (node.type === "aspect") {
+      if (!node.text) return;
+      await ChatMessage.create({
+        content: `<div class="ewk-aspect-invoke">⚡ <strong>${node.text}</strong></div>`,
+        speaker: { alias: "나레이터" },
+      });
+    }
   },
 };
 
