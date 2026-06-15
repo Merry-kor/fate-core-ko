@@ -1437,8 +1437,9 @@ const EWKSidebar = {
     const msgs = [...(game.messages?.values() ?? [])];
     if (!msgs.length) { ui.notifications?.warn("채팅 로그가 비어 있습니다."); return; }
 
-    const worldTitle = game.world?.title ?? "페이트 코어";
-    const sceneName  = game.scenes?.active?.name ?? worldTitle;
+    const worldTitle  = game.world?.title ?? "페이트 코어";
+    const activeScene = game.scenes?.active;
+    const sceneName   = activeScene?.folder?.name ?? activeScene?.name ?? worldTitle;
     const today      = new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" });
 
     // ── 애니메이션 span 제거, 기본 인라인 서식 유지 ──────────
@@ -1690,7 +1691,8 @@ body{background:#6b6b6b;padding:24px;font-family:'NotoSerif','Nanum Myeongjo',Ge
   _downloadLog() {
     const msgs = document.querySelectorAll("#ewk-chat-log li, #ewk-chat-log .chat-message");
     const lines = [];
-    const scene = game.scenes?.active?.name;
+    const _as = game.scenes?.active;
+    const scene = _as?.folder?.name ?? _as?.name;
     if (scene) { lines.push(`=== ${scene} ===`); lines.push(""); }
     msgs.forEach(m => {
       const sender  = m.querySelector(".message-sender")?.textContent?.trim()  ?? "";
