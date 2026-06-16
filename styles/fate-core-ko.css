@@ -3112,16 +3112,12 @@ li:hover .ewk-msg-acts {
 .jwe-num:focus { border-color: var(--ewk-gold-600); }
 .jwe-hint { font-family: var(--font-mono); font-size: 11px; color: var(--text-faint); }
 
-.jwe-body { flex: 1; display: flex; min-height: 0; }
-.jwe-src-col { width: 46%; flex: 0 0 auto; border-right: 1px solid var(--border-strong); display: flex; min-height: 0; }
-.jwe-src {
-  flex: 1; width: 100%; resize: none; border: 0; outline: none;
-  padding: 16px 18px;
-  background: var(--surface-well); color: #cdd6e6;
-  font-family: var(--font-mono); font-size: 12.5px; line-height: 1.65;
-  tab-size: 2;
-}
-.jwe-prev-col { flex: 1; min-width: 0; display: flex; }
+.jwe-body { flex: 1; display: flex; min-height: 0; position: relative; }
+.jwe-mode-btn { font-family: var(--font-mono); }
+.jwe-tb-btn b, .jwe-tb-btn i { font-size: 13px; }
+
+/* 시각 편집 영역 */
+.jwe-visual { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .jwe-prev-canvas {
   flex: 1; overflow: auto;
   background:
@@ -3129,6 +3125,29 @@ li:hover .ewk-msg-acts {
     var(--ewk-ink-900);
   padding: 24px; display: flex; justify-content: flex-start; align-items: flex-start;
 }
+.jwe-edit-hint {
+  flex: 0 0 auto; padding: 7px 16px;
+  font-family: var(--font-mono); font-size: 11px; color: var(--text-faint);
+  background: var(--ewk-ink-850); border-top: 1px solid var(--border-strong);
+  text-align: center;
+}
+/* contenteditable 문서 — 편집 가능 표시 */
+#jwe-doc { outline: none; cursor: text; }
+#jwe-doc:focus { box-shadow: var(--shadow-lg), 0 0 0 2px var(--ewk-gold-600); }
+#jwe-doc img { cursor: pointer; }
+#jwe-doc img.jwe-img-sel { outline: 3px solid var(--ewk-gold-500); outline-offset: 2px; }
+
+/* HTML 소스 영역 (토글 시 표시) */
+.jwe-source { display: none; flex: 1; min-width: 0; }
+.jwe-src {
+  flex: 1; width: 100%; resize: none; border: 0; outline: none;
+  padding: 16px 18px;
+  background: var(--surface-well); color: #cdd6e6;
+  font-family: var(--font-mono); font-size: 12.5px; line-height: 1.65; tab-size: 2;
+}
+.jwe-body--source .jwe-visual { display: none; }
+.jwe-body--source .jwe-source { display: flex; }
+
 .jwe-prev-canvas::-webkit-scrollbar, .jwe-src::-webkit-scrollbar { width: 9px; height: 9px; }
 .jwe-prev-canvas::-webkit-scrollbar-thumb, .jwe-src::-webkit-scrollbar-thumb { background: var(--ewk-ink-650); border-radius: 5px; border: 2px solid transparent; background-clip: padding-box; }
 
@@ -3155,3 +3174,30 @@ li:hover .ewk-msg-acts {
 .jwp-divider { height: 1px; background: var(--border-strong); margin: 8px 0; }
 .jwp-foot { flex: 0 0 auto; display: flex; align-items: center; gap: 8px; padding: 12px 18px; border-top: 1px solid var(--border-strong); background: var(--ewk-ink-850); }
 .jwp .jwe-select { min-width: 92px; }
+
+/* 위험(삭제) 버튼 */
+.jwe-btn--danger { color: #f0a0aa; border-color: var(--ewk-crimson-700); background: rgba(176,31,51,0.12); }
+.jwe-btn--danger:hover { background: rgba(176,31,51,0.24); color: #ffd0d6; }
+
+/* 저널 카드 드래그 중 */
+.ewk-jcard--dragging { opacity: 0.45; }
+
+/* =====================================================
+   커스텀 확인 모달 (EWKConfirm) — 최상위 z-index
+   ===================================================== */
+.ewk-confirm-overlay {
+  position: fixed; inset: 0; z-index: 10050;
+  display: grid; place-items: center;
+  background: rgba(6,7,10,0.62); backdrop-filter: blur(2px);
+}
+.ewk-confirm {
+  width: min(420px, 92vw);
+  background: var(--surface-app);
+  border: 1px solid var(--border-hairline); border-radius: 8px;
+  box-shadow: var(--shadow-stage), 0 0 0 1px rgba(0,0,0,0.5);
+  padding: 22px 24px 18px;
+}
+.ewk-confirm__title { font-family: var(--font-serif); font-weight: 700; font-size: 17px; color: var(--text-strong); margin-bottom: 10px; }
+.ewk-confirm__msg { font-size: 13.5px; color: var(--text-body); line-height: 1.6; }
+.ewk-confirm__btns { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+.ewk-confirm__btns .jwe-btn { margin-left: 0; }
