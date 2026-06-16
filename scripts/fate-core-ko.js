@@ -4101,9 +4101,16 @@ Hooks.once("ready", () => {
   Hooks.on("createFolder",           refreshFolders);
   Hooks.on("updateFolder",           refreshFolders);
   Hooks.on("deleteFolder",           refreshFolders);
-  Hooks.on("createJournalEntry",     () => { if (EWKSidebar._activeTab === "journal") EWKSidebar._renderJournalPanel(); });
+  Hooks.on("createJournalEntry",     () => {
+    if (EWKSidebar._activeTab === "journal") EWKSidebar._renderJournalPanel();
+    EWKJournalViewer.refresh();
+  });
   Hooks.on("updateJournalEntry",     refreshJournals);
-  Hooks.on("deleteJournalEntry",     (entry) => { if (EWKSidebar._activeTab === "journal") EWKSidebar._renderJournalPanel(); EWKJournalViewer.closeIfShowing(entry.id); });
+  Hooks.on("deleteJournalEntry",     (entry) => {
+    if (EWKSidebar._activeTab === "journal") EWKSidebar._renderJournalPanel();
+    EWKJournalViewer.closeIfShowing(entry.id);
+    EWKJournalViewer.refresh();
+  });
 
   Hooks.on("canvasReady", () => {
     const sceneId  = game.scenes?.active?.id ?? null;
