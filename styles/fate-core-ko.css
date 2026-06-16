@@ -3538,41 +3538,76 @@ li:hover .ewk-msg-acts {
 /* =============================================================
    설정 탭 — FVTT Settings SidebarTab 리스타일
    스코프: #ewk-panel-settings
-   기능 변경 없이 시각만 EWK 다크 테마로 통일
+   ⚠ #ewk-panel-settings 자체에는 display 미지정 → .ewk-panel CSS에 위임
    ============================================================= */
 
-#ewk-panel-settings,
+/* 채택된 내부 컨테이너에만 flex 적용 */
 #ewk-panel-settings .sidebar-tab,
 #ewk-panel-settings #settings {
   background: transparent !important;
   color: var(--text-body) !important;
   border: none !important;
   box-shadow: none !important;
-  height: 100%;
+  height: 100% !important;
+  overflow-y: auto !important;
   display: flex !important;
   flex-direction: column !important;
 }
 
-/* ── 섹션 헤더 (h2/h3 구분선) ── */
-#ewk-panel-settings h2,
-#ewk-panel-settings h3,
-#ewk-panel-settings .section-header {
+/* ── 버전 정보 영역 ── */
+#ewk-panel-settings .version,
+#ewk-panel-settings .game-details,
+#ewk-panel-settings .application-title {
+  padding: 12px 14px !important;
+  border-bottom: 1px solid var(--border-strong) !important;
+  background: var(--ewk-ink-850) !important;
+}
+#ewk-panel-settings .version h1,
+#ewk-panel-settings .application-title h1 {
+  font-family: var(--font-serif) !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  color: var(--text-strong) !important;
+  letter-spacing: 0.05em !important;
+  border: none !important;
+  text-shadow: none !important;
+  margin: 0 0 4px !important;
+  padding: 0 !important;
+}
+#ewk-panel-settings .version p,
+#ewk-panel-settings .version dl,
+#ewk-panel-settings .version dt,
+#ewk-panel-settings .version dd {
+  font-family: var(--font-mono) !important;
+  font-size: 11px !important;
+  color: var(--text-faint) !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+#ewk-panel-settings .version dl { display: flex; flex-direction: column; gap: 2px; margin-top: 6px !important; }
+#ewk-panel-settings .version .detail { display: flex; justify-content: space-between; }
+
+/* ── 섹션 헤더 ── */
+#ewk-panel-settings section > h2,
+#ewk-panel-settings section > h3,
+#ewk-panel-settings .settings-header {
   font-family: var(--font-mono) !important;
   font-size: 10px !important;
   font-weight: 600 !important;
   letter-spacing: 0.18em !important;
   text-transform: uppercase !important;
-  color: var(--text-faint) !important;
+  color: var(--ewk-gold-600, var(--accent-gold)) !important;
   border: none !important;
   border-bottom: 1px solid var(--border-strong) !important;
   text-shadow: none !important;
-  padding: 12px 12px 6px !important;
+  padding: 14px 12px 6px !important;
   margin: 0 !important;
 }
 
-/* ── 설정 버튼 목록 ── */
-#ewk-panel-settings .settings-list,
+/* ── 설정 버튼 목록 컨테이너 ── */
 #ewk-panel-settings menu,
+#ewk-panel-settings .settings-list,
+#ewk-panel-settings ol.settings-list,
 #ewk-panel-settings ul.settings-list {
   list-style: none !important;
   margin: 0 !important;
@@ -3581,19 +3616,18 @@ li:hover .ewk-msg-acts {
   flex-direction: column !important;
   gap: 3px !important;
 }
+#ewk-panel-settings menu li,
+#ewk-panel-settings .settings-list li { margin: 0 !important; padding: 0 !important; }
 
-/* 개별 설정 버튼 */
-#ewk-panel-settings .settings-list button,
-#ewk-panel-settings .settings-list a,
-#ewk-panel-settings menu button,
-#ewk-panel-settings button.settings-button {
+/* ── 모든 설정 버튼 — 광범위 선택자 ── */
+#ewk-panel-settings button {
   display: flex !important;
   align-items: center !important;
   gap: 10px !important;
   width: 100% !important;
   padding: 8px 12px !important;
-  background: transparent !important;
-  border: 1px solid transparent !important;
+  background: var(--surface-raised, var(--surface-card)) !important;
+  border: 1px solid var(--border-hairline) !important;
   border-radius: var(--radius-sm) !important;
   color: var(--text-body) !important;
   font-family: var(--font-sans) !important;
@@ -3601,58 +3635,51 @@ li:hover .ewk-msg-acts {
   font-weight: 500 !important;
   text-align: left !important;
   cursor: pointer !important;
+  box-shadow: none !important;
   transition: background var(--dur-fast), border-color var(--dur-fast), color var(--dur-fast) !important;
-  text-decoration: none !important;
 }
-#ewk-panel-settings .settings-list button:hover,
-#ewk-panel-settings .settings-list a:hover,
-#ewk-panel-settings menu button:hover,
-#ewk-panel-settings button.settings-button:hover {
+#ewk-panel-settings button:hover {
   background: var(--surface-card) !important;
-  border-color: var(--border-strong) !important;
+  border-color: var(--ewk-gold-700) !important;
   color: var(--text-strong) !important;
 }
-/* 위험 버튼 (로그아웃, Return to Setup 등) */
-#ewk-panel-settings button[data-action="logout"],
-#ewk-panel-settings button[data-action="returnSetup"],
-#ewk-panel-settings .settings-list li:last-child button {
-  color: var(--ewk-crimson-400, #c94f4f) !important;
-  border-color: transparent !important;
-}
-#ewk-panel-settings button[data-action="logout"]:hover,
-#ewk-panel-settings button[data-action="returnSetup"]:hover {
-  background: rgba(201,79,79,0.08) !important;
-  border-color: rgba(201,79,79,0.3) !important;
-  color: #e06060 !important;
-}
-
-/* 버튼 아이콘 */
-#ewk-panel-settings .settings-list button i,
-#ewk-panel-settings .settings-list a i,
-#ewk-panel-settings menu button i,
-#ewk-panel-settings button.settings-button i {
+#ewk-panel-settings button i,
+#ewk-panel-settings button .fa,
+#ewk-panel-settings button .fas,
+#ewk-panel-settings button .far {
   width: 16px !important;
   text-align: center !important;
   font-size: 13px !important;
   flex-shrink: 0 !important;
   color: var(--text-faint) !important;
 }
-#ewk-panel-settings .settings-list button:hover i,
-#ewk-panel-settings menu button:hover i { color: var(--accent-gold) !important; }
+#ewk-panel-settings button:hover i,
+#ewk-panel-settings button:hover .fa { color: var(--accent-gold) !important; }
+
+/* 위험 버튼 */
+#ewk-panel-settings button[data-action="logout"],
+#ewk-panel-settings button[data-action="returnSetup"] {
+  color: var(--ewk-crimson-400, #c94f4f) !important;
+  border-color: rgba(201,79,79,0.2) !important;
+}
+#ewk-panel-settings button[data-action="logout"]:hover,
+#ewk-panel-settings button[data-action="returnSetup"]:hover {
+  background: rgba(201,79,79,0.1) !important;
+  border-color: rgba(201,79,79,0.4) !important;
+  color: #e06060 !important;
+}
 
 /* ── 플레이어 목록 ── */
 #ewk-panel-settings #player-list,
 #ewk-panel-settings .players-list,
-#ewk-panel-settings ol#player-list {
+#ewk-panel-settings ol.players-list {
   list-style: none !important;
   margin: 0 !important;
-  padding: 4px 8px 8px !important;
+  padding: 6px 8px 10px !important;
   display: flex !important;
   flex-direction: column !important;
-  gap: 2px !important;
+  gap: 3px !important;
 }
-
-/* 플레이어 항목 */
 #ewk-panel-settings .player,
 #ewk-panel-settings li.player {
   display: flex !important;
@@ -3666,10 +3693,9 @@ li:hover .ewk-msg-acts {
 }
 #ewk-panel-settings .player:hover,
 #ewk-panel-settings li.player:hover { border-color: var(--border-strong) !important; }
-
-/* 플레이어 이름 */
 #ewk-panel-settings .player-name,
-#ewk-panel-settings .player h4 {
+#ewk-panel-settings .player h4,
+#ewk-panel-settings li.player > span {
   font-size: 12.5px !important;
   font-weight: 500 !important;
   color: var(--text-body) !important;
@@ -3678,26 +3704,9 @@ li:hover .ewk-msg-acts {
   border: none !important;
   text-shadow: none !important;
 }
-/* GM 표시 */
 #ewk-panel-settings .player.gm .player-name,
 #ewk-panel-settings li.player.gm h4 { color: var(--ewk-gold-300) !important; }
-
-/* 접속 상태 도트 */
-#ewk-panel-settings .player-active,
-#ewk-panel-settings .connection-dot {
-  width: 7px !important;
-  height: 7px !important;
-  border-radius: 50% !important;
-  flex-shrink: 0 !important;
-}
-
-/* 캐릭터 이름 (서브텍스트) */
-#ewk-panel-settings .player-character,
-#ewk-panel-settings .player span {
-  font-size: 11px !important;
-  color: var(--text-faint) !important;
-  font-style: italic !important;
-}
+#ewk-panel-settings .player-character { font-size: 11px !important; color: var(--text-faint) !important; font-style: italic !important; }
 
 /* ── 구분선 ── */
 #ewk-panel-settings hr {
@@ -3718,6 +3727,9 @@ li:hover .ewk-msg-acts {
 #ewk-panel-settings ::-webkit-scrollbar-track { background: transparent; }
 
 /* ── 잡다한 FVTT 기본 스타일 초기화 ── */
+#ewk-panel-settings h2,
+#ewk-panel-settings h3,
+#ewk-panel-settings h4 { text-shadow: none !important; }
 #ewk-panel-settings a { color: inherit !important; text-decoration: none !important; }
 #ewk-panel-settings .fa,
 #ewk-panel-settings i.fas,
