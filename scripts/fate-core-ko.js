@@ -41,7 +41,7 @@ class FateCharacterSheet extends foundry.applications.api.HandlebarsApplicationM
   static DEFAULT_OPTIONS = {
     classes: ["fate-core-ko", "sheet", "actor", "character"],
     window: { resizable: true },
-    position: { width: 980, height: 720 },
+    position: { width: 980, height: 936 },
     form: { submitOnChange: true, closeOnSubmit: false },
     actions: {
       rollSkill:        FateCharacterSheet.#onRollSkill,
