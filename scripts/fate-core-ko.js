@@ -1218,16 +1218,20 @@ const EWKSidebar = {
       this._renderJournalPanel();
     };
 
+    const TPL_LABELS = Object.fromEntries(EWKJournalTemplates.get().map(t => [t.id, t.label.replace(/^\d+\s·\s/, "")]));
     const mkEntry = (e) => {
       const surface = e.getFlag("fate-core-ko", "surface") ?? "dark";
+      const tplId   = e.getFlag("fate-core-ko", "template") ?? null;
       const icon    = surface === "paper" ? "📜" : "📋";
-      const pages   = e.pages?.size ?? 0;
+      const meta    = tplId && TPL_LABELS[tplId] ? TPL_LABELS[tplId] : (surface === "paper" ? "양피지 문서" : "제국 문서");
       return `<div class="ewk-jcard" data-journal-id="${e.id}">
   <span class="ewk-jcard-ico">${icon}</span>
   <div class="ewk-jcard-body">
     <div class="ewk-jcard-name">${e.name}</div>
-    <div class="ewk-jcard-meta">${pages}페이지</div>
+    <div class="ewk-jcard-meta">${meta}</div>
   </div>
+  ${isGM ? `<button class="ewk-acard-btn" data-journal-perm="${e.id}" title="권한 설정">🔑</button>` : ""}
+  ${isGM ? `<button class="ewk-acard-btn" data-journal-edit="${e.id}" title="편집">✏</button>` : ""}
   ${isGM ? `<button class="ewk-acard-btn ewk-acard-del" data-journal-del="${e.id}" title="삭제">✕</button>` : ""}
 </div>`;
     };
@@ -1294,6 +1298,20 @@ const EWKSidebar = {
       });
     });
 
+    panel.querySelectorAll("[data-journal-perm]").forEach(btn => {
+      btn.addEventListener("click", e => {
+        e.stopPropagation();
+        EWKJournalPerms.open(btn.dataset.journalPerm);
+      });
+    });
+
+    panel.querySelectorAll("[data-journal-edit]").forEach(btn => {
+      btn.addEventListener("click", e => {
+        e.stopPropagation();
+        EWKJournalEditor.open(btn.dataset.journalEdit);
+      });
+    });
+
     panel.querySelectorAll("[data-journal-del]").forEach(btn => {
       btn.addEventListener("click", async e => {
         e.stopPropagation();
@@ -1314,17 +1332,7 @@ const EWKSidebar = {
     });
 
     panel.querySelector("#ewk-j-new")?.addEventListener("click", async () => {
-      const name = this._promptText("저널 이름:");
-      if (!name) return;
-      const entry = await JournalEntry.create({ name });
-      if (entry) {
-        await JournalEntryPage.create(
-          { name: "내용", type: "text", text: { content: "", format: 1 } },
-          { parent: entry }
-        );
-        EWKJournalViewer.open(entry.id);
-        entry.sheet?.render(true);
-      }
+      await EWKJournalEditor.createNew();
     });
   },
 
@@ -1885,19 +1893,60 @@ body{background:#6b6b6b;padding:24px;font-family:'NotoSerif','Nanum Myeongjo',Ge
   },
 };
 
+// ─── Journal Templates (디자인 10종 — 런타임 로드) ──────────────────────────
+// 디자인 폴더의 journals-data.js(window.JOURNALS) 를 lazy-load 하여 활용.
+
+const EWK_ASSET_BASE = "systems/fate-core-ko/design/End-War%20Knight%20Design%20System/assets/";
+
+const EWKJournalTemplates = {
+  _list: [],
+  _loaded: false,
+  _loading: null,
+
+  load() {
+    if (this._loaded) return Promise.resolve(this._list);
+    if (this._loading) return this._loading;
+    // 디자인 파일은 `window.JOURNALS = [...]` 형태 — <script> 주입으로 안전하게 로드
+    this._loading = new Promise((resolve) => {
+      const finish = () => {
+        this._list = window.JOURNALS ?? [];
+        this._loaded = true;
+        resolve(this._list);
+      };
+      if (window.JOURNALS) return finish();
+      const s = document.createElement("script");
+      s.src = "systems/fate-core-ko/design/End-War%20Knight%20Design%20System/journal/journals-data.js";
+      s.onload  = finish;
+      s.onerror = () => {
+        console.error("fate-core-ko | 저널 템플릿 로드 실패");
+        this._loaded = true; this._list = []; resolve([]);
+      };
+      document.head.appendChild(s);
+    });
+    return this._loading;
+  },
+
+  get() { return this._list; },
+
+  // 템플릿 HTML 의 ../assets/ 경로를 시스템 경로로 치환
+  resolve(html) { return (html ?? "").replaceAll("../assets/", EWK_ASSET_BASE); },
+
+  byId(id) { return this._list.find(t => t.id === id) ?? null; },
+};
+
 // ─── Journal Viewer ────────────────────────────────────────────────────────
+// FVTT JournalEntry 는 권한/동기화 백엔드로만 사용. 콘텐츠 HTML 은 flag 저장.
 
 const EWKJournalViewer = {
   _entryId: null,
-  _pageIdx: 0,
   _filter:  "",
   _resizeObs: null,
 
-  open(entryId) {
+  async open(entryId) {
     const entry = game.journal?.get(entryId);
     if (!entry || !entry.visible) return;
     this._entryId = entryId;
-    this._pageIdx = 0;
+    await EWKJournalTemplates.load();
 
     let el = document.getElementById("ewk-journal-viewer");
     if (!el) {
@@ -1924,65 +1973,69 @@ const EWKJournalViewer = {
     this._render(el);
   },
 
-  _entry()  { return game.journal?.get(this._entryId) ?? null; },
-  _pages()  { return this._entry()?.pages?.contents ?? []; },
-  _page()   { return this._pages()[this._pageIdx] ?? null; },
+  _entry()   { return game.journal?.get(this._entryId) ?? null; },
   _surface(entry) { return (entry ?? this._entry())?.getFlag("fate-core-ko", "surface") ?? "dark"; },
+  _html(entry)    { return (entry ?? this._entry())?.getFlag("fate-core-ko", "html") ?? ""; },
+  _docW(entry)    { return (entry ?? this._entry())?.getFlag("fate-core-ko", "docW") ?? 720; },
+  _docH(entry)    { return (entry ?? this._entry())?.getFlag("fate-core-ko", "docH") ?? 900; },
 
-  _visibleEntries() {
+  // 레일/네비게이션 순서: 폴더 정렬 → 이름. 검색 필터 적용.
+  _orderedEntries() {
     const q = this._filter.toLowerCase();
-    return (game.journal?.contents ?? [])
-      .filter(e => e.visible && (!q || e.name.toLowerCase().includes(q)))
-      .sort((a, b) => a.name.localeCompare(b.name, "ko"));
+    const all = (game.journal?.contents ?? [])
+      .filter(e => e.visible && (!q || e.name.toLowerCase().includes(q)));
+    const folders = (game.folders?.filter(f => f.type === "JournalEntry") ?? [])
+      .sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0) || a.name.localeCompare(b.name, "ko"));
+    const byFolder = {};
+    all.forEach(e => { const fid = e.folder?.id ?? "__none__"; (byFolder[fid] ??= []).push(e); });
+    const byName = (a, b) => a.name.localeCompare(b.name, "ko");
+    const ordered = [];
+    folders.forEach(f => (byFolder[f.id] ?? []).sort(byName).forEach(e => ordered.push(e)));
+    (byFolder["__none__"] ?? []).sort(byName).forEach(e => ordered.push(e));
+    return { ordered, folders, byFolder, byName };
   },
 
   _render(el) {
     const entry   = this._entry();
-    const page    = this._page();
-    const pages   = this._pages();
     const surface = this._surface(entry);
     const isGM    = game.user?.isGM;
-    const all     = this._visibleEntries();
+    const { ordered, folders, byFolder, byName } = this._orderedEntries();
 
     // ── 좌측 레일 ──────────────────────────────────────────
-    const folders = (game.folders?.filter(f => f.type === "JournalEntry") ?? [])
-      .sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0) || a.name.localeCompare(b.name, "ko"));
-
-    const byFolder = {};
-    all.forEach(e => { const fid = e.folder?.id ?? "__none__"; (byFolder[fid] ??= []).push(e); });
-
     let railHtml = "";
     let idx = 1;
     const mkItem = (e) => {
       const isSel = e.id === this._entryId;
       const surf  = this._surface(e);
+      const tplId = e.getFlag("fate-core-ko", "template");
+      const tpl   = tplId ? EWKJournalTemplates.byId(tplId) : null;
+      const kind  = tpl ? tpl.label.replace(/^\d+\s·\s/, "") : (surf === "paper" ? "양피지 문서" : "제국 문서");
       const n     = String(idx++).padStart(2, "0");
       return `<button class="jw-item${isSel ? " active" : ""}${surf === "paper" ? " paper" : ""}" data-jw-sel="${e.id}">
   <span class="jw-item__no">${n}</span>
   <span class="jw-item__main">
     <span class="jw-item__t">${e.name}</span>
-    <span class="jw-item__k">${e.pages?.size ?? 0}페이지</span>
+    <span class="jw-item__k">${kind}</span>
   </span>
   <span class="jw-item__dot"></span>
 </button>`;
     };
 
     folders.forEach(f => {
-      const items = byFolder[f.id] ?? [];
+      const items = (byFolder[f.id] ?? []).sort(byName);
       if (!items.length) return;
       railHtml += `<div class="jw-grp">${f.name}</div>` + items.map(mkItem).join("");
     });
-    const unfiled = byFolder["__none__"] ?? [];
+    const unfiled = (byFolder["__none__"] ?? []).sort(byName);
     if (unfiled.length) {
       railHtml += `<div class="jw-grp">미분류</div>` + unfiled.map(mkItem).join("");
     }
 
     // ── 메인 영역 ──────────────────────────────────────────
-    const content  = page?.text?.content ?? "";
-    const pageNum  = this._pageIdx + 1;
-    const total    = pages.length;
-    const hasPrev  = this._pageIdx > 0;
-    const hasNext  = this._pageIdx < total - 1;
+    const html    = EWKJournalTemplates.resolve(this._html(entry));
+    const curIdx  = entry ? ordered.findIndex(e => e.id === entry.id) : -1;
+    const hasPrev = curIdx > 0;
+    const hasNext = curIdx >= 0 && curIdx < ordered.length - 1;
 
     el.innerHTML = `<div class="jw-desk-overlay">
 <div class="jw fate-core-ko">
@@ -2011,7 +2064,7 @@ const EWKJournalViewer = {
       </div>
       <div class="jw-rail__foot">
         ${isGM ? `<button class="jw-addbtn" id="jw-add-btn">+ 새 항목</button>` : ""}
-        <span class="jw-rail__count">${all.length}개</span>
+        <span class="jw-rail__count">${ordered.length}개</span>
       </div>
     </div>
     <div class="jw-main">
@@ -2019,17 +2072,17 @@ const EWKJournalViewer = {
         <div class="jw-crumb">
           <span class="jw-crumb__root">전역 일지</span>
           ${entry ? `<span class="jw-crumb__sep">›</span><span class="jw-crumb__title">${entry.name}</span>` : ""}
-          ${page && page.name ? `<span class="jw-crumb__sep">›</span><span class="jw-crumb__kind">${page.name}</span>` : ""}
         </div>
         <div class="jw-bar__spacer"></div>
         <div class="jw-tools">
-          <button class="jw-tool" id="jw-prev" ${hasPrev ? "" : "disabled"} title="이전 페이지">‹</button>
-          <span class="jw-pageno">${entry ? `${pageNum} / ${total}` : "— / —"}</span>
-          <button class="jw-tool" id="jw-next" ${hasNext ? "" : "disabled"} title="다음 페이지">›</button>
-          <div class="jw-divider"></div>
+          <button class="jw-tool" id="jw-prev" ${hasPrev ? "" : "disabled"} title="이전 문서">‹</button>
+          <span class="jw-pageno">${curIdx >= 0 ? `${curIdx + 1} / ${ordered.length}` : "— / —"}</span>
+          <button class="jw-tool" id="jw-next" ${hasNext ? "" : "disabled"} title="다음 문서">›</button>
           ${isGM ? `
-          <button class="jw-tool" id="jw-surf-btn" title="표면 전환 (제국/양피지)">${surface === "paper" ? "🌑" : "📜"}</button>
+          <div class="jw-divider"></div>
+          <button class="jw-tool" id="jw-perm-btn" title="권한 설정">🔑</button>
           <button class="jw-tool" id="jw-edit-btn" title="편집">✏</button>` : ""}
+          <div class="jw-divider"></div>
           <button class="jw-tool" id="jw-print-btn" title="인쇄">🖨</button>
         </div>
       </div>
@@ -2037,14 +2090,12 @@ const EWKJournalViewer = {
         ${entry ? `
         <div class="jw-docwrap" id="jw-docwrap">
           <div class="jw-doc" id="jw-doc">
-            <div class="jr jr-${surface} jr-pad" id="jw-doc-inner">
-              ${content || '<p style="color:var(--text-faint);font-style:italic">내용이 없습니다.</p>'}
-            </div>
+            ${html || `<div class="jr jr-${surface}" style="display:grid;place-items:center;"><p style="color:var(--text-faint);font-style:italic">내용이 비어 있습니다. ${isGM ? "편집 버튼으로 작성하세요." : ""}</p></div>`}
           </div>
         </div>` : `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-faint);font-size:14px">항목을 선택하세요.</div>`}
       </div>
       <div class="jw-status">
-        <span><b>문서</b> ${entry ? String(all.indexOf(entry) + 1).padStart(3, "0") : "—"} / ${String(all.length).padStart(3, "0")}</span>
+        <span><b>문서</b> ${curIdx >= 0 ? String(curIdx + 1).padStart(3, "0") : "—"} / ${String(ordered.length).padStart(3, "0")}</span>
         ${entry ? `<span class="jw-status__surface">
           <span class="jw-surfdot${surface === "paper" ? " paper" : ""}"></span>
           ${surface === "paper" ? "양피지" : "제국 문서"}
@@ -2055,19 +2106,22 @@ const EWKJournalViewer = {
 </div>
 </div>`;
 
-    this._wireViewer(el);
+    this._wireViewer(el, ordered, curIdx);
     if (entry) requestAnimationFrame(() => this._scaleDoc());
   },
 
-  _wireViewer(el) {
+  _wireViewer(el, ordered, curIdx) {
     el.querySelector("[data-jw-close]")?.addEventListener("click", () => this.close());
     el.querySelector(".jw-desk-overlay")?.addEventListener("click", e => {
       if (e.target === e.currentTarget) this.close();
     });
 
-    el.querySelector("#jw-search-input")?.addEventListener("input", e => {
+    const searchEl = el.querySelector("#jw-search-input");
+    searchEl?.addEventListener("input", e => {
       this._filter = e.target.value;
       this._render(el);
+      const s = document.getElementById("jw-search-input");
+      if (s) { s.focus(); s.setSelectionRange(s.value.length, s.value.length); }
     });
 
     el.querySelectorAll("[data-jw-sel]").forEach(btn => {
@@ -2075,34 +2129,28 @@ const EWKJournalViewer = {
         const entry = game.journal?.get(btn.dataset.jwSel);
         if (!entry || !entry.visible) return;
         this._entryId = entry.id;
-        this._pageIdx = 0;
         this._render(el);
       });
     });
 
     el.querySelector("#jw-prev")?.addEventListener("click", () => {
-      if (this._pageIdx > 0) { this._pageIdx--; this._render(el); }
+      if (curIdx > 0) { this._entryId = ordered[curIdx - 1].id; this._render(el); }
     });
     el.querySelector("#jw-next")?.addEventListener("click", () => {
-      const total = this._pages().length;
-      if (this._pageIdx < total - 1) { this._pageIdx++; this._render(el); }
+      if (curIdx >= 0 && curIdx < ordered.length - 1) { this._entryId = ordered[curIdx + 1].id; this._render(el); }
     });
 
-    el.querySelector("#jw-surf-btn")?.addEventListener("click", async () => {
-      const entry = this._entry();
-      if (!entry) return;
-      const cur = this._surface(entry);
-      await entry.setFlag("fate-core-ko", "surface", cur === "paper" ? "dark" : "paper");
-      this._render(el);
+    el.querySelector("#jw-perm-btn")?.addEventListener("click", () => {
+      if (this._entryId) EWKJournalPerms.open(this._entryId);
     });
 
     el.querySelector("#jw-edit-btn")?.addEventListener("click", () => {
-      this._entry()?.sheet?.render(true);
+      if (this._entryId) EWKJournalEditor.open(this._entryId);
     });
 
     el.querySelector("#jw-print-btn")?.addEventListener("click", () => {
-      const inner = el.querySelector("#jw-doc-inner");
-      if (!inner) return;
+      const doc = el.querySelector("#jw-doc");
+      if (!doc) return;
       const styles = Array.from(document.styleSheets).map(s => {
         try { return [...s.cssRules].map(r => r.cssText).join("\n"); } catch(_) { return ""; }
       }).join("\n");
@@ -2110,26 +2158,14 @@ const EWKJournalViewer = {
       if (!w) return;
       w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8">
 <title>${this._entry()?.name ?? "저널"}</title>
-<style>body{margin:0;padding:24px;background:#fff}${styles}</style>
-</head><body class="fate-core-ko">${inner.outerHTML}</body></html>`);
+<style>body{margin:0;padding:24px;background:#fff;display:flex;justify-content:center}${styles}
+.jw-doc{width:${this._docW()}px}</style>
+</head><body class="fate-core-ko"><div class="jw-doc">${EWKJournalTemplates.resolve(this._html())}</div></body></html>`);
       w.document.close();
-      setTimeout(() => w.print(), 400);
+      setTimeout(() => w.print(), 500);
     });
 
-    el.querySelector("#jw-add-btn")?.addEventListener("click", async () => {
-      const name = EWKSidebar._promptText("저널 이름:");
-      if (!name) return;
-      const entry = await JournalEntry.create({ name });
-      if (!entry) return;
-      await JournalEntryPage.create(
-        { name: "내용", type: "text", text: { content: "", format: 1 } },
-        { parent: entry }
-      );
-      this._entryId = entry.id;
-      this._pageIdx = 0;
-      this._render(el);
-      entry.sheet?.render(true);
-    });
+    el.querySelector("#jw-add-btn")?.addEventListener("click", () => EWKJournalEditor.createNew());
 
     this._resizeObs?.disconnect();
     const canvas = el.querySelector("#jw-canvas");
@@ -2144,15 +2180,289 @@ const EWKJournalViewer = {
     const doc    = document.getElementById("jw-doc");
     const wrap   = document.getElementById("jw-docwrap");
     if (!canvas || !doc || !wrap) return;
-    const DOC_W = 760;
+    const DOC_W = this._docW();
+    const DOC_H = this._docH();
     const avail = canvas.clientWidth - 72;
     const scale = Math.min(1, avail / DOC_W);
     doc.style.width     = DOC_W + "px";
+    doc.style.height    = DOC_H + "px";
     doc.style.transform = `scale(${scale})`;
     doc.style.transformOrigin = "top left";
-    const scaledH = doc.scrollHeight * scale;
     wrap.style.width  = (DOC_W * scale) + "px";
-    wrap.style.height = scaledH + "px";
+    wrap.style.height = (DOC_H * scale) + "px";
+  },
+};
+
+// ─── Journal Editor (커스텀 — FVTT 시트 미사용) ──────────────────────────────
+// 좌: HTML 소스 / 우: 실시간 미리보기. 템플릿 팔레트 + 이미지 픽커.
+
+const EWKJournalEditor = {
+  _entryId: null,
+  _docW: 720,
+  _docH: 900,
+  _previewTimer: null,
+
+  async createNew() {
+    if (!game.user?.isGM) return;
+    const name = window.prompt("저널 이름:", "새 기록");
+    if (!name?.trim()) return;
+    await EWKJournalTemplates.load();
+    const entry = await JournalEntry.create({
+      name: name.trim(),
+      flags: { "fate-core-ko": { html: "", surface: "dark", docW: 720, docH: 900 } },
+    });
+    if (entry) this.open(entry.id);
+  },
+
+  async open(entryId) {
+    if (!game.user?.isGM) return;
+    const entry = game.journal?.get(entryId);
+    if (!entry) return;
+    this._entryId = entryId;
+    this._docW = entry.getFlag("fate-core-ko", "docW") ?? 720;
+    this._docH = entry.getFlag("fate-core-ko", "docH") ?? 900;
+    await EWKJournalTemplates.load();
+
+    let el = document.getElementById("ewk-journal-editor");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "ewk-journal-editor";
+      document.body.appendChild(el);
+    }
+    this._render(el);
+  },
+
+  close() {
+    if (this._previewTimer) clearTimeout(this._previewTimer);
+    document.getElementById("ewk-journal-editor")?.remove();
+  },
+
+  _entry() { return game.journal?.get(this._entryId) ?? null; },
+
+  _render(el) {
+    const entry = this._entry();
+    if (!entry) { this.close(); return; }
+    const html = EWKJournalTemplates.resolve(entry.getFlag("fate-core-ko", "html") ?? "");
+    const rawHtml = entry.getFlag("fate-core-ko", "html") ?? "";
+
+    const tplOptions = EWKJournalTemplates.get()
+      .map(t => `<option value="${t.id}">${t.label}</option>`).join("");
+
+    el.innerHTML = `<div class="jw-desk-overlay">
+<div class="jwe fate-core-ko">
+  <div class="jw-title">
+    <div class="jw-title__txt">
+      <span class="jw-title__name">저널 편집</span>
+      <span class="jw-title__sub">DOCUMENT EDITOR</span>
+    </div>
+    <input type="text" class="jwe-title-input" id="jwe-name" value="${(entry.name ?? "").replace(/"/g, '&quot;')}" placeholder="제목">
+    <div class="jw-title__spacer"></div>
+    <button class="jwe-btn jwe-btn--save" id="jwe-save">저장</button>
+    <button class="jwe-btn" id="jwe-cancel">닫기</button>
+  </div>
+  <div class="jwe-toolbar">
+    <label class="jwe-tb-label">템플릿</label>
+    <select class="jwe-select" id="jwe-tpl"><option value="">— 불러오기 —</option>${tplOptions}</select>
+    <div class="jw-divider"></div>
+    <button class="jwe-tb-btn" id="jwe-img">🖼 이미지 삽입</button>
+    <div class="jw-divider"></div>
+    <label class="jwe-tb-label">크기</label>
+    <input type="number" class="jwe-num" id="jwe-w" value="${this._docW}" title="너비(px)"> ×
+    <input type="number" class="jwe-num" id="jwe-h" value="${this._docH}" title="높이(px)">
+    <div class="jw-bar__spacer"></div>
+    <span class="jwe-hint">.jr / .jr-dark / .jr-paper 클래스로 디자인합니다</span>
+  </div>
+  <div class="jwe-body">
+    <div class="jwe-src-col">
+      <textarea class="jwe-src" id="jwe-src" spellcheck="false" placeholder="여기에 HTML 을 작성하세요. 템플릿을 불러와 시작할 수 있습니다.">${rawHtml.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</textarea>
+    </div>
+    <div class="jwe-prev-col">
+      <div class="jwe-prev-canvas" id="jwe-canvas">
+        <div class="jw-docwrap" id="jwe-docwrap">
+          <div class="jw-doc" id="jwe-doc">${html}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>`;
+
+    this._wire(el);
+    requestAnimationFrame(() => this._scalePreview());
+  },
+
+  _wire(el) {
+    el.querySelector("#jwe-cancel")?.addEventListener("click", () => this.close());
+
+    const src = el.querySelector("#jwe-src");
+    src?.addEventListener("input", () => this._updatePreview(el));
+
+    el.querySelector("#jwe-w")?.addEventListener("input", e => {
+      this._docW = parseInt(e.target.value, 10) || 720; this._scalePreview();
+    });
+    el.querySelector("#jwe-h")?.addEventListener("input", e => {
+      this._docH = parseInt(e.target.value, 10) || 900; this._scalePreview();
+    });
+
+    el.querySelector("#jwe-tpl")?.addEventListener("change", async e => {
+      const id = e.target.value;
+      e.target.value = "";
+      if (!id) return;
+      const tpl = EWKJournalTemplates.byId(id);
+      if (!tpl) return;
+      const cur = src?.value?.trim();
+      if (cur) {
+        const ok = await foundry.applications.api.DialogV2.confirm({
+          content: `<p>현재 내용을 "${tpl.label}" 템플릿으로 교체할까요?</p>`,
+          yes: { label: "교체" }, no: { label: "취소" },
+        }).catch(() => false);
+        if (!ok) return;
+      }
+      if (src) src.value = tpl.html.trim();
+      this._docW = tpl.w ?? 720;
+      this._docH = tpl.h ?? 900;
+      const wEl = el.querySelector("#jwe-w"); if (wEl) wEl.value = this._docW;
+      const hEl = el.querySelector("#jwe-h"); if (hEl) hEl.value = this._docH;
+      this._updatePreview(el);
+    });
+
+    el.querySelector("#jwe-img")?.addEventListener("click", () => {
+      new FilePicker({
+        type: "image",
+        callback: (path) => {
+          if (!src) return;
+          const snippet = `<img src="${path}" alt="" style="width:100%;display:block;border-radius:4px;">`;
+          const s = src.selectionStart ?? src.value.length;
+          src.value = src.value.slice(0, s) + snippet + src.value.slice(src.selectionEnd ?? s);
+          this._updatePreview(el);
+        },
+      }).browse();
+    });
+
+    el.querySelector("#jwe-save")?.addEventListener("click", () => this._save(el));
+  },
+
+  _updatePreview(el) {
+    if (this._previewTimer) clearTimeout(this._previewTimer);
+    this._previewTimer = setTimeout(() => {
+      const src = el.querySelector("#jwe-src");
+      const doc = el.querySelector("#jwe-doc");
+      if (src && doc) {
+        doc.innerHTML = EWKJournalTemplates.resolve(src.value);
+        this._scalePreview();
+      }
+    }, 180);
+  },
+
+  _scalePreview() {
+    const canvas = document.getElementById("jwe-canvas");
+    const doc    = document.getElementById("jwe-doc");
+    const wrap   = document.getElementById("jwe-docwrap");
+    if (!canvas || !doc || !wrap) return;
+    const avail = canvas.clientWidth - 48;
+    const scale = Math.min(1, avail / this._docW);
+    doc.style.width     = this._docW + "px";
+    doc.style.height    = this._docH + "px";
+    doc.style.transform = `scale(${scale})`;
+    doc.style.transformOrigin = "top left";
+    wrap.style.width  = (this._docW * scale) + "px";
+    wrap.style.height = (this._docH * scale) + "px";
+  },
+
+  async _save(el) {
+    const entry = this._entry();
+    if (!entry) return;
+    const name = el.querySelector("#jwe-name")?.value?.trim() || entry.name;
+    const html = el.querySelector("#jwe-src")?.value ?? "";
+    const surface = /jr-paper/.test(html) ? "paper" : "dark";
+    await entry.update({
+      name,
+      "flags.fate-core-ko.html": html,
+      "flags.fate-core-ko.surface": surface,
+      "flags.fate-core-ko.docW": this._docW,
+      "flags.fate-core-ko.docH": this._docH,
+    });
+    ui.notifications?.info("저널이 저장되었습니다.");
+    this.close();
+    if (EWKJournalViewer._entryId === entry.id) EWKJournalViewer.refresh();
+  },
+};
+
+// ─── Journal Permissions (커스텀 권한 다이얼로그) ────────────────────────────
+
+const EWKJournalPerms = {
+  open(entryId) {
+    if (!game.user?.isGM) return;
+    const entry = game.journal?.get(entryId);
+    if (!entry) return;
+
+    const LEVELS = CONST.DOCUMENT_OWNERSHIP_LEVELS;
+    const own = entry.ownership ?? {};
+    const players = (game.users?.contents ?? []).filter(u => !u.isGM);
+
+    const lvlSelect = (id, val) => `
+<select class="jwe-select" data-perm-user="${id}">
+  <option value="${LEVELS.INHERIT}"${val === LEVELS.INHERIT || val == null ? " selected" : ""}>기본값</option>
+  <option value="${LEVELS.NONE}"${val === LEVELS.NONE ? " selected" : ""}>없음</option>
+  <option value="${LEVELS.OBSERVER}"${val === LEVELS.OBSERVER ? " selected" : ""}>열람</option>
+  <option value="${LEVELS.OWNER}"${val === LEVELS.OWNER ? " selected" : ""}>편집</option>
+</select>`;
+
+    const rows = players.map(u => `
+<div class="jwp-row">
+  <span class="jwp-user"><span class="jwp-dot" style="background:${u.color}"></span>${u.name}</span>
+  ${lvlSelect(u.id, own[u.id])}
+</div>`).join("") || `<div class="ewk-panel-empty" style="padding:12px">플레이어가 없습니다.</div>`;
+
+    let el = document.getElementById("ewk-journal-perms");
+    if (!el) { el = document.createElement("div"); el.id = "ewk-journal-perms"; document.body.appendChild(el); }
+
+    el.innerHTML = `<div class="jw-desk-overlay">
+<div class="jwp fate-core-ko">
+  <div class="jw-title">
+    <div class="jw-title__txt">
+      <span class="jw-title__name">권한 설정</span>
+      <span class="jw-title__sub">${entry.name}</span>
+    </div>
+    <div class="jw-title__spacer"></div>
+    <i class="jw-wbtns"><i class="jw-close-btn" id="jwp-x" title="닫기" style="cursor:pointer"></i></i>
+  </div>
+  <div class="jwp-body">
+    <div class="jwp-row jwp-row--default">
+      <span class="jwp-user"><b>기본 (모든 플레이어)</b></span>
+      <select class="jwe-select" id="jwp-default">
+        <option value="${LEVELS.NONE}"${(own.default ?? LEVELS.NONE) === LEVELS.NONE ? " selected" : ""}>없음</option>
+        <option value="${LEVELS.OBSERVER}"${(own.default ?? LEVELS.NONE) === LEVELS.OBSERVER ? " selected" : ""}>열람</option>
+        <option value="${LEVELS.OWNER}"${(own.default ?? LEVELS.NONE) === LEVELS.OWNER ? " selected" : ""}>편집</option>
+      </select>
+    </div>
+    <div class="jwp-divider"></div>
+    ${rows}
+  </div>
+  <div class="jwp-foot">
+    <span class="jwe-hint">개별 설정이 없으면 기본값을 따릅니다.</span>
+    <div class="jw-bar__spacer"></div>
+    <button class="jwe-btn" id="jwp-cancel">취소</button>
+    <button class="jwe-btn jwe-btn--save" id="jwp-save">저장</button>
+  </div>
+</div>
+</div>`;
+
+    const close = () => el.remove();
+    el.querySelector("#jwp-x")?.addEventListener("click", close);
+    el.querySelector("#jwp-cancel")?.addEventListener("click", close);
+    el.querySelector(".jw-desk-overlay")?.addEventListener("click", e => { if (e.target === e.currentTarget) close(); });
+
+    el.querySelector("#jwp-save")?.addEventListener("click", async () => {
+      const ownership = { default: parseInt(el.querySelector("#jwp-default")?.value ?? "0", 10) };
+      el.querySelectorAll("[data-perm-user]").forEach(sel => {
+        const lvl = parseInt(sel.value, 10);
+        ownership[sel.dataset.permUser] = lvl;
+      });
+      await entry.update({ ownership });
+      ui.notifications?.info("권한이 저장되었습니다.");
+      close();
+    });
   },
 };
 
@@ -3458,6 +3768,7 @@ Hooks.once("ready", () => {
   // 우리 커스텀 사이드바 빌드 (FVTT #sidebar는 CSS에서 숨김)
   EWKSidebar.build();
   EWKTyping.init();
+  EWKJournalTemplates.load(); // 저널 템플릿 미리 로드 (라벨 표시용)
 
   // 플레이어 → GM: onStage 권한 위임 처리
   game.socket?.on("system.fate-core-ko", async (data) => {
@@ -3557,7 +3868,6 @@ Hooks.once("ready", () => {
   Hooks.on("createJournalEntry",     () => { if (EWKSidebar._activeTab === "journal") EWKSidebar._renderJournalPanel(); });
   Hooks.on("updateJournalEntry",     refreshJournals);
   Hooks.on("deleteJournalEntry",     (entry) => { if (EWKSidebar._activeTab === "journal") EWKSidebar._renderJournalPanel(); EWKJournalViewer.closeIfShowing(entry.id); });
-  Hooks.on("updateJournalEntryPage", (page) => { refreshJournals(page.parent); });
 
   Hooks.on("canvasReady", () => {
     const sceneId  = game.scenes?.active?.id ?? null;
