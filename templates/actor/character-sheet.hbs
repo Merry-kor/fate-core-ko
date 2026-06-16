@@ -67,9 +67,12 @@
         </div>
         <ul class="fate-list fate-aspects">
           {{#each aspects as |aspect|}}
-          <li class="fate-list__item fate-aspect" data-item-id="{{aspect.id}}"
+          <li class="fate-list__item fate-aspect{{#if aspect.isPrimary}} fate-aspect--primary{{/if}}" data-item-id="{{aspect.id}}"
             data-aspect-type="{{aspect.system.aspectType}}">
             <div class="fate-aspect__row">
+              <button class="fate-aspect__primary-btn{{#if aspect.isPrimary}} fate-aspect__primary-btn--on{{/if}}"
+                type="button" data-action="setPrimaryAspect"
+                title="{{#if aspect.isPrimary}}대표 면모 해제{{else}}대표 면모로 설정{{/if}}">★</button>
               <button class="fate-aspect__type-pill fate-aspect__type-pill--{{aspect.system.aspectType}}"
                 type="button" data-item-cycle="system.aspectType"
                 title="클릭하여 유형 변경">{{aspect.system.typeLabel}}</button>

@@ -3201,3 +3201,29 @@ li:hover .ewk-msg-acts {
 .ewk-confirm__msg { font-size: 13.5px; color: var(--text-body); line-height: 1.6; }
 .ewk-confirm__btns { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
 .ewk-confirm__btns .jwe-btn { margin-left: 0; }
+
+/* ── 저널 사이드바 카드 버튼 가시성 수정 ── */
+.ewk-jcard:hover .ewk-acard-btn { opacity: 1; }
+
+/* ── 저널 뷰어 삭제 버튼 ── */
+.jw-tool--danger:hover { color: #c94f4f !important; border-color: #c94f4f !important; background: rgba(201,79,79,0.1) !important; }
+
+/* ── 특기 레이아웃: 이름 위, 효과 아래 (수직) ── */
+.fate-stunts .fate-stunt { display: block; width: 100%; }
+
+/* ── 면모 대표 버튼 ── */
+.fate-aspect__primary-btn {
+  flex: 0 0 auto;
+  background: transparent;
+  border: none;
+  padding: 0 2px;
+  font-size: 14px;
+  color: var(--text-faint);
+  cursor: pointer;
+  line-height: 1;
+  transition: color var(--dur-fast), transform var(--dur-fast);
+  opacity: 0.35;
+}
+.fate-aspect:hover .fate-aspect__primary-btn { opacity: 0.7; }
+.fate-aspect__primary-btn--on { color: var(--accent-gold) !important; opacity: 1 !important; filter: drop-shadow(0 0 4px var(--ewk-gold-glow)); }
+.fate-aspect--primary { border-left-color: var(--accent-gold) !important; }

@@ -40,18 +40,20 @@ class FateCharacterSheet extends foundry.applications.api.HandlebarsApplicationM
 ) {
   static DEFAULT_OPTIONS = {
     classes: ["fate-core-ko", "sheet", "actor", "character"],
+    window: { resizable: true },
     position: { width: 980, height: 720 },
     form: { submitOnChange: true, closeOnSubmit: false },
     actions: {
-      rollSkill:    FateCharacterSheet.#onRollSkill,
-      adjustFP:     FateCharacterSheet.#onAdjustFP,
-      invokeAspect: FateCharacterSheet.#onInvokeAspect,
-      invokeStunt:  FateCharacterSheet.#onInvokeStunt,
-      addItem:      FateCharacterSheet.#onAddItem,
-      deleteItem:   FateCharacterSheet.#onDeleteItem,
-      editItem:     FateCharacterSheet.#onEditItem,
-      toggleStage:    FateCharacterSheet.#onToggleStage,
-      pickTokenImg:   FateCharacterSheet.#onPickTokenImg,
+      rollSkill:        FateCharacterSheet.#onRollSkill,
+      adjustFP:         FateCharacterSheet.#onAdjustFP,
+      invokeAspect:     FateCharacterSheet.#onInvokeAspect,
+      invokeStunt:      FateCharacterSheet.#onInvokeStunt,
+      addItem:          FateCharacterSheet.#onAddItem,
+      deleteItem:       FateCharacterSheet.#onDeleteItem,
+      editItem:         FateCharacterSheet.#onEditItem,
+      toggleStage:      FateCharacterSheet.#onToggleStage,
+      pickTokenImg:     FateCharacterSheet.#onPickTokenImg,
+      setPrimaryAspect: FateCharacterSheet.#onSetPrimaryAspect,
     },
   };
 
@@ -114,7 +116,7 @@ class FateCharacterSheet extends foundry.applications.api.HandlebarsApplicationM
       });
 
       // 면모 유형 사이클 버튼
-      const ASPECT_TYPES = ["identity", "trouble", "general", "situation", "longterm", "stack"];
+      const ASPECT_TYPES = ["situation", "longterm", "stack"];
       el.querySelectorAll("[data-item-cycle]").forEach(btn => {
         btn.addEventListener("click", async e => {
           e.stopPropagation();
@@ -156,8 +158,8 @@ class FateCharacterSheet extends foundry.applications.api.HandlebarsApplicationM
       ladder[k] = game.i18n.localize(v);
     }
 
-    // 면모 타입 목록 및 레이블 맵
-    const ASPECT_TYPE_KEYS = ["identity", "trouble", "general", "situation", "longterm", "stack"];
+    // 면모 타입 목록 및 레이블 맵 (identity/trouble/general 제거)
+    const ASPECT_TYPE_KEYS = ["situation", "longterm", "stack"];
     const aspectTypes = ASPECT_TYPE_KEYS.map(t => ({
       value: t,
       label: game.i18n.localize(`FATE.Item.Aspect.Type.${t}`),
@@ -166,23 +168,31 @@ class FateCharacterSheet extends foundry.applications.api.HandlebarsApplicationM
       ASPECT_TYPE_KEYS.map(t => [t, game.i18n.localize(`FATE.Item.Aspect.Type.${t}`)])
     );
 
-    const ASPECT_TYPE_LABELS = { identity: "정체성", trouble: "고민", general: "일반", situation: "상황", longterm: "장기", stack: "스택" };
+    const ASPECT_TYPE_LABELS = { situation: "상황", longterm: "장기", stack: "스택" };
+    const VALID_ASPECT_TYPES = new Set(ASPECT_TYPE_KEYS);
+    const primaryAspectId = actor.getFlag("fate-core-ko", "primaryAspectId") ?? null;
+
     return {
       ...context,
       actor,
       system: actor.system,
       onStage: actor.getFlag("fate-core-ko", "onStage") ?? false,
       actorColor: actor.getFlag("fate-core-ko", "color") || "#c9a227",
-      aspects: items.filter(i => i.type === "aspect").map(a => ({
-        id: a.id,
-        name: a.name,
-        system: {
-          label:      a.system.label ?? "",
-          aspectType: a.system.aspectType ?? "general",
-          typeLabel:  ASPECT_TYPE_LABELS[a.system.aspectType ?? "general"] ?? "일반",
-          invoke:     a.system.invoke ?? 0,
-        },
-      })),
+      aspects: items.filter(i => i.type === "aspect").map(a => {
+        const rawType  = a.system.aspectType ?? "situation";
+        const aspType  = VALID_ASPECT_TYPES.has(rawType) ? rawType : "situation";
+        return {
+          id: a.id,
+          name: a.name,
+          isPrimary: a.id === primaryAspectId,
+          system: {
+            label:      a.system.label ?? "",
+            aspectType: aspType,
+            typeLabel:  ASPECT_TYPE_LABELS[aspType],
+            invoke:     a.system.invoke ?? 0,
+          },
+        };
+      }),
       skills:       items.filter(i => i.type === "skill").sort((a, b) => b.system.rank - a.system.rank),
       stunts:       items.filter(i => i.type === "stunt"),
       stressTracks: items.filter(i => i.type === "stress"),
@@ -288,6 +298,14 @@ class FateCharacterSheet extends foundry.applications.api.HandlebarsApplicationM
         await this.actor.setFlag("fate-core-ko", "tokenImg", path);
       },
     }).browse();
+  }
+
+  static async #onSetPrimaryAspect(event, target) {
+    const itemId  = target.closest("[data-item-id]")?.dataset.itemId;
+    if (!itemId) return;
+    const current = this.actor.getFlag("fate-core-ko", "primaryAspectId");
+    if (current === itemId) await this.actor.unsetFlag("fate-core-ko", "primaryAspectId");
+    else                    await this.actor.setFlag("fate-core-ko", "primaryAspectId", itemId);
   }
 }
 
@@ -2195,12 +2213,13 @@ const EWKJournalViewer = {
           <button class="jw-tool" id="jw-prev" ${hasPrev ? "" : "disabled"} title="이전 문서">‹</button>
           <span class="jw-pageno">${curIdx >= 0 ? `${curIdx + 1} / ${ordered.length}` : "— / —"}</span>
           <button class="jw-tool" id="jw-next" ${hasNext ? "" : "disabled"} title="다음 문서">›</button>
-          ${isGM ? `
+          ${isGM && entry ? `
           <div class="jw-divider"></div>
           <button class="jw-tool" id="jw-perm-btn" title="권한 설정">🔑</button>
-          <button class="jw-tool" id="jw-edit-btn" title="편집">✏</button>` : ""}
+          <button class="jw-tool" id="jw-edit-btn" title="편집">✏</button>
+          <button class="jw-tool jw-tool--danger" id="jw-del-btn" title="문서 삭제">🗑</button>` : ""}
           <div class="jw-divider"></div>
-          <button class="jw-tool" id="jw-print-btn" title="인쇄">🖨</button>
+          <button class="jw-tool" id="jw-print-btn" title="인쇄" ${entry ? "" : "disabled"}>🖨</button>
         </div>
       </div>
       <div class="jw-canvas" id="jw-canvas">
@@ -2263,6 +2282,20 @@ const EWKJournalViewer = {
 
     el.querySelector("#jw-edit-btn")?.addEventListener("click", () => {
       if (this._entryId) EWKJournalEditor.open(this._entryId);
+    });
+
+    el.querySelector("#jw-del-btn")?.addEventListener("click", async () => {
+      const entry = this._entry();
+      if (!entry) return;
+      const ok = await EWKConfirm.ask({
+        title: "문서 삭제", danger: true,
+        message: `<b>${entry.name}</b>을(를) 삭제합니다. 이 작업은 되돌릴 수 없습니다.`,
+        yes: "삭제", no: "취소",
+      });
+      if (!ok) return;
+      const nextId = ordered[curIdx + 1]?.id ?? ordered[curIdx - 1]?.id ?? null;
+      this._entryId = nextId;
+      await entry.delete();
     });
 
     el.querySelector("#jw-print-btn")?.addEventListener("click", () => {
@@ -2929,9 +2962,10 @@ const FateStageBar = {
       .filter(a => a.getFlag("fate-core-ko", "onStage"));
 
     const cardsHtml = onStage.map(a => {
-      const items    = a.items?.filter(i => i.type === "aspect") ?? [];
-      const identity = items.find(i => i.system?.aspectType === "identity") ?? items[0];
-      const asp      = identity?.system?.label ?? "";
+      const items      = a.items?.filter(i => i.type === "aspect") ?? [];
+      const primaryId  = a.getFlag("fate-core-ko", "primaryAspectId");
+      const primaryAsp = (primaryId ? items.find(i => i.id === primaryId) : null) ?? items[0];
+      const asp        = primaryAsp?.system?.label ?? "";
       const fp       = a.system?.fatepoints ?? { current: 0, refresh: 3 };
       const color    = a.getFlag("fate-core-ko", "color") || "var(--accent-gold)";
       const role     = a.getFlag("fate-core-ko", "role")  || "";
