@@ -116,7 +116,7 @@ class FateCharacterSheet extends foundry.applications.api.HandlebarsApplicationM
       });
 
       // 면모 유형 사이클 버튼
-      const ASPECT_TYPES = ["situation", "longterm", "stack"];
+      const ASPECT_TYPES = ["identity", "trouble", "general"];
       el.querySelectorAll("[data-item-cycle]").forEach(btn => {
         btn.addEventListener("click", async e => {
           e.stopPropagation();
@@ -158,8 +158,8 @@ class FateCharacterSheet extends foundry.applications.api.HandlebarsApplicationM
       ladder[k] = game.i18n.localize(v);
     }
 
-    // 면모 타입 목록 및 레이블 맵 (identity/trouble/general 제거)
-    const ASPECT_TYPE_KEYS = ["situation", "longterm", "stack"];
+    // 면모 타입 목록 및 레이블 맵 (situation/longterm/stack 제거)
+    const ASPECT_TYPE_KEYS = ["identity", "trouble", "general"];
     const aspectTypes = ASPECT_TYPE_KEYS.map(t => ({
       value: t,
       label: game.i18n.localize(`FATE.Item.Aspect.Type.${t}`),
@@ -168,7 +168,7 @@ class FateCharacterSheet extends foundry.applications.api.HandlebarsApplicationM
       ASPECT_TYPE_KEYS.map(t => [t, game.i18n.localize(`FATE.Item.Aspect.Type.${t}`)])
     );
 
-    const ASPECT_TYPE_LABELS = { situation: "상황", longterm: "장기", stack: "스택" };
+    const ASPECT_TYPE_LABELS = { identity: "정체성", trouble: "고민", general: "일반" };
     const VALID_ASPECT_TYPES = new Set(ASPECT_TYPE_KEYS);
     const primaryAspectId = actor.getFlag("fate-core-ko", "primaryAspectId") ?? null;
 
@@ -179,8 +179,8 @@ class FateCharacterSheet extends foundry.applications.api.HandlebarsApplicationM
       onStage: actor.getFlag("fate-core-ko", "onStage") ?? false,
       actorColor: actor.getFlag("fate-core-ko", "color") || "#c9a227",
       aspects: items.filter(i => i.type === "aspect").map(a => {
-        const rawType  = a.system.aspectType ?? "situation";
-        const aspType  = VALID_ASPECT_TYPES.has(rawType) ? rawType : "situation";
+        const rawType  = a.system.aspectType ?? "general";
+        const aspType  = VALID_ASPECT_TYPES.has(rawType) ? rawType : "general";
         return {
           id: a.id,
           name: a.name,
