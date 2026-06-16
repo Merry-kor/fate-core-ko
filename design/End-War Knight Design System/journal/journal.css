@@ -1,0 +1,440 @@
+/* =====================================================
+   종전의 기사 — Journal 디자인 언어
+   FVTT 저널을 위한 프레임 탈피 에디토리얼 문서 시스템.
+   두 표면: 어두운 제국 문서(ink) · 양피지 사료(paper).
+   모든 값은 ../styles.css 의 토큰을 참조.
+   prefix: jr-
+   ===================================================== */
+
+.jr, .jr *, .jr *::before, .jr *::after { box-sizing: border-box; }
+
+.jr {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  font-family: var(--font-sans);
+  color: var(--text-body);
+  font-size: 15px;
+  line-height: var(--lh-normal);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+.jr *::selection { background: var(--ewk-gold-600); color: #000; }
+
+/* ── Surfaces ── */
+.jr-dark {
+  background:
+    radial-gradient(120% 80% at 100% 0%, rgba(201,162,39,0.06), transparent 55%),
+    linear-gradient(180deg, var(--ewk-ink-800), var(--ewk-ink-850));
+  color: var(--text-body);
+}
+.jr-paper {
+  background-color: var(--paper-page);
+  background-image:
+    radial-gradient(rgba(139,122,92,0.16) 1px, transparent 1px);
+  background-size: 18px 18px;
+  color: var(--paper-text);
+}
+
+/* ── Generic frame padding ── */
+.jr-pad { padding: 34px 38px; }
+.jr-pad-lg { padding: 44px 48px; }
+
+/* ── Eyebrow / kicker ── */
+.jr-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent-gold);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.jr-eyebrow.crimson { color: var(--accent-crimson-bright); }
+.jr-eyebrow.paper { color: var(--ewk-crimson-700); }
+.jr-eyebrow::before {
+  content: "";
+  width: 22px; height: 1px;
+  background: currentColor;
+  opacity: 0.7;
+}
+
+/* ── Titles ── */
+.jr-title {
+  font-family: var(--font-serif);
+  font-weight: 900;
+  color: var(--text-strong);
+  line-height: 1.12;
+  letter-spacing: -0.01em;
+}
+.jr-title.xl { font-size: 38px; }
+.jr-title.lg { font-size: 30px; }
+.jr-title.md { font-size: 23px; }
+.jr-subtitle {
+  font-family: var(--font-serif);
+  font-style: italic;
+  color: var(--text-muted);
+  font-size: 15px;
+  margin-top: 4px;
+}
+.jr-paper .jr-title { color: var(--paper-text); }
+.jr-paper .jr-subtitle { color: var(--paper-text-soft); }
+
+/* ── Rules ── */
+.jr-rule {
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent-gold), transparent);
+  border: 0;
+}
+.jr-rule.full { background: linear-gradient(90deg, transparent, var(--accent-gold), transparent); }
+.jr-rule.hair { height: 1px; background: var(--border-strong); }
+.jr-paper .jr-rule { background: linear-gradient(90deg, var(--paper-rule), transparent); }
+.jr-paper .jr-rule.full { background: linear-gradient(90deg, transparent, var(--ewk-parch-400), transparent); }
+
+/* ── Prose ── */
+.jr-prose {
+  font-family: var(--font-serif);
+  font-size: 16px;
+  line-height: var(--lh-prose);
+  color: var(--text-body);
+  text-wrap: pretty;
+}
+.jr-prose + .jr-prose { margin-top: 12px; }
+.jr-paper .jr-prose { color: var(--paper-text); text-align: justify; }
+.jr-lede {
+  font-family: var(--font-serif);
+  font-size: 17px;
+  line-height: 1.7;
+  color: var(--text-strong);
+}
+.jr-paper .jr-lede { color: var(--paper-text); }
+
+/* ── 終 seal / emblem ── */
+.jr-seal {
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  display: grid; place-items: center;
+  font-family: var(--font-serif);
+  font-weight: 900;
+  color: var(--ewk-ink-900);
+  background:
+    radial-gradient(circle at 38% 32%, var(--ewk-gold-300), var(--ewk-gold-500) 55%, var(--ewk-gold-700));
+  box-shadow: 0 0 0 1px var(--ewk-gold-600), var(--shadow-gold);
+  flex: 0 0 auto;
+}
+.jr-seal.sm { width: 40px; height: 40px; font-size: 20px; }
+.jr-seal.lg { width: 76px; height: 76px; font-size: 38px; }
+
+/* ── Metadata grid (mono) ── */
+.jr-meta {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 18px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+.jr-meta dt { color: var(--text-faint); letter-spacing: 0.08em; text-transform: uppercase; }
+.jr-meta dd { color: var(--text-body); font-variant-numeric: tabular-nums; }
+.jr-paper .jr-meta dt { color: var(--paper-text-faint); }
+.jr-paper .jr-meta dd { color: var(--paper-text-soft); }
+
+/* ── Aspect chips ── */
+.jr-chip {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 14px;
+  color: var(--text-strong);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-strong);
+  border-left: 3px solid var(--ewk-aspect-general);
+  border-radius: var(--radius-sm);
+  padding: 5px 12px;
+}
+.jr-chip.identity { border-left-color: var(--ewk-aspect-identity); }
+.jr-chip.trouble  { border-left-color: var(--ewk-aspect-trouble); }
+.jr-chip.situation{ border-left-color: var(--ewk-aspect-situation); }
+.jr-chip.longterm { border-left-color: var(--ewk-aspect-longterm); }
+.jr-chip.stack    { border-left-color: var(--ewk-aspect-stack); }
+.jr-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* ── Tag / pill ── */
+.jr-tag {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 3px 11px;
+  border-radius: var(--radius-pill);
+  border: 1px solid;
+  white-space: nowrap;
+}
+.jr-tag.gold { color: var(--ewk-gold-300); border-color: var(--ewk-gold-600); background: rgba(201,162,39,0.10); }
+.jr-tag.crimson { color: var(--ewk-crimson-400); border-color: var(--ewk-crimson-700); background: rgba(176,31,51,0.10); }
+.jr-tag.steel { color: var(--text-muted); border-color: var(--border-hairline); background: var(--surface-raised); }
+.jr-tag.green { color: var(--ewk-outcome-succeed); border-color: #2e6e44; background: rgba(79,174,107,0.10); }
+
+/* ── Classification stamp ── */
+.jr-stamp {
+  font-family: var(--font-sans);
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ewk-crimson-500);
+  border: 2.5px solid var(--ewk-crimson-600);
+  border-radius: 4px;
+  padding: 7px 16px;
+  font-size: 18px;
+  display: inline-block;
+  transform: rotate(-7deg);
+  opacity: 0.86;
+  box-shadow: inset 0 0 0 1px rgba(176,31,51,0.3);
+}
+
+/* ── Redaction bar ── */
+.jr-redact {
+  background: var(--ewk-ink-900);
+  color: transparent;
+  border-radius: 2px;
+  padding: 0 2px;
+  user-select: none;
+  box-shadow: inset 0 0 0 1px #000;
+}
+
+/* ── Scene image block ── */
+.jr-figure { position: relative; overflow: hidden; border-radius: var(--radius-sm); }
+.jr-figure img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.jr-figcap {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--text-faint);
+  margin-top: 7px;
+}
+
+/* =====================================================
+   01 · 기밀 문서 (Classified Dossier)
+   ===================================================== */
+.jr-dossier__bar {
+  display: flex; align-items: center; justify-content: space-between;
+  background: repeating-linear-gradient(-45deg, var(--ewk-crimson-800) 0 14px, var(--ewk-crimson-700) 14px 28px);
+  color: #f1d8dc;
+  font-family: var(--font-mono);
+  font-size: 12px; font-weight: 700; letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 9px 20px;
+}
+.jr-dossier__head { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; margin: 26px 0 18px; }
+.jr-dossier__metarow {
+  display: flex; gap: 28px; flex-wrap: wrap;
+  border-top: 1px solid var(--border-strong);
+  border-bottom: 1px solid var(--border-strong);
+  padding: 12px 0; margin: 18px 0 22px;
+}
+
+/* =====================================================
+   02 · 인물록 (NPC Dossier)
+   ===================================================== */
+.jr-npc { display: grid; grid-template-columns: 240px 1fr; height: 100%; }
+.jr-npc__portrait {
+  position: relative;
+  background: linear-gradient(180deg, var(--ewk-ink-700), var(--ewk-ink-900));
+  border-right: 1px solid var(--border-strong);
+  overflow: hidden;
+}
+.jr-npc__portrait img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top center; }
+.jr-npc__portrait::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(180deg, transparent 50%, rgba(10,11,15,0.85));
+}
+.jr-npc__id {
+  position: absolute; left: 18px; bottom: 16px; right: 18px; z-index: 2;
+}
+.jr-npc__body { padding: 30px 32px; display: flex; flex-direction: column; }
+.jr-meter { height: 7px; border-radius: 4px; background: var(--surface-well); overflow: hidden; box-shadow: var(--inset-well); }
+.jr-meter > span { display: block; height: 100%; border-radius: 4px; }
+.jr-meter.threat > span { background: linear-gradient(90deg, var(--ewk-crimson-700), var(--ewk-crimson-500)); }
+
+/* ── Stat ladder rung ── */
+.jr-stat { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: 1px dotted var(--border-strong); }
+.jr-stat__name { font-size: 14px; color: var(--text-body); }
+.jr-stat__val { font-family: var(--font-mono); font-weight: 700; color: var(--accent-gold); font-variant-numeric: tabular-nums; }
+
+/* =====================================================
+   03 · 관보 (Gazetteer / Location)
+   ===================================================== */
+.jr-gaz__hero { position: relative; height: 320px; overflow: hidden; }
+.jr-gaz__hero img { width: 100%; height: 100%; object-fit: cover; display: block; filter: saturate(0.92) contrast(1.05); }
+.jr-gaz__hero::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(10,11,15,0.1) 30%, rgba(10,11,15,0.92));
+}
+.jr-gaz__overlay { position: absolute; left: 38px; right: 38px; bottom: 26px; z-index: 2; }
+.jr-gaz__facts {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px;
+  background: var(--border-strong);
+  border-bottom: 1px solid var(--border-strong);
+}
+.jr-gaz__fact { background: var(--surface-app); padding: 14px 20px; }
+.jr-gaz__fact dt { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-faint); }
+.jr-gaz__fact dd { font-family: var(--font-serif); font-size: 17px; color: var(--text-strong); margin-top: 3px; }
+
+/* =====================================================
+   04 · 작전보고 (After-Action Report)
+   ===================================================== */
+.jr-aar__head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid var(--accent-gold); padding-bottom: 16px; }
+.jr-obj { display: flex; gap: 14px; align-items: flex-start; padding: 13px 0; border-bottom: 1px solid var(--border-strong); }
+.jr-obj__num { font-family: var(--font-mono); font-weight: 700; color: var(--text-faint); font-size: 13px; padding-top: 2px; min-width: 26px; }
+.jr-obj__body { flex: 1; }
+.jr-obj__title { font-weight: 600; color: var(--text-strong); font-size: 15px; }
+.jr-obj__note { font-size: 13px; color: var(--text-muted); margin-top: 3px; }
+.jr-seal-wax {
+  position: absolute; right: 34px; bottom: 30px;
+  width: 84px; height: 84px; border-radius: 50%;
+  display: grid; place-items: center; text-align: center;
+  font-family: var(--font-serif); color: var(--ewk-gold-300);
+  border: 2px solid var(--ewk-gold-600);
+  background: radial-gradient(circle at 40% 35%, rgba(201,162,39,0.18), rgba(201,162,39,0.04));
+  font-size: 11px; letter-spacing: 0.1em; line-height: 1.3;
+  transform: rotate(-8deg); opacity: 0.9;
+}
+
+/* =====================================================
+   05 · 연대기 (Timeline)
+   ===================================================== */
+.jr-tl { position: relative; padding-left: 30px; }
+.jr-tl::before { content: ""; position: absolute; left: 6px; top: 6px; bottom: 6px; width: 2px; background: linear-gradient(180deg, var(--accent-gold), var(--border-strong)); }
+.jr-tl__item { position: relative; padding: 0 0 22px 18px; }
+.jr-tl__item::before {
+  content: ""; position: absolute; left: -29px; top: 4px;
+  width: 12px; height: 12px; border-radius: 50%;
+  background: var(--ewk-gold-500);
+  box-shadow: 0 0 0 3px var(--ewk-ink-800), var(--shadow-gold);
+}
+.jr-tl__item.crimson::before { background: var(--ewk-crimson-500); box-shadow: 0 0 0 3px var(--ewk-ink-800), var(--shadow-crimson); }
+.jr-tl__date { font-family: var(--font-mono); font-size: 12px; color: var(--accent-gold); letter-spacing: 0.06em; }
+.jr-tl__title { font-family: var(--font-serif); font-weight: 700; color: var(--text-strong); font-size: 17px; margin: 2px 0 4px; }
+.jr-tl__body { font-size: 13.5px; color: var(--text-muted); line-height: 1.6; }
+
+/* =====================================================
+   06 · 임무 브리핑 (Mission Briefing)
+   ===================================================== */
+.jr-mb__grid { display: grid; grid-template-columns: 1fr 230px; gap: 22px; }
+.jr-task { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; background: var(--surface-card); border: 1px solid var(--border-strong); border-left: 3px solid var(--accent-gold); border-radius: var(--radius-sm); }
+.jr-task + .jr-task { margin-top: 10px; }
+.jr-task__box { width: 18px; height: 18px; border: 1.5px solid var(--ewk-gold-600); border-radius: 3px; flex: 0 0 auto; margin-top: 1px; display: grid; place-items: center; color: var(--ewk-gold-300); font-size: 12px; }
+.jr-task.done { border-left-color: var(--ewk-outcome-succeed); }
+.jr-task.done .jr-task__box { border-color: #2e6e44; background: rgba(79,174,107,0.16); }
+.jr-task__t { font-weight: 600; color: var(--text-strong); font-size: 14.5px; }
+.jr-task__d { font-size: 12.5px; color: var(--text-muted); margin-top: 3px; line-height: 1.55; }
+.jr-mb__map {
+  height: 150px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong);
+  background:
+    repeating-linear-gradient(45deg, rgba(201,162,39,0.05) 0 9px, transparent 9px 18px),
+    var(--surface-well);
+  display: grid; place-items: center;
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.1em;
+  color: var(--text-faint); text-align: center;
+}
+.jr-side-card { background: var(--surface-card); border: 1px solid var(--border-strong); border-radius: var(--radius-sm); padding: 16px; }
+.jr-side-card + .jr-side-card { margin-top: 14px; }
+.jr-side-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 8px; }
+.jr-dots { display: flex; gap: 5px; }
+.jr-dots i { width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid var(--ewk-crimson-600); }
+.jr-dots i.on { background: var(--ewk-crimson-500); }
+
+/* =====================================================
+   07 · 표지 / 목차 (Codex Cover + Index)
+   ===================================================== */
+.jr-cover__hero { position: relative; width: 100%; aspect-ratio: 1084 / 1446; overflow: hidden; background: #000; }
+.jr-cover__hero img { width: 100%; height: 100%; object-fit: cover; object-position: top center; display: block; }
+.jr-cover__hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 86%, var(--ewk-ink-850)); }
+.jr-cover__title { position: absolute; left: 0; right: 0; bottom: 30px; text-align: center; z-index: 2; }
+.jr-toc { padding: 24px 44px 40px; }
+.jr-toc__row { display: flex; align-items: baseline; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--border-strong); }
+.jr-toc__num { font-family: var(--font-mono); color: var(--accent-gold); font-size: 13px; min-width: 30px; }
+.jr-toc__name { font-family: var(--font-serif); font-size: 17px; color: var(--text-body); }
+.jr-toc__lead { flex: 1; border-bottom: 1px dotted var(--border-hairline); transform: translateY(-4px); }
+.jr-toc__pg { font-family: var(--font-mono); font-size: 13px; color: var(--text-muted); }
+
+/* =====================================================
+   08 · 사료 (Chronicle — parchment)
+   ===================================================== */
+.jr-chron__head { text-align: center; }
+.jr-dropcap::first-letter {
+  font-family: var(--font-serif);
+  font-weight: 900;
+  font-size: 64px;
+  float: left;
+  line-height: 0.82;
+  padding: 6px 12px 0 0;
+  color: var(--ewk-crimson-700);
+}
+.jr-margin {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-style: normal;
+  color: var(--paper-text-faint);
+  border-left: 2px solid var(--ewk-parch-400);
+  padding-left: 12px;
+  line-height: 1.6;
+}
+.jr-ornament { text-align: center; color: var(--ewk-parch-400); font-size: 15px; letter-spacing: 1em; padding-left: 1em; }
+
+/* =====================================================
+   09 · 포고문 (Proclamation — parchment + crimson)
+   ===================================================== */
+.jr-proc__banner {
+  background: linear-gradient(180deg, var(--ewk-crimson-700), var(--ewk-crimson-800));
+  color: #f4dde1;
+  text-align: center;
+  padding: 20px;
+  position: relative;
+  border-bottom: 3px solid var(--ewk-gold-600);
+}
+.jr-proc__kicker { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.3em; text-transform: uppercase; opacity: 0.9; }
+.jr-proc__body { padding: 30px 44px 44px; text-align: center; }
+.jr-proc__name { font-family: var(--font-serif); font-weight: 900; font-size: 40px; color: var(--paper-text); letter-spacing: 0.02em; }
+.jr-proc__reward {
+  display: inline-flex; flex-direction: column; align-items: center;
+  border: 2px solid var(--ewk-crimson-700);
+  border-radius: var(--radius-sm);
+  padding: 12px 36px; margin: 8px 0;
+  background: rgba(176,31,51,0.06);
+}
+.jr-proc__reward b { font-family: var(--font-serif); font-weight: 900; font-size: 30px; color: var(--ewk-crimson-700); }
+.jr-proc__seal { position: absolute; right: 30px; bottom: -34px; }
+
+/* =====================================================
+   10 · 서신 (Correspondence — parchment)
+   ===================================================== */
+.jr-letter { padding: 46px 50px; height: 100%; display: flex; flex-direction: column; }
+.jr-letter__date { font-family: var(--font-mono); font-size: 12px; color: var(--paper-text-faint); letter-spacing: 0.06em; text-align: right; }
+.jr-letter__salute { font-family: var(--font-serif); font-size: 19px; color: var(--paper-text); margin: 22px 0 14px; }
+.jr-letter__body { font-family: var(--font-serif); font-size: 16px; line-height: 1.95; color: var(--paper-text); }
+.jr-letter__body p + p { margin-top: 12px; text-indent: 1.1em; }
+.jr-letter__sign { margin-top: auto; padding-top: 26px; text-align: right; }
+.jr-letter__sign .name { font-family: var(--font-serif); font-style: italic; font-size: 22px; color: var(--paper-text); }
+.jr-letter__sign .role { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.1em; color: var(--paper-text-faint); margin-top: 4px; }
+.jr-wax {
+  width: 64px; height: 64px; border-radius: 50%;
+  display: grid; place-items: center;
+  font-family: var(--font-serif); font-weight: 900; font-size: 26px;
+  color: #f4dde1;
+  background: radial-gradient(circle at 38% 32%, var(--ewk-crimson-500), var(--ewk-crimson-800) 70%);
+  box-shadow: 0 3px 8px rgba(42,35,23,0.35), inset 0 0 0 2px rgba(244,221,225,0.18);
+  margin-left: auto;
+}
+
+/* small helpers */
+.jr-flex { display: flex; }
+.jr-between { display: flex; align-items: center; justify-content: space-between; }
+.jr-col { display: flex; flex-direction: column; }
+.jr-mt-a { margin-top: auto; }
+.jr-foot { font-family: var(--font-mono); font-size: 11px; color: var(--text-faint); letter-spacing: 0.06em; }
+.jr-paper .jr-foot { color: var(--paper-text-faint); }

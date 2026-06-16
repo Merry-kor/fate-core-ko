@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>종전의 기사 — 전역 일지</title>
+<link rel="stylesheet" href="../styles.css">
+<link rel="stylesheet" href="journal.css">
+<link rel="stylesheet" href="window.css">
+<script src="journals-data.js"></script>
+</head>
+<body>
+<div class="jw-desk">
+  <main class="jw" role="application" aria-label="종전의 기사 전역 일지">
+
+    <!-- Title bar -->
+    <header class="jw-title">
+      <div class="jr-seal sm">終</div>
+      <div class="jw-title__txt">
+        <span class="jw-title__name">전역 일지 · 종전의 기사</span>
+        <span class="jw-title__sub">FELDTAGEBUCH · GM 메리메리</span>
+      </div>
+      <div class="jw-title__spacer"></div>
+      <span class="jw-class">기밀 · SCHWARZ</span>
+      <div class="jw-wbtns" aria-hidden="true"><i></i><i></i><i></i></div>
+    </header>
+
+    <!-- Body -->
+    <div class="jw-body">
+
+      <!-- Left rail: page index -->
+      <nav class="jw-rail" aria-label="페이지 색인">
+        <div class="jw-rail__head">
+          <div class="jw-rail__eyebrow">페이지 색인 · INHALT</div>
+          <div class="jw-search">
+            <span class="jw-search__ico">⌕</span>
+            <input id="jwSearch" type="text" placeholder="페이지 검색…" aria-label="페이지 검색">
+          </div>
+        </div>
+        <div class="jw-list" id="jwList"></div>
+        <div class="jw-rail__foot">
+          <button class="jw-addbtn" type="button" title="새 페이지 (데모)">＋ 새 페이지</button>
+          <span class="jw-rail__count" id="jwCount"></span>
+        </div>
+      </nav>
+
+      <!-- Main: toolbar + document -->
+      <section class="jw-main">
+        <div class="jw-bar">
+          <div class="jw-crumb">
+            <span class="jw-crumb__root">전역 일지</span>
+            <span class="jw-crumb__sep">›</span>
+            <span class="jw-crumb__kind" id="jwKind"></span>
+            <span class="jw-crumb__sep">·</span>
+            <span class="jw-crumb__title" id="jwTitle"></span>
+          </div>
+          <div class="jw-bar__spacer"></div>
+          <div class="jw-tools">
+            <button class="jw-tool" id="jwPrev" type="button" title="이전 페이지" aria-label="이전 페이지">‹</button>
+            <span class="jw-pageno" id="jwPageNo"></span>
+            <button class="jw-tool" id="jwNext" type="button" title="다음 페이지" aria-label="다음 페이지">›</button>
+            <span class="jw-divider"></span>
+            <button class="jw-tool" id="jwEdit" type="button" title="편집 (데모)" aria-label="편집">✎</button>
+            <button class="jw-tool" id="jwPrint" type="button" title="인쇄 (데모)" aria-label="인쇄">⎙</button>
+          </div>
+        </div>
+
+        <div class="jw-canvas" id="jwCanvas">
+          <div class="jw-docwrap" id="jwDocWrap">
+            <div class="jw-doc" id="jwDoc"></div>
+          </div>
+        </div>
+
+        <footer class="jw-status">
+          <span id="jwStatusLeft"></span>
+          <span class="jw-status__surface" id="jwStatusRight">
+            <span class="jw-surfdot" id="jwSurfDot"></span>
+            <span id="jwSurfText"></span>
+          </span>
+        </footer>
+      </section>
+    </div>
+  </main>
+</div>
+
+<script>
+(function () {
+  var J = (window.JOURNALS || []).reduce(function (m, j) { m[j.id] = j; return m; }, {});
+
+  // Navigation meta + order. The "표지" page leads; dark documents, then paper.
+  var META = {
+    cover:        { t: '종전의 기사',            k: '표지 · 목차',     no: '00' },
+    dossier:      { t: '제4치유원 사건 조사',     k: '기밀 문서철',     no: 'ITPA-0774' },
+    npc:          { t: '안야 슈탈',               k: '인물 기록부',     no: 'PERS-04' },
+    gazetteer:    { t: '흑철상회',                k: '관보 · 지명',     no: 'GAZ-11' },
+    aar:          { t: '야간 화물열차 강행 돌파',  k: '작전 사후 보고',  no: 'EISBRECHER' },
+    timeline:     { t: '스피어헤드의 행로',        k: '전역 연대기',     no: 'CHRONIK' },
+    briefing:     { t: '외곽 제분소 잠입',         k: '임무 브리핑',     no: 'EINSATZ' },
+    chronicle:    { t: '신비라 불리는 것',         k: '사료 · 외전',     no: 'APOC-1' },
+    proclamation: { t: '현상수배',                k: '포고 · 수배령',   no: 'STECK-9' },
+    letter:       { t: '폰 아르님의 서신',         k: '서신',           no: 'BRIEF-7' }
+  };
+  var ORDER = ['cover', 'dossier', 'npc', 'gazetteer', 'aar', 'timeline', 'briefing', 'chronicle', 'proclamation', 'letter'];
+  var GROUPS = [
+    { key: 'dark',  label: '제국 문서 · IMPERIAL', ids: ['cover', 'dossier', 'npc', 'gazetteer', 'aar', 'timeline', 'briefing'] },
+    { key: 'paper', label: '사료 · 서신 · PERGAMENT', ids: ['chronicle', 'proclamation', 'letter'] }
+  ];
+
+  var pages = ORDER.filter(function (id) { return J[id]; });
+  var active = 'cover';
+
+  var listEl   = document.getElementById('jwList');
+  var countEl  = document.getElementById('jwCount');
+  var kindEl   = document.getElementById('jwKind');
+  var titleEl  = document.getElementById('jwTitle');
+  var pageNoEl = document.getElementById('jwPageNo');
+  var canvas   = document.getElementById('jwCanvas');
+  var wrap     = document.getElementById('jwDocWrap');
+  var doc      = document.getElementById('jwDoc');
+  var prevBtn  = document.getElementById('jwPrev');
+  var nextBtn  = document.getElementById('jwNext');
+  var statusL  = document.getElementById('jwStatusLeft');
+  var surfDot  = document.getElementById('jwSurfDot');
+  var surfText = document.getElementById('jwSurfText');
+
+  // ── Build rail ──
+  function buildRail() {
+    listEl.innerHTML = '';
+    GROUPS.forEach(function (g) {
+      var ids = g.ids.filter(function (id) { return J[id]; });
+      if (!ids.length) return;
+      var h = document.createElement('div');
+      h.className = 'jw-grp'; h.textContent = g.label;
+      h.dataset.group = g.key;
+      listEl.appendChild(h);
+      ids.forEach(function (id) {
+        var j = J[id], m = META[id] || {};
+        var idx = pages.indexOf(id) + 1;
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'jw-item' + (j.group === 'paper' ? ' paper' : '');
+        b.dataset.id = id;
+        b.dataset.title = m.t || '';
+        b.innerHTML =
+          '<span class="jw-item__no">' + String(idx).padStart(2, '0') + '</span>' +
+          '<span class="jw-item__main">' +
+            '<span class="jw-item__t">' + (m.t || '') + '</span>' +
+            '<span class="jw-item__k">' + (m.k || '') + ' · ' + (m.no || '') + '</span>' +
+          '</span>' +
+          '<span class="jw-item__dot"></span>';
+        b.addEventListener('click', function () { go(id); });
+        listEl.appendChild(b);
+      });
+    });
+    countEl.textContent = pages.length + ' 페이지';
+  }
+
+  // ── Fit document to canvas width ──
+  function fit() {
+    var j = J[active]; if (!j) return;
+    var avail = canvas.clientWidth - 72; // canvas padding (36*2)
+    var s = Math.min(1, avail / j.w);
+    doc.style.transform = 'scale(' + s + ')';
+    wrap.style.width = (j.w * s) + 'px';
+    wrap.style.height = (j.h * s) + 'px';
+  }
+
+  // ── Render a page ──
+  function render(id) {
+    var j = J[id], m = META[id] || {};
+    doc.style.width = j.w + 'px';
+    doc.style.height = j.h + 'px';
+    doc.innerHTML = j.html;
+    fit();
+    // crumb + status
+    kindEl.textContent = m.k || '';
+    titleEl.textContent = m.t || '';
+    var idx = pages.indexOf(id) + 1;
+    pageNoEl.textContent = idx + ' / ' + pages.length;
+    statusL.innerHTML = '문서번호 <b>' + (m.no || '—') + '</b> · ' + (j.w) + '×' + (j.h);
+    var paper = j.group === 'paper';
+    surfDot.className = 'jw-surfdot' + (paper ? ' paper' : '');
+    surfText.textContent = paper ? '양피지 면 · 사료/서신' : '잉크 면 · 제국 문서';
+    prevBtn.disabled = idx <= 1;
+    nextBtn.disabled = idx >= pages.length;
+    // active state in rail
+    Array.prototype.forEach.call(listEl.querySelectorAll('.jw-item'), function (el) {
+      el.classList.toggle('active', el.dataset.id === id);
+    });
+  }
+
+  // ── Navigate with fade ──
+  function go(id) {
+    if (!J[id]) return;
+    active = id;
+    wrap.style.opacity = '0';
+    setTimeout(function () {
+      render(id);
+      canvas.scrollTop = 0;
+      requestAnimationFrame(function () { wrap.style.opacity = '1'; });
+      // ensure active item visible in rail
+      var el = listEl.querySelector('.jw-item.active');
+      if (el) {
+        var r = el.getBoundingClientRect(), lr = listEl.getBoundingClientRect();
+        if (r.top < lr.top || r.bottom > lr.bottom) el.scrollIntoView({ block: 'nearest' });
+      }
+    }, 160);
+  }
+
+  function step(d) {
+    var i = pages.indexOf(active) + d;
+    if (i >= 0 && i < pages.length) go(pages[i]);
+  }
+
+  // ── Search ──
+  document.getElementById('jwSearch').addEventListener('input', function (e) {
+    var q = e.target.value.trim().toLowerCase();
+    var groupHas = {};
+    Array.prototype.forEach.call(listEl.querySelectorAll('.jw-item'), function (el) {
+      var hit = !q || (el.dataset.title.toLowerCase().indexOf(q) >= 0) ||
+                (el.querySelector('.jw-item__k').textContent.toLowerCase().indexOf(q) >= 0);
+      el.style.display = hit ? '' : 'none';
+      if (hit) {
+        var grpEl = el.previousElementSibling;
+        while (grpEl && !grpEl.classList.contains('jw-grp')) grpEl = grpEl.previousElementSibling;
+        if (grpEl) groupHas[grpEl.dataset.group] = true;
+      }
+    });
+    Array.prototype.forEach.call(listEl.querySelectorAll('.jw-grp'), function (h) {
+      h.style.display = (!q || groupHas[h.dataset.group]) ? '' : 'none';
+    });
+  });
+
+  // ── Controls ──
+  prevBtn.addEventListener('click', function () { step(-1); });
+  nextBtn.addEventListener('click', function () { step(1); });
+  document.getElementById('jwPrint').addEventListener('click', function () { window.print(); });
+
+  document.addEventListener('keydown', function (e) {
+    if (document.activeElement && document.activeElement.tagName === 'INPUT') return;
+    if (e.key === 'ArrowLeft') { e.preventDefault(); step(-1); }
+    else if (e.key === 'ArrowRight') { e.preventDefault(); step(1); }
+  });
+
+  var rt;
+  window.addEventListener('resize', function () { clearTimeout(rt); rt = setTimeout(fit, 80); });
+
+  // ── Init ──
+  buildRail();
+  render(active);
+})();
+</script>
+</body>
+</html>
