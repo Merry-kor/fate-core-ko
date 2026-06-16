@@ -3227,3 +3227,310 @@ li:hover .ewk-msg-acts {
 .fate-aspect:hover .fate-aspect__primary-btn { opacity: 0.7; }
 .fate-aspect__primary-btn--on { color: var(--accent-gold) !important; opacity: 1 !important; filter: drop-shadow(0 0 4px var(--ewk-gold-glow)); }
 .fate-aspect--primary { border-left-color: var(--accent-gold) !important; }
+
+/* =============================================================
+   음악 탭 — FVTT PlaylistDirectory 리스타일
+   스코프: #ewk-panel-playlists (FVTT 네이티브 패널을 채택한 컨테이너)
+   기능 변경 없이 시각만 EWK 다크 테마로 통일
+   ============================================================= */
+
+#ewk-panel-playlists,
+#ewk-panel-playlists .sidebar-tab,
+#ewk-panel-playlists #playlists {
+  background: transparent !important;
+  color: var(--text-body) !important;
+  border: none !important;
+  box-shadow: none !important;
+  height: 100%;
+}
+
+/* ── 헤더 영역 ── */
+#ewk-panel-playlists .directory-header,
+#ewk-panel-playlists .directory-header-actions,
+#ewk-panel-playlists .action-buttons {
+  background: var(--ewk-ink-800) !important;
+  border-bottom: 1px solid var(--border-strong) !important;
+  padding: 8px 10px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  flex-wrap: wrap !important;
+}
+
+/* 검색 입력 */
+#ewk-panel-playlists input[type="search"],
+#ewk-panel-playlists .directory-search input,
+#ewk-panel-playlists input[name="search"] {
+  background: var(--surface-input) !important;
+  border: 1px solid var(--border-strong) !important;
+  border-radius: var(--radius-sm) !important;
+  color: var(--text-body) !important;
+  font-family: var(--font-sans) !important;
+  font-size: 12px !important;
+  padding: 5px 10px !important;
+  flex: 1 !important;
+  min-width: 0 !important;
+  outline: none !important;
+}
+#ewk-panel-playlists input[type="search"]:focus,
+#ewk-panel-playlists input[name="search"]:focus {
+  border-color: var(--ewk-gold-600) !important;
+  box-shadow: 0 0 0 1px var(--ewk-gold-700) !important;
+}
+#ewk-panel-playlists input[type="search"]::placeholder { color: var(--text-faint) !important; }
+
+/* 헤더 버튼 (+ 플레이리스트 생성 등) */
+#ewk-panel-playlists .directory-header button,
+#ewk-panel-playlists .action-buttons button,
+#ewk-panel-playlists .header-actions .create-playlist {
+  background: transparent !important;
+  border: 1px solid var(--border-strong) !important;
+  border-radius: var(--radius-sm) !important;
+  color: var(--text-muted) !important;
+  font-size: 11px !important;
+  padding: 4px 9px !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+  transition: color var(--dur-fast), border-color var(--dur-fast), background var(--dur-fast) !important;
+  font-family: var(--font-sans) !important;
+}
+#ewk-panel-playlists .directory-header button:hover,
+#ewk-panel-playlists .action-buttons button:hover {
+  background: var(--surface-card) !important;
+  color: var(--text-strong) !important;
+  border-color: var(--ewk-gold-700) !important;
+}
+
+/* ── 스크롤 목록 ── */
+#ewk-panel-playlists .directory-list,
+#ewk-panel-playlists ol.directory-list {
+  background: transparent !important;
+  border: none !important;
+  padding: 4px 6px !important;
+  margin: 0 !important;
+  list-style: none !important;
+  overflow-y: auto !important;
+  flex: 1 !important;
+}
+
+/* ── 플레이리스트 항목 ── */
+#ewk-panel-playlists .playlist,
+#ewk-panel-playlists li.playlist {
+  background: var(--surface-card) !important;
+  border: 1px solid var(--border-hairline) !important;
+  border-left: 2px solid var(--border-strong) !important;
+  border-radius: var(--radius-sm) !important;
+  margin-bottom: 4px !important;
+  overflow: hidden !important;
+  transition: border-left-color var(--dur-fast) !important;
+}
+#ewk-panel-playlists .playlist:hover,
+#ewk-panel-playlists li.playlist:hover { border-left-color: var(--accent-gold) !important; }
+#ewk-panel-playlists .playlist.playing,
+#ewk-panel-playlists li.playlist.playing { border-left-color: var(--ewk-gold-500) !important; }
+
+/* 플레이리스트 헤더 행 */
+#ewk-panel-playlists .playlist-header,
+#ewk-panel-playlists .document-name {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 7px 10px !important;
+  background: transparent !important;
+  border-bottom: 1px solid transparent !important;
+  cursor: pointer !important;
+}
+#ewk-panel-playlists .playlist[data-expanded="true"] .playlist-header,
+#ewk-panel-playlists li.playlist.expanded .playlist-header { border-bottom-color: var(--border-strong) !important; }
+
+/* 플레이리스트 이름 */
+#ewk-panel-playlists .playlist-name,
+#ewk-panel-playlists h3.playlist-name,
+#ewk-panel-playlists .document-name h4 {
+  font-family: var(--font-sans) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: var(--text-body) !important;
+  flex: 1 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+}
+#ewk-panel-playlists .playlist.playing .playlist-name,
+#ewk-panel-playlists li.playlist.playing .document-name h4 { color: var(--ewk-gold-300) !important; }
+
+/* 플레이리스트 컨트롤 (prev/play/pause/next/stop) */
+#ewk-panel-playlists .playlist-controls,
+#ewk-panel-playlists .sound-controls.playlist {
+  display: flex !important;
+  align-items: center !important;
+  gap: 2px !important;
+  flex-shrink: 0 !important;
+}
+
+/* ── 모든 아이콘 버튼 (a, button with fa icons) ── */
+#ewk-panel-playlists .playlist-controls a,
+#ewk-panel-playlists .playlist-controls button,
+#ewk-panel-playlists .sound-controls a,
+#ewk-panel-playlists .sound-controls button,
+#ewk-panel-playlists .control-buttons a,
+#ewk-panel-playlists .control-buttons button {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 26px !important;
+  height: 26px !important;
+  border-radius: var(--radius-xs) !important;
+  background: transparent !important;
+  border: none !important;
+  color: var(--text-muted) !important;
+  font-size: 12px !important;
+  cursor: pointer !important;
+  transition: color var(--dur-fast), background var(--dur-fast) !important;
+  text-decoration: none !important;
+}
+#ewk-panel-playlists .playlist-controls a:hover,
+#ewk-panel-playlists .playlist-controls button:hover,
+#ewk-panel-playlists .sound-controls a:hover,
+#ewk-panel-playlists .sound-controls button:hover,
+#ewk-panel-playlists .control-buttons a:hover,
+#ewk-panel-playlists .control-buttons button:hover {
+  color: var(--text-strong) !important;
+  background: var(--surface-raised) !important;
+}
+/* 재생 중 강조 */
+#ewk-panel-playlists .playlist-controls .fa-pause,
+#ewk-panel-playlists .sound-controls .fa-pause,
+#ewk-panel-playlists [data-action="playlistPlay"] .fa-pause {
+  color: var(--ewk-gold-400) !important;
+}
+
+/* ── 사운드 목록 ── */
+#ewk-panel-playlists .sound-list,
+#ewk-panel-playlists ol.sound-list,
+#ewk-panel-playlists ul.sound-list {
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 4px 6px !important;
+  background: var(--ewk-ink-875, var(--ewk-ink-850)) !important;
+  border-top: 1px solid var(--border-strong) !important;
+}
+
+/* 사운드 항목 */
+#ewk-panel-playlists .sound,
+#ewk-panel-playlists li.sound {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 5px 6px !important;
+  border-radius: var(--radius-xs) !important;
+  transition: background var(--dur-fast) !important;
+}
+#ewk-panel-playlists .sound:hover,
+#ewk-panel-playlists li.sound:hover { background: var(--surface-card) !important; }
+#ewk-panel-playlists .sound.playing,
+#ewk-panel-playlists li.sound.playing { background: rgba(201,162,39,0.07) !important; }
+
+/* 사운드 이름 */
+#ewk-panel-playlists .sound-name,
+#ewk-panel-playlists .sound h4 {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  color: var(--text-body) !important;
+  flex: 1 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  margin: 0 !important;
+}
+#ewk-panel-playlists .sound.playing .sound-name,
+#ewk-panel-playlists li.sound.playing h4 { color: var(--ewk-gold-300) !important; }
+
+/* ── 볼륨 슬라이더 ── */
+#ewk-panel-playlists input[type="range"] {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  height: 3px !important;
+  background: var(--border-strong) !important;
+  border-radius: 2px !important;
+  border: none !important;
+  cursor: pointer !important;
+}
+#ewk-panel-playlists input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none !important;
+  width: 12px !important;
+  height: 12px !important;
+  border-radius: 50% !important;
+  background: var(--ewk-gold-500) !important;
+  border: 2px solid var(--ewk-ink-800) !important;
+  cursor: pointer !important;
+}
+#ewk-panel-playlists input[type="range"]::-moz-range-thumb {
+  width: 12px !important;
+  height: 12px !important;
+  border-radius: 50% !important;
+  background: var(--ewk-gold-500) !important;
+  border: 2px solid var(--ewk-ink-800) !important;
+  cursor: pointer !important;
+}
+
+/* ── 글로벌 볼륨 / 하단 컨트롤 ── */
+#ewk-panel-playlists .global-volume,
+#ewk-panel-playlists .sound-volume,
+#ewk-panel-playlists footer,
+#ewk-panel-playlists .playlist-footer {
+  background: var(--ewk-ink-850) !important;
+  border-top: 1px solid var(--border-strong) !important;
+  padding: 8px 10px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+  font-size: 11px !important;
+  color: var(--text-faint) !important;
+  font-family: var(--font-mono) !important;
+  letter-spacing: 0.06em !important;
+}
+#ewk-panel-playlists .global-volume label,
+#ewk-panel-playlists .sound-volume label { color: var(--text-faint) !important; font-size: 10px !important; white-space: nowrap !important; }
+
+/* ── 폴더 (플레이리스트 그룹) ── */
+#ewk-panel-playlists .folder,
+#ewk-panel-playlists li.folder {
+  margin-bottom: 6px !important;
+}
+#ewk-panel-playlists .folder-header,
+#ewk-panel-playlists li.folder > header {
+  font-family: var(--font-mono) !important;
+  font-size: 10px !important;
+  letter-spacing: 0.16em !important;
+  text-transform: uppercase !important;
+  color: var(--text-faint) !important;
+  padding: 8px 10px 4px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+/* ── 스크롤바 ── */
+#ewk-panel-playlists ::-webkit-scrollbar { width: 8px; }
+#ewk-panel-playlists ::-webkit-scrollbar-thumb {
+  background: var(--ewk-ink-650);
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+#ewk-panel-playlists ::-webkit-scrollbar-thumb:hover { background: var(--ewk-steel-500); background-clip: padding-box; }
+#ewk-panel-playlists ::-webkit-scrollbar-track { background: transparent; }
+
+/* ── FVTT 기본 스타일 덮어쓰기 정리 ── */
+#ewk-panel-playlists h2,
+#ewk-panel-playlists h3,
+#ewk-panel-playlists h4 { border: none !important; text-shadow: none !important; margin: 0 !important; }
+#ewk-panel-playlists a { color: inherit !important; text-decoration: none !important; }
+#ewk-panel-playlists hr { border-color: var(--border-strong) !important; margin: 4px 0 !important; }
+#ewk-panel-playlists .fa, #ewk-panel-playlists i.fas, #ewk-panel-playlists i.far, #ewk-panel-playlists i.fab { font-size: inherit !important; }
