@@ -3534,3 +3534,191 @@ li:hover .ewk-msg-acts {
 #ewk-panel-playlists a { color: inherit !important; text-decoration: none !important; }
 #ewk-panel-playlists hr { border-color: var(--border-strong) !important; margin: 4px 0 !important; }
 #ewk-panel-playlists .fa, #ewk-panel-playlists i.fas, #ewk-panel-playlists i.far, #ewk-panel-playlists i.fab { font-size: inherit !important; }
+
+/* =============================================================
+   설정 탭 — FVTT Settings SidebarTab 리스타일
+   스코프: #ewk-panel-settings
+   기능 변경 없이 시각만 EWK 다크 테마로 통일
+   ============================================================= */
+
+#ewk-panel-settings,
+#ewk-panel-settings .sidebar-tab,
+#ewk-panel-settings #settings {
+  background: transparent !important;
+  color: var(--text-body) !important;
+  border: none !important;
+  box-shadow: none !important;
+  height: 100%;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* ── 섹션 헤더 (h2/h3 구분선) ── */
+#ewk-panel-settings h2,
+#ewk-panel-settings h3,
+#ewk-panel-settings .section-header {
+  font-family: var(--font-mono) !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.18em !important;
+  text-transform: uppercase !important;
+  color: var(--text-faint) !important;
+  border: none !important;
+  border-bottom: 1px solid var(--border-strong) !important;
+  text-shadow: none !important;
+  padding: 12px 12px 6px !important;
+  margin: 0 !important;
+}
+
+/* ── 설정 버튼 목록 ── */
+#ewk-panel-settings .settings-list,
+#ewk-panel-settings menu,
+#ewk-panel-settings ul.settings-list {
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 6px 8px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 3px !important;
+}
+
+/* 개별 설정 버튼 */
+#ewk-panel-settings .settings-list button,
+#ewk-panel-settings .settings-list a,
+#ewk-panel-settings menu button,
+#ewk-panel-settings button.settings-button {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  width: 100% !important;
+  padding: 8px 12px !important;
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  border-radius: var(--radius-sm) !important;
+  color: var(--text-body) !important;
+  font-family: var(--font-sans) !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  text-align: left !important;
+  cursor: pointer !important;
+  transition: background var(--dur-fast), border-color var(--dur-fast), color var(--dur-fast) !important;
+  text-decoration: none !important;
+}
+#ewk-panel-settings .settings-list button:hover,
+#ewk-panel-settings .settings-list a:hover,
+#ewk-panel-settings menu button:hover,
+#ewk-panel-settings button.settings-button:hover {
+  background: var(--surface-card) !important;
+  border-color: var(--border-strong) !important;
+  color: var(--text-strong) !important;
+}
+/* 위험 버튼 (로그아웃, Return to Setup 등) */
+#ewk-panel-settings button[data-action="logout"],
+#ewk-panel-settings button[data-action="returnSetup"],
+#ewk-panel-settings .settings-list li:last-child button {
+  color: var(--ewk-crimson-400, #c94f4f) !important;
+  border-color: transparent !important;
+}
+#ewk-panel-settings button[data-action="logout"]:hover,
+#ewk-panel-settings button[data-action="returnSetup"]:hover {
+  background: rgba(201,79,79,0.08) !important;
+  border-color: rgba(201,79,79,0.3) !important;
+  color: #e06060 !important;
+}
+
+/* 버튼 아이콘 */
+#ewk-panel-settings .settings-list button i,
+#ewk-panel-settings .settings-list a i,
+#ewk-panel-settings menu button i,
+#ewk-panel-settings button.settings-button i {
+  width: 16px !important;
+  text-align: center !important;
+  font-size: 13px !important;
+  flex-shrink: 0 !important;
+  color: var(--text-faint) !important;
+}
+#ewk-panel-settings .settings-list button:hover i,
+#ewk-panel-settings menu button:hover i { color: var(--accent-gold) !important; }
+
+/* ── 플레이어 목록 ── */
+#ewk-panel-settings #player-list,
+#ewk-panel-settings .players-list,
+#ewk-panel-settings ol#player-list {
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 4px 8px 8px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+}
+
+/* 플레이어 항목 */
+#ewk-panel-settings .player,
+#ewk-panel-settings li.player {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 6px 10px !important;
+  border-radius: var(--radius-sm) !important;
+  background: var(--surface-card) !important;
+  border: 1px solid var(--border-hairline) !important;
+  transition: border-color var(--dur-fast) !important;
+}
+#ewk-panel-settings .player:hover,
+#ewk-panel-settings li.player:hover { border-color: var(--border-strong) !important; }
+
+/* 플레이어 이름 */
+#ewk-panel-settings .player-name,
+#ewk-panel-settings .player h4 {
+  font-size: 12.5px !important;
+  font-weight: 500 !important;
+  color: var(--text-body) !important;
+  flex: 1 !important;
+  margin: 0 !important;
+  border: none !important;
+  text-shadow: none !important;
+}
+/* GM 표시 */
+#ewk-panel-settings .player.gm .player-name,
+#ewk-panel-settings li.player.gm h4 { color: var(--ewk-gold-300) !important; }
+
+/* 접속 상태 도트 */
+#ewk-panel-settings .player-active,
+#ewk-panel-settings .connection-dot {
+  width: 7px !important;
+  height: 7px !important;
+  border-radius: 50% !important;
+  flex-shrink: 0 !important;
+}
+
+/* 캐릭터 이름 (서브텍스트) */
+#ewk-panel-settings .player-character,
+#ewk-panel-settings .player span {
+  font-size: 11px !important;
+  color: var(--text-faint) !important;
+  font-style: italic !important;
+}
+
+/* ── 구분선 ── */
+#ewk-panel-settings hr {
+  border: none !important;
+  border-top: 1px solid var(--border-strong) !important;
+  margin: 4px 8px !important;
+}
+
+/* ── 스크롤바 ── */
+#ewk-panel-settings ::-webkit-scrollbar { width: 8px; }
+#ewk-panel-settings ::-webkit-scrollbar-thumb {
+  background: var(--ewk-ink-650);
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+#ewk-panel-settings ::-webkit-scrollbar-thumb:hover { background: var(--ewk-steel-500); background-clip: padding-box; }
+#ewk-panel-settings ::-webkit-scrollbar-track { background: transparent; }
+
+/* ── 잡다한 FVTT 기본 스타일 초기화 ── */
+#ewk-panel-settings a { color: inherit !important; text-decoration: none !important; }
+#ewk-panel-settings .fa,
+#ewk-panel-settings i.fas,
+#ewk-panel-settings i.far { font-size: inherit !important; }
