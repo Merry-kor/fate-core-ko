@@ -1,4 +1,4 @@
-<div class="fate-roll-card">
+<div class="fate-roll-card{{#if outcomeClass}} fate-roll-card--anim fate-roll-anim--{{outcomeClass}}{{/if}}">
   <div class="fate-roll-card__header">
     <span class="fate-roll-card__actor">{{actor.name}}</span>
     {{#if skillName}}
@@ -11,6 +11,9 @@
     {{#if rank}}
     <span class="fate-roll-card__modifier">{{#if (gte rank 0)}}+{{/if}}{{rank}}</span>
     {{/if}}
+    {{#if bonus}}
+    <span class="fate-roll-card__modifier fate-roll-card__modifier--bonus" title="추가 수정치">{{#if (gte bonus 0)}}+{{/if}}{{bonus}}</span>
+    {{/if}}
   </div>
 
   <div class="fate-roll-card__result">
@@ -18,7 +21,16 @@
     <span class="fate-roll-card__ladder">{{ladderLabel}}</span>
   </div>
 
+  {{#if hasDifficulty}}
+  <div class="fate-roll-card__vs">
+    <span class="fate-roll-card__diff">난이도 {{#if (gte difficulty 0)}}+{{/if}}{{difficulty}}</span>
+    <span class="fate-roll-card__shifts">차이 {{#if (gte shifts 0)}}+{{/if}}{{shifts}}</span>
+  </div>
+  {{/if}}
+
+  {{#if outcome}}
   <div class="fate-roll-card__outcome fate-outcome--{{outcomeClass}}">
     {{outcome}}
   </div>
+  {{/if}}
 </div>
