@@ -414,9 +414,10 @@ const FateVNBox = {
   _el:           null,
   _timer:        null,
   _cropCache:    new Map(), // src → cropped data URL
-  _slots:        [],        // 화면 위 초상화 [{actorId, el, last}] — 최근 발화순
+  _slots:        [],        // 화면 위 초상화 [{actorId, el, last, pos, src}]
   _expiryTimer:  null,
-  EXPIRE_MS:     30000,     // 마지막 대사 후 30초 지나면 초상화 자동 퇴장
+  _typing:       null,      // 진행 중 타자 상태 {cursor, text, i, textEl}
+  _activeId:     null,      // 현재 하이라이트 액터
 
   _ensure() {
     if (this._el) return;
@@ -431,11 +432,15 @@ const FateVNBox = {
       </div>`;
     document.getElementById("interface")?.appendChild(this._el);
     this._el.querySelector("#fate-vn-close").onclick = () => this.hide();
-    // 30초 무발화 초상화 자동 퇴장 (전원 퇴장 시 박스 닫기)
+    // 타자 중 대사창 클릭 → 즉시 완성
+    this._el.querySelector("#fate-vn-textbox").addEventListener("click", () => this._skipTyping());
+    // 무발화 초상화 자동 퇴장 (시간은 설정 탭에서, 전원 퇴장 시 박스 닫기)
     this._expiryTimer ??= setInterval(() => {
       if (!this._el?.classList.contains("visible") || !this._slots.length) return;
+      const v   = EWKConfig.getNum("ewk-vn-expire", 30);
+      if (v <= 0) return;   // "계속 유지"
       const now = Date.now();
-      const expired = this._slots.filter(s => now - s.last > this.EXPIRE_MS);
+      const expired = this._slots.filter(s => now - s.last > v * 1000);
       if (!expired.length) return;
       expired.forEach(s => this._removeSlot(s));
       this._applySlots();
@@ -447,6 +452,53 @@ const FateVNBox = {
     this._el?.classList.remove("visible");
     this._slots.forEach(s => s.el.remove());
     this._slots = [];
+    this._typing = null;
+    this._setTypingInteractive(false);
+    this._syncFocus();
+  },
+
+  // 집중 모드 — 대사창 표시 중 배경 어둡게 (클라이언트 설정)
+  _syncFocus() {
+    const on = EWKConfig.getBool("ewk-vn-focus", false) && !!this._el?.classList.contains("visible");
+    document.body.classList.toggle("ewk-vn-focusing", on);
+  },
+
+  // 타자 중에만 대사창이 클릭을 받도록 (평소엔 캔버스 클릭 방해 없음)
+  _setTypingInteractive(on) {
+    const tb = document.getElementById("fate-vn-textbox");
+    if (!tb) return;
+    tb.style.pointerEvents = on ? "auto" : "";
+    tb.style.cursor = on ? "pointer" : "";
+    tb.title = on ? "클릭하면 대사가 즉시 표시됩니다" : "";
+  },
+
+  _skipTyping() {
+    if (!this._timer || !this._typing) return;
+    clearInterval(this._timer); this._timer = null;
+    const t = this._typing;
+    t.cursor.insertAdjacentText("beforebegin", t.text.slice(t.i));
+    t.textEl.scrollTop = t.textEl.scrollHeight;
+    const c = t.cursor;
+    setTimeout(() => c.remove(), 1200);
+    this._typing = null;
+    this._setTypingInteractive(false);
+  },
+
+  // 타자 효과음 — 작은 블립 (기본 꺼짐, 설정 탭)
+  _blip() {
+    if (!EWKConfig.getBool("ewk-vn-blip", false)) return;
+    try {
+      this._ac ??= new (window.AudioContext || window.webkitAudioContext)();
+      if (this._ac.state === "suspended") this._ac.resume();
+      const t = this._ac.currentTime;
+      const o = this._ac.createOscillator(), g = this._ac.createGain();
+      o.type = "square";
+      o.frequency.value = 840 + Math.random() * 160;
+      g.gain.setValueAtTime(0.018, t);
+      g.gain.exponentialRampToValueAtTime(0.0008, t + 0.05);
+      o.connect(g); g.connect(this._ac.destination);
+      o.start(t); o.stop(t + 0.06);
+    } catch (_) {}
   },
 
   // 투명 여백을 Canvas로 분석해 제거한 data URL 반환 (캐시)
@@ -493,7 +545,7 @@ const FateVNBox = {
     });
   },
 
-  show(actor, html) {
+  show(actor, html, message) {
     this._ensure();
     const nameEl = document.getElementById("fate-vn-name");
     const textEl = document.getElementById("fate-vn-text");
@@ -507,6 +559,7 @@ const FateVNBox = {
     textEl.className = emoMatch ? `ewk-emo ewk-emo--${emoMatch[1]}` : "";
     textEl.innerHTML = "";
     this._el.classList.add("visible");
+    this._syncFocus();
 
     // plain text 추출 (타이프라이터용)
     const tmp = document.createElement("div");
@@ -514,42 +567,61 @@ const FateVNBox = {
     const text = tmp.textContent ?? html;
 
     if (this._timer) { clearInterval(this._timer); this._timer = null; }
+    this._typing = null;
+    this._setTypingInteractive(false);
     // 대사 속도 (설정 탭에서 변경: 느림 45 / 보통 28 / 빠름 14 / 즉시 0)
     const spd = parseInt(localStorage.getItem("ewk-vn-speed") ?? "28", 10);
     if (spd <= 0) {
       textEl.textContent = text;   // 즉시 표시 — 타이프라이터 생략
     } else {
-      let i = 0;
       const cursor = document.createElement("span");
       cursor.className = "fate-vn-cursor";
       textEl.appendChild(cursor);
+      this._typing = { cursor, text, i: 0, textEl };
+      this._setTypingInteractive(true);   // 타자 중 클릭 → 즉시 완성
       this._timer = setInterval(() => {
-        if (i < text.length) {
-          cursor.insertAdjacentText("beforebegin", text[i++]);
+        const t = this._typing;
+        if (!t) { clearInterval(this._timer); this._timer = null; return; }
+        if (t.i < t.text.length) {
+          cursor.insertAdjacentText("beforebegin", t.text[t.i++]);
+          if (t.i % 2 === 0) this._blip();
+          textEl.scrollTop = textEl.scrollHeight;   // 초장문 자동 스크롤
         } else {
           clearInterval(this._timer); this._timer = null;
+          this._typing = null;
+          this._setTypingInteractive(false);
           setTimeout(() => cursor.remove(), 2200);
         }
       }, spd);
     }
 
-    // 초상화 무대 갱신 — 최근 발화자 가운데, 이전 발화자 좌/우(음영)
-    this._speak(actor);
+    // 표정 차분 해석 — 메시지 플래그의 표정 이름 → 액터에 등록된 이미지
+    let src = actor.img;
+    const exprName = message?.getFlag?.("fate-core-ko", "expression");
+    if (exprName) {
+      const x = (actor.getFlag("fate-core-ko", "expressions") ?? []).find(e => e.name === exprName);
+      if (x?.img) src = x.img;
+    }
+    // 초상화 무대 갱신
+    this._speak(actor, src);
   },
 
   // 발화 처리 — 자리는 고정(sticky), 하이라이트만 발화자를 따라 이동
   // 배치: 1명=가운데 / 2명=좌·우 마주보기 / 3명=좌·가운데·우
-  _speak(actor) {
+  _speak(actor, src) {
+    src = src || actor.img;
     let slot = this._slots.find(s => s.actorId === actor.id);
+    let isNew = false;
     if (!slot) {
+      isNew = true;
       const div = document.createElement("div");
       div.className = "fate-vn-actor fate-vn-actor--enter";
       div.dataset.actorId = actor.id;
-      div.innerHTML = `<img src="${actor.img}" alt="" draggable="false">`;
+      div.innerHTML = `<img src="${src}" alt="" draggable="false">`;
       document.getElementById("fate-vn-stage")?.appendChild(div);
       const img = div.querySelector("img");
-      this._cropPortrait(actor.img).then(c => { if (div.isConnected) img.src = c; });
-      slot = { actorId: actor.id, el: div, last: 0, pos: null };
+      this._cropPortrait(src).then(c => { if (div.isConnected && slot.src === src) img.src = c; });
+      slot = { actorId: actor.id, el: div, last: 0, pos: null, src };
 
       // 자리 배정
       if (this._slots.length === 0) {
@@ -570,13 +642,30 @@ const FateVNBox = {
         this._removeSlot(oldest);
       }
       this._slots.push(slot);
+
+      // 등장 연출 — 자기 자리 방향의 화면 밖에서 슬라이드 인
+      const startLeft = { l: "-14%", r: "114%", c: "50%" }[slot.pos] ?? "50%";
+      div.style.left = startLeft;
+      if (slot.pos === "c") div.style.transform = "translateX(-50%) translateY(40px)";
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        div.style.left = "";
+        div.style.transform = "";
+      }));
+    } else if (slot.src !== src) {
+      // 표정 교체 — 같은 자리에서 이미지만 전환
+      slot.src = src;
+      const img = slot.el.querySelector("img");
+      img.src = src;
+      this._cropPortrait(src).then(c => { if (slot.el.isConnected && slot.src === src) img.src = c; });
     }
+    // 우측 자리 좌우 반전 (액터 플래그 — 마주보기)
+    slot.el.classList.toggle("fate-vn-actor--mirrorable", !!actor.getFlag("fate-core-ko", "vnMirror"));
     slot.last = Date.now();
-    this._applySlots();
+    this._applySlots(isNew);
   },
 
   // 자리 반영 + 발화자 하이라이트 (나머지는 음영)
-  _applySlots() {
+  _applySlots(skipPop = false) {
     if (this._slots.length === 1) this._slots[0].pos = "c";   // 혼자 남으면 가운데로 복귀
     const active = [...this._slots].sort((a, b) => b.last - a.last)[0];
     this._slots.forEach(s => {
@@ -584,12 +673,70 @@ const FateVNBox = {
       s.el.classList.add(`fate-vn-actor--${s.pos}`);
       s.el.classList.toggle("fate-vn-actor--dim", s !== active);
     });
+    // 하이라이트가 옮겨갈 때 활성 초상화 팝 (신규 등장은 슬라이드 연출이 대신함)
+    if (active && this._activeId !== active.actorId) {
+      this._activeId = active.actorId;
+      if (!skipPop) {
+        active.el.classList.remove("fate-vn-actor--pop");
+        void active.el.offsetWidth;
+        active.el.classList.add("fate-vn-actor--pop");
+      }
+    }
   },
 
   _removeSlot(slot) {
     this._slots = this._slots.filter(s => s !== slot);
     slot.el.classList.add("fate-vn-actor--out");
     setTimeout(() => slot.el.remove(), 500);
+  },
+};
+
+// ─── VN 표정(차분) 관리 — 액터 플래그(expressions)에 [{name, img}] 저장 ─────
+const EWKExpr = {
+  manage(actor) {
+    if (!game.user?.isGM && !actor.isOwner) return;
+    document.getElementById("ewk-expr-mgr")?.remove();
+    const el = document.createElement("div");
+    el.id = "ewk-expr-mgr";
+    el.className = "ewk-confirm-overlay fate-core-ko";
+    const render = () => {
+      const exprs  = actor.getFlag("fate-core-ko", "expressions") ?? [];
+      const mirror = !!actor.getFlag("fate-core-ko", "vnMirror");
+      el.innerHTML = `<div class="ewk-confirm ewk-expr-mgr">
+  <div class="ewk-confirm__title">${actor.name} — VN 표정 관리</div>
+  <div class="ewk-expr-rows">
+    <div class="ewk-expr-row ewk-expr-row--base"><img src="${actor.img}"><span>기본 (액터 이미지)</span></div>
+    ${exprs.map((x, i) => `<div class="ewk-expr-row"><img src="${x.img}"><span>${x.name}</span>
+      <button class="ewk-aw-asp-btn ewk-aw-asp-del" data-x-del="${i}" title="삭제">×</button></div>`).join("")}
+  </div>
+  <button class="jwe-btn" data-x-add>+ 표정 추가</button>
+  <label class="ewk-expr-mirror"><input type="checkbox" data-x-mirror ${mirror ? "checked" : ""}> 오른쪽 자리에서 좌우 반전 (마주보기)</label>
+  <div class="ewk-confirm__btns"><button class="jwe-btn jwe-btn--save" data-x-close>닫기</button></div>
+</div>`;
+      el.querySelector("[data-x-close]").onclick = () => el.remove();
+      el.querySelector("[data-x-mirror]").onchange = async (e) => {
+        await actor.setFlag("fate-core-ko", "vnMirror", e.target.checked);
+      };
+      el.querySelector("[data-x-add]").onclick = () => {
+        const name = window.prompt("표정 이름 (예: 웃음, 분노, 슬픔):");
+        if (!name?.trim()) return;
+        ewkPickImage(async (path) => {
+          if (!path) return;
+          const list = [...(actor.getFlag("fate-core-ko", "expressions") ?? [])];
+          list.push({ name: name.trim(), img: path });
+          await actor.setFlag("fate-core-ko", "expressions", list);
+          render();
+        });
+      };
+      el.querySelectorAll("[data-x-del]").forEach(b => b.onclick = async () => {
+        const list = [...(actor.getFlag("fate-core-ko", "expressions") ?? [])];
+        list.splice(Number(b.dataset.xDel), 1);
+        await actor.setFlag("fate-core-ko", "expressions", list);
+        render();
+      });
+    };
+    render();
+    document.body.appendChild(el);
   },
 };
 
@@ -608,6 +755,7 @@ const EWKSidebar = {
   _scrollLock: false,   // 지난 이야기 확인 — 자동 스크롤 잠금
   _bulkLoading: false,  // 전체 로그 일괄 로드 중 (VN 박스 등 부작용 억제)
   _currentEmo: "normal",
+  _currentExpr: null,   // VN 표정 (액터 플래그 expressions의 이름)
   _currentWrap: null,
   _textStyles: { bold: false, italic: false, center: false },
   _messageBuffer: [],   // 사이드바 생성 전 수신된 메시지 임시 보관
@@ -734,6 +882,8 @@ const EWKSidebar = {
         <button class="ewk-emo-btn" data-emo="shout">외침</button>
         <button class="ewk-emo-btn" data-emo="wave">파동</button>
         <button class="ewk-emo-btn" data-emo="glow">빛남</button>
+        <div class="ewk-tool-sep"></div>
+        <button class="ewk-fmt-btn" id="ewk-expr-btn" type="button" title="VN 표정 선택 (발언권 액터)">😊</button>
       </div>
       <div id="ewk-chat-form">
         <textarea id="ewk-chat-input" rows="2" placeholder="대사나 행동 입력… (Enter)"></textarea>
@@ -1873,7 +2023,9 @@ const EWKSidebar = {
       if (this._currentEmo && this._currentEmo !== "normal") {
         content = `<span class="ewk-emo ewk-emo--${this._currentEmo}">${content}</span>`;
       }
-      await ChatMessage.create({ content, speaker: ChatMessage.getSpeaker() });
+      const msgData = { content, speaker: ChatMessage.getSpeaker() };
+      if (this._currentExpr) msgData.flags = { "fate-core-ko": { expression: this._currentExpr } };   // VN 표정
+      await ChatMessage.create(msgData);
     };
 
     input?.addEventListener("keydown", e => {
@@ -1920,6 +2072,40 @@ const EWKSidebar = {
           b.classList.toggle("ewk-emo-btn--on", b === btn));
       });
     });
+
+    // 표정 선택 메뉴
+    document.getElementById("ewk-expr-btn")?.addEventListener("click", () => this._toggleExprMenu());
+  },
+
+  // VN 표정 선택 팝업 — 발언권 액터의 등록된 표정 목록
+  _toggleExprMenu() {
+    const existing = document.getElementById("ewk-expr-menu");
+    if (existing) { existing.remove(); return; }
+    const speakerId = localStorage.getItem(`ewk-speaker-${game.userId}`);
+    const actor = speakerId ? game.actors?.get(speakerId) : null;
+    if (!actor) { ui.notifications?.warn("먼저 발언권(무대/출연진에서 발언 선택)을 지정하세요."); return; }
+    const exprs = actor.getFlag("fate-core-ko", "expressions") ?? [];
+    const menu = document.createElement("div");
+    menu.id = "ewk-expr-menu";
+    menu.className = "fate-core-ko";
+    menu.innerHTML = `
+      <div class="ewk-expr-title">${actor.name} — 표정</div>
+      <button type="button" class="ewk-expr-item${!this._currentExpr ? " on" : ""}" data-expr="">기본</button>
+      ${exprs.map(x => `<button type="button" class="ewk-expr-item${this._currentExpr === x.name ? " on" : ""}" data-expr="${x.name.replace(/"/g, "&quot;")}">${x.name}</button>`).join("")}
+      ${(game.user?.isGM || actor.isOwner) ? `<button type="button" class="ewk-expr-manage" data-expr-manage>⚙ 표정 관리…</button>` : ""}`;
+    document.getElementById("ewk-panel-chat")?.appendChild(menu);
+    menu.querySelectorAll("[data-expr]").forEach(b => b.addEventListener("click", () => {
+      this._currentExpr = b.dataset.expr || null;
+      document.getElementById("ewk-expr-btn")?.classList.toggle("ewk-emo-btn--on", !!this._currentExpr);
+      menu.remove();
+    }));
+    menu.querySelector("[data-expr-manage]")?.addEventListener("click", () => { menu.remove(); EWKExpr.manage(actor); });
+    setTimeout(() => {
+      const close = ev => {
+        if (!menu.contains(ev.target)) { menu.remove(); document.removeEventListener("mousedown", close); }
+      };
+      document.addEventListener("mousedown", close);
+    }, 0);
   },
 
   _wireChatActions() {
@@ -2104,6 +2290,18 @@ const EWKSidebar = {
     const vnBtns = [["45", "느림"], ["28", "보통"], ["14", "빠름"], ["0", "즉시"]].map(([v, l]) =>
       `<button class="ewk-set-seg${v === vnKey ? " ewk-set-seg--on" : ""}" data-vnspd="${v}">${l}</button>`
     ).join("");
+    const vnOptRow = (key, label, desc, def) => {
+      const on = EWKConfig.getBool(key, def);
+      return `<div class="ewk-set-row">
+        <div class="ewk-set-info"><span class="ewk-set-label">${label}</span><span class="ewk-set-desc">${desc}</span></div>
+        <button class="ewk-set-toggle${on ? " ewk-set-toggle--on" : ""}" data-vnopt="${key}" data-vndef="${def ? "1" : "0"}" role="switch" aria-checked="${on}">
+          <span class="ewk-set-knob"></span>
+        </button>
+      </div>`;
+    };
+    const expCur    = EWKConfig.getNum("ewk-vn-expire", 30);
+    const vnExpBtns = [[15, "15초"], [30, "30초"], [60, "60초"], [0, "계속"]].map(([v, l]) =>
+      `<button class="ewk-set-seg${v === expCur ? " ewk-set-seg--on" : ""}" data-vnexp="${v}">${l}</button>`).join("");
 
     panel.innerHTML = `
 <div class="ewk-panel-scroll ewk-settings">
@@ -2123,8 +2321,19 @@ const EWKSidebar = {
 
   <section class="ewk-set-sec">
     <h3 class="ewk-set-h">💬 대사 표시 속도</h3>
-    <p class="ewk-set-desc" style="margin:0 0 8px">VN 박스의 타자기 효과 속도입니다.</p>
+    <p class="ewk-set-desc" style="margin:0 0 8px">VN 박스의 타자기 효과 속도입니다. (타자 중 대사창 클릭 = 즉시 표시)</p>
     <div class="ewk-set-seg-row">${vnBtns}</div>
+  </section>
+
+  <section class="ewk-set-sec">
+    <h3 class="ewk-set-h">🗨 VN 대사창</h3>
+    ${vnOptRow("ewk-vn-show",  "VN 대사창 표시", "끄면 대사가 채팅 로그에만 표시됩니다", true)}
+    ${vnOptRow("ewk-vn-blip",  "타자 효과음",    "글자가 찍힐 때 작은 블립음", false)}
+    ${vnOptRow("ewk-vn-focus", "집중 모드",      "대사창이 떠 있는 동안 배경을 어둡게", false)}
+    <div class="ewk-set-row" style="margin-top:4px">
+      <div class="ewk-set-info"><span class="ewk-set-label">초상화 유지 시간</span><span class="ewk-set-desc">마지막 대사 후 자동 퇴장까지</span></div>
+    </div>
+    <div class="ewk-set-seg-row">${vnExpBtns}</div>
   </section>
 
   <section class="ewk-set-sec">
@@ -2194,6 +2403,22 @@ const EWKSidebar = {
     // 대사 표시 속도
     panel.querySelectorAll("[data-vnspd]").forEach(b => b.addEventListener("click", () => {
       localStorage.setItem("ewk-vn-speed", b.dataset.vnspd);
+      this._renderSettingsPanel();
+    }));
+
+    // VN 대사창 옵션 토글
+    panel.querySelectorAll("[data-vnopt]").forEach(b => b.addEventListener("click", () => {
+      const key  = b.dataset.vnopt;
+      const def  = b.dataset.vndef === "1";
+      const next = !EWKConfig.getBool(key, def);
+      EWKConfig.set(key, next ? "1" : "0");
+      if (key === "ewk-vn-show" && !next) FateVNBox.hide();
+      if (key === "ewk-vn-focus") FateVNBox._syncFocus();
+      this._renderSettingsPanel();
+    }));
+    // 초상화 유지 시간
+    panel.querySelectorAll("[data-vnexp]").forEach(b => b.addEventListener("click", () => {
+      EWKConfig.set("ewk-vn-expire", b.dataset.vnexp);
       this._renderSettingsPanel();
     }));
 
@@ -5233,7 +5458,7 @@ const EWKFlowchart = {
     let bodyHtml = "";
     if (node.type === "dialogue") {
       bodyHtml = `
-        <div class="ewk-fc__node-lbl">${actor?.name ?? "(액터 없음)"}</div>
+        <div class="ewk-fc__node-lbl">${actor?.name ?? "(액터 없음)"}${node.expr ? ` <span class="ewk-fc__hint-inline">😊${node.expr}</span>` : ""}</div>
         <div class="ewk-fc__node-prev">${node.text ?? ""}</div>`;
     } else if (node.type === "effect") {
       const eff = EWKScreenEffect.EFFECTS[node.effect];
@@ -5346,9 +5571,18 @@ const EWKFlowchart = {
 
     let fields = "";
     if (node.type === "dialogue") {
+      const exprOpts = (aid, sel) => {
+        const list = aid ? (game.actors?.get(aid)?.getFlag("fate-core-ko", "expressions") ?? []) : [];
+        return `<option value="">기본</option>` + list.map(x =>
+          `<option value="${x.name.replace(/"/g, "&quot;")}"${x.name === sel ? " selected" : ""}>${x.name}</option>`).join("");
+      };
+      this._exprOpts = exprOpts;   // actor 변경 리스너에서 재사용
       fields = `
         <label>액터
           <select class="ewk-fc__field" name="actorId"><option value="">-- 선택 --</option>${actorOpts}</select>
+        </label>
+        <label>표정 <span class="ewk-fc__hint-inline">(VN 초상화 차분 — 액터에 등록된 표정)</span>
+          <select class="ewk-fc__field" name="expr">${exprOpts(node.actorId, node.expr)}</select>
         </label>
         <label>대사
           <textarea class="ewk-fc__field ewk-fc__ta" name="text" rows="3">${node.text ?? ""}</textarea>
@@ -5454,6 +5688,14 @@ const EWKFlowchart = {
         <button class="ewk-fc__cancel-btn">취소</button>
       </div>`;
 
+    if (node.type === "dialogue") {
+      // 액터 변경 시 표정 목록 갱신
+      div.querySelector("[name='actorId']")?.addEventListener("change", e => {
+        const sel = div.querySelector("[name='expr']");
+        if (sel && this._exprOpts) sel.innerHTML = this._exprOpts(e.target.value, null);
+      });
+    }
+
     if (node.type === "image" || node.type === "music") {
       div.querySelector(".ewk-fc__file-pick")?.addEventListener("click", () => {
         const srcInput   = div.querySelector("[name='src']");
@@ -5489,6 +5731,7 @@ const EWKFlowchart = {
       };
       if (node.type === "dialogue") {
         n.actorId = div.querySelector("[name='actorId']")?.value ?? "";
+        n.expr    = div.querySelector("[name='expr']")?.value ?? "";
         n.text    = div.querySelector("[name='text']")?.value.trim() ?? "";
         readFmt();
       } else if (node.type === "narration") {
@@ -5529,7 +5772,7 @@ const EWKFlowchart = {
     const d = this.getData();
     const s = d.find(x => x.id === this._activeSceneId);
     if (!s) return;
-    const node = { id: this._uid(), type, label: "", text: "", text2: "", src: "", actorId: "", effect: "", duration: 1500, weather: "", aspectAction: "add", aspectType: "situation", bold: false, italic: false, center: false, emo: "normal", musicMode: "bgm" };
+    const node = { id: this._uid(), type, label: "", text: "", text2: "", src: "", actorId: "", expr: "", effect: "", duration: 1500, weather: "", aspectAction: "add", aspectType: "situation", bold: false, italic: false, center: false, emo: "normal", musicMode: "bgm" };
     // 재생 커서(여기서부터 재생이 활성화된 노드) 다음에 삽입, 커서 없으면 맨 끝
     const at = (this._cursor >= 0 && this._cursor < s.nodes.length) ? this._cursor + 1 : s.nodes.length;
     s.nodes.splice(at, 0, node);
@@ -5752,7 +5995,7 @@ const EWKFlowchart = {
       sceneLink: s.sceneLink || null,
       nodes: (s.nodes ?? []).map(n => ({
         id: this._uid(), type: n.type || "memo", label: n.label || "", text: n.text || "",
-        text2: n.text2 || "", src: n.src || "", actorId: n.actorId || "", effect: n.effect || "",
+        text2: n.text2 || "", src: n.src || "", actorId: n.actorId || "", expr: n.expr || "", effect: n.effect || "",
         duration: n.duration ?? 1500, weather: n.weather || "",
         aspectAction: n.aspectAction || "add", aspectType: n.aspectType || "situation",
         bold: !!n.bold, italic: !!n.italic, center: !!n.center, emo: n.emo || "normal",
@@ -5903,6 +6146,7 @@ const EWKFlowchart = {
       await ChatMessage.create({
         content: this._wrapText(node.text, node),
         speaker: { actor: node.actorId },
+        ...(node.expr ? { flags: { "fate-core-ko": { expression: node.expr } } } : {}),
       });
     } else if (node.type === "narration") {
       if (!node.text) return;
@@ -6997,8 +7241,13 @@ Hooks.on("renderChatMessageHTML", (message, html) => {
       }
     }
     const msgContent = el.querySelector(".message-content");
-    // 전체 로그 일괄 로드 중에는 VN 박스 억제 (과거 대사마다 튀어나오는 것 방지)
-    if (!EWKSidebar._bulkLoading && msgContent?.textContent?.trim()) FateVNBox.show(actor, msgContent.innerHTML.trim());
+    // VN 표시 — 일괄 로드·귓속말·메시지 수정·사용자 OFF 시에는 억제
+    const vnOk = !EWKSidebar._bulkLoading
+      && !(message.whisper?.length > 0)
+      && !EWKSidebar._pendingUpdates[message.id]
+      && EWKConfig.getBool("ewk-vn-show", true)
+      && msgContent?.textContent?.trim();
+    if (vnOk) FateVNBox.show(actor, msgContent.innerHTML.trim(), message);
   } else {
     el.classList.add("ewk-chat--narration");
   }

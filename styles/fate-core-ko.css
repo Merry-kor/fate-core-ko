@@ -4918,3 +4918,82 @@ li:hover .ewk-msg-acts {
   font-style: italic;
   margin-bottom: 3px;
 }
+
+/* ════════════════════ VN 대사창 확장 (표정·연출·집중 모드) ════════════════════ */
+
+/* 하이라이트 이동 팝 */
+@keyframes fate-vn-pop { 30% { transform: translateX(-50%) translateY(-10px) scale(1.02); } }
+.fate-vn-actor--pop { animation: fate-vn-pop 0.35s ease; }
+
+/* 우측 자리 좌우 반전 (액터 플래그 vnMirror — 마주보기) */
+.fate-vn-actor--r.fate-vn-actor--mirrorable img { transform: scaleX(-1); }
+
+/* 초장문 안전장치 — 6줄 넘으면 내부 스크롤 (타자 중 자동 스크롤) */
+#fate-vn-text {
+  max-height: calc(1.45rem * 1.55 * 6);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(201,162,39,.4) transparent;
+}
+#fate-vn-text::-webkit-scrollbar { width: 5px; }
+#fate-vn-text::-webkit-scrollbar-thumb { background: rgba(201,162,39,.35); border-radius: 3px; }
+
+/* 집중 모드 — VN 표시 중 배경 어둡게 */
+#ewk-scene-bg { transition: filter 0.6s ease; }
+body.ewk-vn-focusing #ewk-scene-bg { filter: brightness(0.55) saturate(0.85); }
+
+/* 표정 선택 팝업 */
+#ewk-expr-menu {
+  position: absolute;
+  bottom: 96px; left: 10px;
+  z-index: 20;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 6px;
+  min-width: 160px;
+  box-shadow: 0 10px 28px rgba(0,0,0,.55);
+  display: flex; flex-direction: column; gap: 3px;
+  animation: ewk-pop-in 0.18s cubic-bezier(.16,1,.3,1);
+}
+.ewk-expr-title {
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.12em;
+  color: var(--text-faint); padding: 2px 6px 4px; text-transform: uppercase;
+}
+.ewk-expr-item {
+  text-align: left; padding: 5px 9px;
+  background: transparent; border: 1px solid transparent;
+  border-radius: var(--radius-xs);
+  color: var(--text-body); font-size: 12px; cursor: pointer;
+  transition: background 0.12s ease;
+}
+.ewk-expr-item:hover { background: rgba(201,162,39,.1); }
+.ewk-expr-item.on { border-color: var(--accent-gold); color: var(--accent-gold); }
+.ewk-expr-manage {
+  margin-top: 3px; padding: 6px 9px;
+  font-size: 11px; text-align: left;
+  background: transparent; color: var(--text-muted); cursor: pointer;
+  border: none; border-top: 1px solid var(--border-hairline);
+}
+.ewk-expr-manage:hover { color: var(--accent-gold); }
+
+/* 표정 관리 다이얼로그 */
+.ewk-expr-mgr { min-width: 340px; }
+.ewk-expr-rows {
+  display: flex; flex-direction: column; gap: 5px;
+  margin: 10px 0; max-height: 40vh; overflow-y: auto;
+}
+.ewk-expr-row {
+  display: flex; align-items: center; gap: 9px;
+  padding: 4px 6px;
+  background: var(--surface-well);
+  border-radius: var(--radius-xs);
+}
+.ewk-expr-row img { width: 42px; height: 42px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border-strong); }
+.ewk-expr-row span { flex: 1; font-size: 12.5px; color: var(--text-body); text-align: left; }
+.ewk-expr-row--base { opacity: 0.7; }
+.ewk-expr-mirror {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 12px; color: var(--text-muted);
+  margin: 8px 0 2px; cursor: pointer;
+}
