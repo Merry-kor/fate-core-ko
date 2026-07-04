@@ -4718,3 +4718,50 @@ li:hover .ewk-msg-acts {
   border-radius: 1px;
   transition: width 1s linear;
 }
+
+/* ── 음악 탭: 플레이리스트 헤더 한 줄 고정 + 좌측 정렬 ── */
+#ewk-panel-playlists .playlist-header {
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  justify-content: flex-start !important;
+  min-width: 0 !important;
+}
+/* 이름·트랙명 좌측 정렬 */
+#ewk-panel-playlists .playlist-name,
+#ewk-panel-playlists h3.playlist-name,
+#ewk-panel-playlists .document-name h4,
+#ewk-panel-playlists .sound-name,
+#ewk-panel-playlists .sound h4 {
+  text-align: left !important;
+  justify-content: flex-start !important;
+}
+/* 헤더 안으로 합쳐진 컨트롤 묶음 — 오른쪽 정렬, 줄바꿈 금지 */
+#ewk-panel-playlists .playlist-header .playlist-controls,
+#ewk-panel-playlists .playlist-header .sound-controls,
+#ewk-panel-playlists .playlist-header .playback-controls,
+#ewk-panel-playlists .playlist-header .controls {
+  display: inline-flex !important;
+  align-items: center !important;
+  flex-wrap: nowrap !important;
+  flex-shrink: 0 !important;
+  margin-left: auto !important;
+  width: auto !important;
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  gap: 1px !important;
+}
+#ewk-panel-playlists .playlist-header .playlist-controls ~ .playlist-controls,
+#ewk-panel-playlists .playlist-header .playback-controls ~ .playback-controls,
+#ewk-panel-playlists .playlist-header .controls ~ .controls { margin-left: 2px !important; }
+/* 컨트롤 버튼 컴팩트화 — 한 줄에 전부 수납 */
+#ewk-panel-playlists .playlist-header .playlist-controls a,
+#ewk-panel-playlists .playlist-header .playlist-controls button,
+#ewk-panel-playlists .playlist-header .playback-controls a,
+#ewk-panel-playlists .playlist-header .playback-controls button,
+#ewk-panel-playlists .playlist-header .controls a,
+#ewk-panel-playlists .playlist-header .controls button {
+  width: 22px !important;
+  height: 22px !important;
+  font-size: 11px !important;
+}

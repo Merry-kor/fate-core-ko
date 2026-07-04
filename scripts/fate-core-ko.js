@@ -718,6 +718,17 @@ const EWKSidebar = {
     this._renderNowPlaying(panel, isGM);
     this._startMusicTicker();
 
+    // v13: 플레이리스트 재생 컨트롤이 헤더 밖 별도 줄로 렌더됨 → 헤더 안으로 이동해 한 줄로 합침 (전 사용자)
+    panel.querySelectorAll(".playlist").forEach(li => {
+      const hdr = li.querySelector(".playlist-header, header");
+      if (!hdr || hdr.dataset.ewkMerged) return;
+      hdr.dataset.ewkMerged = "1";
+      [...li.children].forEach(ch => {
+        if (ch === hdr || !ch.matches) return;
+        if (ch.matches(".playlist-controls, .sound-controls, .playback-controls, .controls")) hdr.appendChild(ch);
+      });
+    });
+
     // 재생 중 사운드에 이퀄라이저 표시
     panel.querySelectorAll(".sound.playing").forEach(li => {
       const name = li.querySelector(".sound-name, h4");
