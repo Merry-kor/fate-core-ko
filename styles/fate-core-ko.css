@@ -4320,16 +4320,15 @@ li:hover .ewk-msg-acts {
   gap: 6px !important;
 }
 
-/* ── 스크롤바 ── */
-#ewk-panel-playlists ::-webkit-scrollbar { width: 8px; }
+/* ── 스크롤바 (전역 금색 thin 스타일과 통일) ── */
+#ewk-panel-playlists ::-webkit-scrollbar { width: 7px; }
 #ewk-panel-playlists ::-webkit-scrollbar-thumb {
-  background: var(--ewk-ink-650);
+  background: rgba(201,162,39,.35);
   border-radius: 4px;
-  border: 2px solid transparent;
-  background-clip: padding-box;
 }
-#ewk-panel-playlists ::-webkit-scrollbar-thumb:hover { background: var(--ewk-steel-500); background-clip: padding-box; }
+#ewk-panel-playlists ::-webkit-scrollbar-thumb:hover { background: rgba(201,162,39,.7); }
 #ewk-panel-playlists ::-webkit-scrollbar-track { background: transparent; }
+#ewk-panel-playlists { scrollbar-width: thin; scrollbar-color: rgba(201,162,39,.45) transparent; }
 
 /* ── FVTT 기본 스타일 덮어쓰기 정리 ── */
 #ewk-panel-playlists h2,
@@ -4614,3 +4613,65 @@ li:hover .ewk-msg-acts {
 .jw-canvas::-webkit-scrollbar-thumb:hover {
   background: rgba(201,162,39,.7);
 }
+
+/* ════════════════════ 음악 탭 보강 (이퀄라이저·수정/삭제·빈 상태) ════════════════════ */
+
+/* 재생 중 사운드 — 움직이는 이퀄라이저 */
+.ewk-eq {
+  display: inline-flex; align-items: flex-end; gap: 2px;
+  height: 11px; margin-right: 6px; flex-shrink: 0;
+  vertical-align: middle;
+}
+.ewk-eq i {
+  width: 3px; border-radius: 1px;
+  background: var(--ewk-gold-500, #c9a227);
+  animation: ewk-eq-bar 0.9s ease-in-out infinite;
+}
+.ewk-eq i:nth-child(2) { animation-delay: 0.3s; }
+.ewk-eq i:nth-child(3) { animation-delay: 0.6s; }
+@keyframes ewk-eq-bar { 0%, 100% { height: 3px; } 50% { height: 11px; } }
+
+/* 재생 중 플레이리스트 — ♪ 배지 펄스 */
+@keyframes ewk-note-pulse { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+#ewk-panel-playlists .playlist.playing .playlist-name::before,
+#ewk-panel-playlists li.playlist.playing .document-name h4::before {
+  content: "♪ ";
+  color: var(--ewk-gold-500, #c9a227);
+  display: inline-block;
+  animation: ewk-note-pulse 1.6s ease-in-out infinite;
+}
+
+/* 사운드·플레이리스트 수정/삭제 버튼 (호버 시 표시) */
+.ewk-snd-acts {
+  display: inline-flex; gap: 3px; margin-left: 4px; flex-shrink: 0;
+  opacity: 0; transition: opacity 0.15s ease;
+}
+#ewk-panel-playlists .sound:hover .ewk-snd-acts,
+#ewk-panel-playlists .playlist-header:hover .ewk-pl-acts,
+#ewk-panel-playlists .playlist > header:hover .ewk-pl-acts { opacity: 1; }
+.ewk-snd-btn {
+  width: 18px; height: 18px; padding: 0;
+  border: 1px solid var(--border-hairline);
+  background: transparent; color: var(--text-muted);
+  border-radius: 3px; font-size: 10px; line-height: 1; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.ewk-snd-btn:hover { color: var(--accent-gold); border-color: var(--accent-gold); background: rgba(201,162,39,.1); }
+.ewk-snd-btn--del:hover { color: var(--accent-crimson-bright); border-color: var(--accent-crimson); background: rgba(176,31,51,.12); }
+
+/* 플레이어 빈 상태 안내 */
+.ewk-music-empty {
+  padding: 20px 14px; text-align: center;
+  color: var(--text-faint); font-size: 12px; line-height: 1.8; font-style: italic;
+}
+
+/* 볼륨 슬라이더 썸 — 호버 글로우 */
+#ewk-panel-playlists input[type="range"]:hover::-webkit-slider-thumb {
+  background: var(--ewk-gold-300, #e3c65f) !important;
+  box-shadow: 0 0 7px rgba(201,162,39,.85);
+}
+#ewk-panel-playlists input[type="range"]:hover::-moz-range-thumb {
+  background: var(--ewk-gold-300, #e3c65f) !important;
+  box-shadow: 0 0 7px rgba(201,162,39,.85);
+}
+.ewk-set-range:hover::-webkit-slider-thumb { box-shadow: 0 0 7px rgba(201,162,39,.85); }

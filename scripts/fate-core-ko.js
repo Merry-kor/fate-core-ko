@@ -705,6 +705,85 @@ const EWKSidebar = {
       fvttPanel.style.overflow = "auto";
       ourPanel.appendChild(fvttPanel);
     });
+    this._decorateMusicPanel();
+  },
+
+  // 음악 탭 보강 — 이퀄라이저·수정/삭제 버튼·플레이어 빈 상태 안내
+  // (FVTT가 PlaylistDirectory를 재렌더할 때마다 renderPlaylistDirectory 훅 → 재적용)
+  _decorateMusicPanel() {
+    const panel = document.getElementById("ewk-panel-playlists");
+    if (!panel) return;
+    const isGM = game.user?.isGM;
+
+    // 재생 중 사운드에 이퀄라이저 표시
+    panel.querySelectorAll(".sound.playing").forEach(li => {
+      const name = li.querySelector(".sound-name, h4");
+      if (!name || name.querySelector(".ewk-eq")) return;
+      const eq = document.createElement("span");
+      eq.className = "ewk-eq";
+      eq.innerHTML = "<i></i><i></i><i></i>";
+      name.prepend(eq);
+    });
+
+    // GM: 사운드 수정/삭제 버튼 (우클릭 컨텍스트 메뉴 없이 바로 조작)
+    if (isGM) {
+      panel.querySelectorAll(".sound").forEach(li => {
+        if (li.querySelector(".ewk-snd-acts")) return;
+        const sndId = li.dataset.soundId ?? li.dataset.documentId;
+        const plEl  = li.closest(".playlist, [data-entry-id]");
+        const plId  = plEl?.dataset.entryId ?? plEl?.dataset.documentId;
+        const snd   = game.playlists?.get(plId)?.sounds.get(sndId);
+        if (!snd) return;
+        const acts = document.createElement("span");
+        acts.className = "ewk-snd-acts";
+        acts.innerHTML = `<button type="button" class="ewk-snd-btn" data-act="edit" title="트랙 수정">✏</button>
+          <button type="button" class="ewk-snd-btn ewk-snd-btn--del" data-act="del" title="트랙 삭제">✕</button>`;
+        acts.querySelector('[data-act="edit"]').addEventListener("click", e => {
+          e.preventDefault(); e.stopPropagation();
+          snd.sheet?.render(true);
+        });
+        acts.querySelector('[data-act="del"]').addEventListener("click", async e => {
+          e.preventDefault(); e.stopPropagation();
+          const ok = await EWKConfirm.ask({ title: "트랙 삭제", message: `"${snd.name}" 트랙을 목록에서 삭제할까요?<br>(음악 파일 자체는 삭제되지 않습니다)`, yes: "삭제", danger: true });
+          if (ok) await snd.delete();
+        });
+        li.appendChild(acts);
+      });
+
+      // GM: 플레이리스트 수정/삭제 버튼 (헤더 호버 시 표시)
+      panel.querySelectorAll(".playlist").forEach(li => {
+        if (li.querySelector(".ewk-pl-acts")) return;
+        const pl = game.playlists?.get(li.dataset.entryId ?? li.dataset.documentId);
+        if (!pl) return;
+        const hdr = li.querySelector(".playlist-header, header");
+        if (!hdr) return;
+        const acts = document.createElement("span");
+        acts.className = "ewk-snd-acts ewk-pl-acts";
+        acts.innerHTML = `<button type="button" class="ewk-snd-btn" data-act="edit" title="플레이리스트 설정">✏</button>
+          <button type="button" class="ewk-snd-btn ewk-snd-btn--del" data-act="del" title="플레이리스트 삭제">✕</button>`;
+        acts.querySelector('[data-act="edit"]').addEventListener("click", e => {
+          e.preventDefault(); e.stopPropagation();
+          pl.sheet?.render(true);
+        });
+        acts.querySelector('[data-act="del"]').addEventListener("click", async e => {
+          e.preventDefault(); e.stopPropagation();
+          const ok = await EWKConfirm.ask({ title: "플레이리스트 삭제", message: `"${pl.name}" 플레이리스트를 삭제할까요? 안의 트랙 목록도 함께 삭제됩니다.`, yes: "삭제", danger: true });
+          if (ok) await pl.delete();
+        });
+        hdr.appendChild(acts);
+      });
+    }
+
+    // 플레이어: 보이는 플레이리스트가 없을 때 안내
+    if (!isGM) {
+      const list = panel.querySelector(".directory-list");
+      if (list && !list.querySelector(".playlist") && !panel.querySelector(".ewk-music-empty")) {
+        const d = document.createElement("div");
+        d.className = "ewk-music-empty";
+        d.innerHTML = "🎵 표시할 플레이리스트가 없습니다.<br>GM이 재생하는 음악은 자동으로 들립니다.<br>내 음량은 설정 탭 또는 아래 볼륨에서 조절하세요.";
+        list.after(d);
+      }
+    }
   },
 
   _switchTab(key) {
@@ -1798,7 +1877,12 @@ const EWKSidebar = {
     const panel = document.getElementById("ewk-panel-settings");
     if (!panel) return;
     const isGM = game.user?.isGM;
-    const vol  = EWKConfig.getNum("ewk-music-volume", 80);
+    // 내 기기 재생 볼륨 = FVTT 글로벌 재생 볼륨 (클라이언트별 설정)
+    let vol = EWKConfig.getNum("ewk-music-volume", 80);
+    try {
+      const gv = game.settings.get("core", "globalPlaylistVolume");
+      if (typeof gv === "number") vol = Math.round(gv * 100);
+    } catch (_) {}
     const fontKey = localStorage.getItem("ewk-chat-fontsize") ?? "normal";
 
     const toggleRow = (key, label, desc, def = true) => {
@@ -1822,6 +1906,7 @@ const EWKSidebar = {
 <div class="ewk-panel-scroll ewk-settings">
   <section class="ewk-set-sec">
     <h3 class="ewk-set-h">🔊 음악 볼륨</h3>
+    <p class="ewk-set-desc" style="margin:0 0 8px">이 기기에서 들리는 음악 볼륨입니다.</p>
     <div class="ewk-set-row">
       <input type="range" id="ewk-set-vol" min="0" max="100" step="5" value="${vol}" class="ewk-set-range">
       <span class="ewk-set-volnum" id="ewk-set-volnum">${vol}</span>
@@ -1860,6 +1945,12 @@ const EWKSidebar = {
   </section>
 
   <section class="ewk-set-sec">
+    <h3 class="ewk-set-h">🧹 흐름도 음악 정리</h3>
+    <p class="ewk-set-desc" style="margin:0 0 8px">흐름도로 재생했던 트랙 목록을 비웁니다 (음악 파일은 유지).</p>
+    <button class="ewk-set-action" id="ewk-set-musicclean">🧹 재생 중이 아닌 트랙 정리</button>
+  </section>
+
+  <section class="ewk-set-sec">
     <h3 class="ewk-set-h">📖 사용 안내</h3>
     <p class="ewk-set-desc" style="margin:0 0 8px">UI 안내 저널을 만들어 모든 플레이어에게 공유합니다(저널 탭).</p>
     <button class="ewk-set-action" id="ewk-set-guide">📖 사용 안내 저널 생성/갱신</button>
@@ -1892,11 +1983,8 @@ const EWKSidebar = {
       const v = parseInt(vEl.value, 10);
       vNum.textContent = v;
       EWKConfig.set("ewk-music-volume", v);
-      // 재생 중인 흐름도 음악 볼륨 즉시 반영 (GM)
-      if (game.user?.isGM) {
-        const pl = game.playlists?.find(p => p.getFlag("fate-core-ko", "fcMusic"));
-        pl?.sounds?.filter(s => s.playing).forEach(s => { s.update({ volume: v / 100 }).catch(() => {}); });
-      }
+      // FVTT 글로벌 재생 볼륨(클라이언트별)과 연동 — GM·플레이어 모두 자기 기기에만 적용, 즉시 반영
+      try { game.settings.set("core", "globalPlaylistVolume", v / 100); } catch (_) {}
     });
 
     // 글자 크기
@@ -1927,6 +2015,21 @@ const EWKSidebar = {
     panel.querySelector("#ewk-set-handout")?.addEventListener("click", () => this._shareHandout());
     panel.querySelector("#ewk-set-handout-close")?.addEventListener("click", () => EWKBroadcast.send("imageClose"));
     panel.querySelector("#ewk-set-quicknpc")?.addEventListener("click", () => this._quickNPC());
+    panel.querySelector("#ewk-set-musicclean")?.addEventListener("click", async () => {
+      const pl = game.playlists?.find(p => p.getFlag("fate-core-ko", "fcMusic"));
+      if (!pl) { ui.notifications?.info("흐름도 음악 플레이리스트가 없습니다."); return; }
+      const ids = pl.sounds.filter(s => !s.playing).map(s => s.id);
+      if (!ids.length) { ui.notifications?.info("정리할 트랙이 없습니다."); return; }
+      const ok = await EWKConfirm.ask({
+        title: "흐름도 음악 정리",
+        message: `재생 중이 아닌 트랙 ${ids.length}개를 목록에서 삭제할까요?<br>(음악 파일 자체는 삭제되지 않습니다)`,
+        yes: "정리", danger: true,
+      });
+      if (ok) {
+        await pl.deleteEmbeddedDocuments("PlaylistSound", ids);
+        ui.notifications?.info(`${ids.length}개 트랙을 정리했습니다.`);
+      }
+    });
     panel.querySelector("#ewk-set-guide")?.addEventListener("click", () => EWKGuide.create());
 
     // Foundry 네이티브 사이드바 일시 표시
