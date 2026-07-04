@@ -4765,3 +4765,69 @@ li:hover .ewk-msg-acts {
   height: 22px !important;
   font-size: 11px !important;
 }
+
+/* ── 음악 탭: 사운드(트랙) 행도 한 줄 고정 + 좌측 정렬 ── */
+/* v13: 트랙 이름·컨트롤이 중간 래퍼로 감싸여 세로로 쌓임 → 래퍼 평탄화 */
+#ewk-panel-playlists .sound > header,
+#ewk-panel-playlists .sound > .sound-header,
+#ewk-panel-playlists .sound > .flexrow:not(.sound-controls):not(.playback-controls) {
+  display: contents !important;
+}
+#ewk-panel-playlists .sound,
+#ewk-panel-playlists li.sound {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  text-align: left !important;
+  gap: 4px 6px !important;
+  min-width: 0 !important;
+}
+#ewk-panel-playlists .sound .sound-name,
+#ewk-panel-playlists .sound h4,
+#ewk-panel-playlists .sound .name {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  text-align: left !important;
+  justify-content: flex-start !important;
+}
+/* 컨트롤 묶음 — 오른쪽으로, 줄바꿈 금지, 컴팩트 */
+#ewk-panel-playlists .sound .sound-controls,
+#ewk-panel-playlists .sound .playback-controls,
+#ewk-panel-playlists .sound .controls {
+  display: inline-flex !important;
+  align-items: center !important;
+  flex-wrap: nowrap !important;
+  flex-shrink: 0 !important;
+  margin-left: auto !important;
+  width: auto !important;
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  gap: 1px !important;
+}
+#ewk-panel-playlists .sound .sound-controls ~ .sound-controls,
+#ewk-panel-playlists .sound .controls ~ .controls { margin-left: 2px !important; }
+#ewk-panel-playlists .sound .sound-controls a,
+#ewk-panel-playlists .sound .sound-controls button,
+#ewk-panel-playlists .sound .playback-controls a,
+#ewk-panel-playlists .sound .playback-controls button,
+#ewk-panel-playlists .sound .controls a,
+#ewk-panel-playlists .sound .controls button {
+  width: 22px !important;
+  height: 22px !important;
+  font-size: 11px !important;
+}
+/* 재생 중 부가 요소(볼륨·타임스탬프)는 아랫줄 전체 폭으로 자연 배치 */
+#ewk-panel-playlists .sound .sound-volume,
+#ewk-panel-playlists .sound .volume,
+#ewk-panel-playlists .sound .sound-playback {
+  flex: 1 1 100% !important;
+}
+#ewk-panel-playlists .sound .sound-timestamp {
+  flex-shrink: 0 !important;
+  font-family: var(--font-mono) !important;
+  font-size: 10px !important;
+  color: var(--text-faint) !important;
+}
