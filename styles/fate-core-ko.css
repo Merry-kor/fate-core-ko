@@ -4831,3 +4831,32 @@ li:hover .ewk-msg-acts {
   font-size: 10px !important;
   color: var(--text-faint) !important;
 }
+
+/* ── 저널 탭 보강 ── */
+/* GM 카드 버튼(👁🔑✏✕) — 호버 시에만 표시해 목록 정돈 */
+.ewk-jcard .ewk-acard-btn { opacity: 0; transition: opacity 0.15s ease; }
+.ewk-jcard:hover .ewk-acard-btn { opacity: 1; }
+
+/* 패널 검색 입력 */
+#ewk-panel-journal .ewk-panel-toolbar { display: flex; gap: 6px; align-items: center; }
+.ewk-panel-search {
+  flex: 1 1 auto; min-width: 0;
+  background: var(--surface-well);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-xs);
+  color: var(--text-body);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  padding: 4px 9px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.ewk-panel-search:focus {
+  border-color: var(--accent-gold);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(201,162,39,.15);
+}
+.ewk-panel-search::placeholder { color: var(--text-faint); }
+
+/* 폴더 화살표 회전 (저널·액터·장면 패널 공통) */
+.ewk-fldr-arrow { display: inline-block; transition: transform 0.2s ease; }
+.ewk-fldr-arrow--open { transform: rotate(90deg); }
