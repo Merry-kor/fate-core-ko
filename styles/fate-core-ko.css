@@ -4869,3 +4869,22 @@ li:hover .ewk-msg-acts {
   opacity: 0.96;
   transition: box-shadow 0.15s ease;
 }
+
+/* ── 채팅 이미지 메시지 (흐름도 이미지 노드·핸드아웃 기록) ── */
+.ewk-img-msg { margin: 4px 0; }
+.ewk-img-msg img {
+  display: block;
+  max-width: 100%;
+  max-height: 260px;
+  border-radius: 6px;
+  border: 1px solid var(--border-strong);
+  cursor: zoom-in;
+  transition: filter 0.15s ease, border-color 0.15s ease;
+}
+.ewk-img-msg img:hover { filter: brightness(1.08); border-color: var(--accent-gold); }
+.ewk-img-msg-label {
+  font-size: 11px;
+  color: var(--text-faint);
+  font-style: italic;
+  margin-bottom: 3px;
+}

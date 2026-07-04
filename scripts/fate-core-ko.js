@@ -1893,6 +1893,9 @@ const EWKSidebar = {
     const log = document.getElementById("ewk-chat-log");
     if (!log) return;
     log.addEventListener("click", async e => {
+      // 채팅 이미지 클릭 → 로컬로 크게 보기 (브로드캐스트 없음)
+      const chatImg = e.target.closest(".ewk-img-msg img");
+      if (chatImg) { EWKImageOverlay.show(chatImg.getAttribute("src"), "", true); return; }
       // 굴림 카드 면모 발현 버튼
       const invBtn = e.target.closest(".fate-inv-btn");
       if (invBtn) {
@@ -2195,11 +2198,19 @@ const EWKSidebar = {
     });
   },
 
-  // 이미지 핸드아웃 — 전 플레이어 오버레이로 공유
+  // 이미지 핸드아웃 — 전 플레이어 오버레이로 공유 (+ 채팅 기록)
   _shareHandout() {
     new FilePicker({
       type: "image",
-      callback: (path) => { if (path) EWKBroadcast.send("imageShow", { src: path, label: "" }); },
+      callback: (path) => {
+        if (!path) return;
+        EWKBroadcast.send("imageShow", { src: path, label: "" });
+        ChatMessage.create({
+          content: `<div class="ewk-img-msg"><img src="${path}" alt=""></div>`,
+          speaker: { scene: null, actor: null, token: null, alias: "나레이터" },
+          flags: { "fate-core-ko": { narrator: true, image: true } },
+        });
+      },
     }).browse();
   },
 
@@ -2294,6 +2305,12 @@ const EWKSidebar = {
       .replace(/<div style="text-align:\s*center">([\s\S]*?)<\/div>/gi,
                '<span style="display:block;text-align:center">$1</span>');
 
+    // 상대 경로 이미지를 절대 URL로 (새 창 문서에서도 확실히 로드되도록)
+    const absUrl = (p) => {
+      if (!p || /^(https?:)?\/\//i.test(p) || p.startsWith("data:")) return p ?? "";
+      return `${location.origin}/${p.replace(/^\//, "")}`;
+    };
+
     // ── 메시지 → HTML 블록 변환 ──────────────────────────────
     const parseBlock = (msg) => {
       const raw = msg.content ?? "";
@@ -2307,7 +2324,7 @@ const EWKSidebar = {
           const name  = tmp.querySelector(".ewk-scm-name")?.textContent?.trim() ?? "";
           const bgSrc = tmp.querySelector(".ewk-scene-change-msg")?.dataset?.bg ?? "";
           return `<div class="scene-break">
-  ${bgSrc ? `<div class="scene-break-img" style="background-image:url('${bgSrc}')"></div>` : ""}
+  ${bgSrc ? `<div class="scene-break-img" style="background-image:url('${absUrl(bgSrc)}')"></div>` : ""}
   <div class="scene-break-title">장면 전환${name ? ` — ${name}` : ""}</div>
 </div>`;
         }
@@ -2315,6 +2332,14 @@ const EWKSidebar = {
         const body = tmp.querySelector("em")?.textContent?.trim()
           ?? tmp.querySelector(".ewk-scm-name")?.textContent?.trim() ?? "";
         return `<div class="sys-note"><strong>${label}</strong>${body ? ` — <em>${body}</em>` : ""}</div>`;
+      }
+
+      // ⓪-1 이미지 메시지 (흐름도 이미지 노드·핸드아웃)
+      if (tmp.querySelector(".ewk-img-msg")) {
+        const src   = tmp.querySelector(".ewk-img-msg img")?.getAttribute("src") ?? "";
+        const label = tmp.querySelector(".ewk-img-msg-label")?.textContent?.trim() ?? "";
+        if (!src) return null;
+        return `<div class="print-img"><img src="${absUrl(src)}" alt="">${label ? `<div class="print-img-cap">${label}</div>` : ""}</div>`;
       }
 
       // ①-0 대결 판정 카드 (일반 롤 카드보다 먼저 — 둘 다 .fate-roll-card)
@@ -2529,6 +2554,11 @@ body{background:#6b6b6b;padding:24px;font-family:'NotoSerif','Nanum Myeongjo',Ge
   font-family:'NotoSans',sans-serif;font-size:8pt;color:#5b4e38;letter-spacing:.04em;
 }
 
+/* ── 이미지 (흐름도 이미지 노드·핸드아웃) ── */
+.print-img{margin:10pt 0;text-align:center;break-inside:avoid;page-break-inside:avoid;}
+.print-img img{max-width:100%;max-height:110mm;border-radius:3pt;box-shadow:0 2px 8px rgba(0,0,0,.18);}
+.print-img-cap{font-family:'NotoSans',sans-serif;font-size:7.5pt;color:#8a7a5c;margin-top:3pt;letter-spacing:.06em;}
+
 /* ── 장면 전환 ── */
 .scene-break{margin:14pt 0 10pt;break-before:avoid;}
 .scene-break-img{
@@ -2608,7 +2638,13 @@ body{background:#6b6b6b;padding:24px;font-family:'NotoSerif','Nanum Myeongjo',Ge
       const ts     = new Date(msg.timestamp).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
       const tmp    = document.createElement("div");
       tmp.innerHTML = msg.content ?? "";
-      const content = tmp.textContent?.trim() ?? "";
+      let content = tmp.textContent?.trim() ?? "";
+      // 이미지 메시지는 파일명으로 기록
+      const imgEl = tmp.querySelector(".ewk-img-msg img");
+      if (imgEl) {
+        const fn = (imgEl.getAttribute("src") ?? "").split("/").pop() ?? "";
+        content = content ? `[이미지: ${fn}] ${content}` : `[이미지: ${fn}]`;
+      }
       if (content) lines.push(`[${ts}] ${sender}: ${content}`);
     }
     const blob = new Blob([lines.join("\n")], { type: "text/plain;charset=utf-8" });
@@ -4515,7 +4551,7 @@ const EWKClocks = {
 
 // ─── Image Overlay ─────────────────────────────────────────────────────────
 const EWKImageOverlay = {
-  show(src, label) {
+  show(src, label, local = false) {
     document.getElementById("ewk-img-overlay")?.remove();
     const el = document.createElement("div");
     el.id = "ewk-img-overlay";
@@ -4525,8 +4561,8 @@ const EWKImageOverlay = {
       <img src="${src}" alt="${label ?? ""}" draggable="false">`;
     document.getElementById("interface")?.appendChild(el);
     el.querySelector("#ewk-img-ol-close").onclick = () => {
-      // GM이 닫으면 전 플레이어 화면에서도 닫힘, 플레이어는 자기 화면만
-      if (game.user?.isGM) EWKBroadcast.send("imageClose");
+      // GM이 닫으면 전 플레이어 화면에서도 닫힘, 플레이어·로컬 보기는 자기 화면만
+      if (!local && game.user?.isGM) EWKBroadcast.send("imageClose");
       else el.remove();
     };
     // 드래그 가능
@@ -5845,6 +5881,12 @@ const EWKFlowchart = {
     } else if (node.type === "image") {
       if (!node.src) { ui.notifications?.warn("이미지 경로를 입력해주세요."); return; }
       EWKBroadcast.send("imageShow", { src: node.src, label: node.label }); // 전 플레이어 전파
+      // 채팅 로그에도 남겨 기록·인쇄에 포함 (클릭 시 크게 보기)
+      await ChatMessage.create({
+        content: `<div class="ewk-img-msg">${node.label ? `<div class="ewk-img-msg-label">${node.label}</div>` : ""}<img src="${node.src}" alt="${node.label ?? ""}"></div>`,
+        speaker: { scene: null, actor: null, token: null, alias: "나레이터" },
+        flags: { "fate-core-ko": { narrator: true, image: true } },
+      });
     } else if (node.type === "aspect") {
       const action = node.aspectAction || "add";
       const label  = (node.text || "").trim();
