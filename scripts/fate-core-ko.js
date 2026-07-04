@@ -747,7 +747,14 @@ const EWKSidebar = {
           const ok = await EWKConfirm.ask({ title: "트랙 삭제", message: `"${snd.name}" 트랙을 목록에서 삭제할까요?<br>(음악 파일 자체는 삭제되지 않습니다)`, yes: "삭제", danger: true });
           if (ok) await snd.delete();
         });
-        li.appendChild(acts);
+        // 이름과 같은 줄에 배치 — 네이티브 컨트롤 묶음 앞, 없으면 이름 바로 뒤
+        const ctrl = li.querySelector(".sound-controls");
+        if (ctrl) ctrl.prepend(acts);
+        else {
+          const nameEl = li.querySelector(".sound-name, h4");
+          if (nameEl) nameEl.after(acts);
+          else li.appendChild(acts);
+        }
       });
 
       // GM: 플레이리스트 수정/삭제 버튼 (헤더 호버 시 표시)
@@ -770,7 +777,10 @@ const EWKSidebar = {
           const ok = await EWKConfirm.ask({ title: "플레이리스트 삭제", message: `"${pl.name}" 플레이리스트를 삭제할까요? 안의 트랙 목록도 함께 삭제됩니다.`, yes: "삭제", danger: true });
           if (ok) await pl.delete();
         });
-        hdr.appendChild(acts);
+        // 이름과 같은 줄 — 네이티브 컨트롤 묶음 앞, 없으면 헤더 끝
+        const plCtrl = hdr.querySelector(".playlist-controls, .sound-controls");
+        if (plCtrl) plCtrl.prepend(acts);
+        else hdr.appendChild(acts);
       });
     }
 
