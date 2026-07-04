@@ -480,18 +480,24 @@ const FateVNBox = {
     const text = tmp.textContent ?? html;
 
     if (this._timer) { clearInterval(this._timer); this._timer = null; }
-    let i = 0;
-    const cursor = document.createElement("span");
-    cursor.className = "fate-vn-cursor";
-    textEl.appendChild(cursor);
-    this._timer = setInterval(() => {
-      if (i < text.length) {
-        cursor.insertAdjacentText("beforebegin", text[i++]);
-      } else {
-        clearInterval(this._timer); this._timer = null;
-        setTimeout(() => cursor.remove(), 2200);
-      }
-    }, 28);
+    // 대사 속도 (설정 탭에서 변경: 느림 45 / 보통 28 / 빠름 14 / 즉시 0)
+    const spd = parseInt(localStorage.getItem("ewk-vn-speed") ?? "28", 10);
+    if (spd <= 0) {
+      textEl.textContent = text;   // 즉시 표시 — 타이프라이터 생략
+    } else {
+      let i = 0;
+      const cursor = document.createElement("span");
+      cursor.className = "fate-vn-cursor";
+      textEl.appendChild(cursor);
+      this._timer = setInterval(() => {
+        if (i < text.length) {
+          cursor.insertAdjacentText("beforebegin", text[i++]);
+        } else {
+          clearInterval(this._timer); this._timer = null;
+          setTimeout(() => cursor.remove(), 2200);
+        }
+      }, spd);
+    }
 
     // 초상화 전환
     const src = actor.img;
@@ -1539,7 +1545,9 @@ const EWKSidebar = {
     if (msgId && log.querySelector(`[data-message-id="${msgId}"]`)) return;
     // 잠금(지난 이야기 확인) 또는 위로 스크롤한 상태면 자동으로 최신으로 내리지 않음
     const atBottom = (log.scrollHeight - log.scrollTop - log.clientHeight) < 80;
-    log.appendChild(el.cloneNode(true));
+    const clone = el.cloneNode(true);
+    if (!this._bulkLoading) clone.classList.add("ewk-msg-in");   // 새 메시지만 등장 애니메이션
+    log.appendChild(clone);
     if (!this._scrollLock && atBottom) log.scrollTop = log.scrollHeight;
     else document.getElementById("ewk-newmsg")?.classList.add("show");   // 새 메시지 알림
   },
@@ -1805,6 +1813,10 @@ const EWKSidebar = {
     const fontBtns = this.FONT_SIZES.map(f =>
       `<button class="ewk-set-seg${f.key === fontKey ? " ewk-set-seg--on" : ""}" data-font="${f.key}">${f.label}</button>`
     ).join("");
+    const vnKey  = localStorage.getItem("ewk-vn-speed") ?? "28";
+    const vnBtns = [["45", "느림"], ["28", "보통"], ["14", "빠름"], ["0", "즉시"]].map(([v, l]) =>
+      `<button class="ewk-set-seg${v === vnKey ? " ewk-set-seg--on" : ""}" data-vnspd="${v}">${l}</button>`
+    ).join("");
 
     panel.innerHTML = `
 <div class="ewk-panel-scroll ewk-settings">
@@ -1819,6 +1831,12 @@ const EWKSidebar = {
   <section class="ewk-set-sec">
     <h3 class="ewk-set-h">🅰 채팅 글자 크기</h3>
     <div class="ewk-set-seg-row">${fontBtns}</div>
+  </section>
+
+  <section class="ewk-set-sec">
+    <h3 class="ewk-set-h">💬 대사 표시 속도</h3>
+    <p class="ewk-set-desc" style="margin:0 0 8px">VN 박스의 타자기 효과 속도입니다.</p>
+    <div class="ewk-set-seg-row">${vnBtns}</div>
   </section>
 
   <section class="ewk-set-sec">
@@ -1885,6 +1903,12 @@ const EWKSidebar = {
     panel.querySelectorAll("[data-font]").forEach(b => b.addEventListener("click", () => {
       localStorage.setItem("ewk-chat-fontsize", b.dataset.font);
       this._applyFontSize();
+      this._renderSettingsPanel();
+    }));
+
+    // 대사 표시 속도
+    panel.querySelectorAll("[data-vnspd]").forEach(b => b.addEventListener("click", () => {
+      localStorage.setItem("ewk-vn-speed", b.dataset.vnspd);
       this._renderSettingsPanel();
     }));
 
@@ -3239,6 +3263,18 @@ const EWKAspectWidget = {
     if (!body) return;
     const aspects = this._get();
     const isGM    = game.user?.isGM;
+    const keyOf   = (a, idx) => a.id ?? `i${idx}`;
+
+    // 제거 애니메이션 — 사라질 행을 먼저 페이드아웃한 뒤 재렌더
+    const newKeys = new Set(aspects.map(keyOf));
+    const goners  = [...body.querySelectorAll("[data-aw-key]")].filter(r => !newKeys.has(r.dataset.awKey));
+    if (goners.length && !this._exiting) {
+      this._exiting = true;
+      goners.forEach(r => r.classList.add("ewk-aw-asp--out"));
+      setTimeout(() => { this._exiting = false; this.render(); }, 210);
+      return;
+    }
+    const prevKeys = new Set([...body.querySelectorAll("[data-aw-key]")].map(r => r.dataset.awKey));
 
     if (!aspects.length) {
       body.innerHTML = '<div class="ewk-aw-empty">등록된 면모 없음</div>';
@@ -3246,8 +3282,9 @@ const EWKAspectWidget = {
     }
 
     body.innerHTML = aspects.map((a, idx) => {
-      const t = a.type ?? "situation";
-      return `<div class="ewk-aw-asp ewk-aw-asp--${t}" data-aw-idx="${idx}">
+      const t  = a.type ?? "situation";
+      const nw = prevKeys.size > 0 && !prevKeys.has(keyOf(a, idx));   // 새로 추가된 행만 슬라이드인
+      return `<div class="ewk-aw-asp ewk-aw-asp--${t}${nw ? " ewk-aw-asp--in" : ""}" data-aw-idx="${idx}" data-aw-key="${keyOf(a, idx)}">
         <span class="ewk-aw-asp-txt">${a.label ?? ""}</span>
         ${isGM ? `<span class="ewk-aw-asp-acts">
           <button class="ewk-aw-asp-btn" data-aw-edit="${idx}" title="수정">✏</button>
@@ -3345,10 +3382,9 @@ const EWKAspectWidget = {
 
     document.getElementById("ewk-aw-min")?.addEventListener("click", () => {
       this._open = !this._open;
-      document.getElementById("ewk-aw-body").style.display   = this._open ? "" : "none";
-      document.getElementById("ewk-aw-footer").style.display = this._open ? "" : "none";
-      document.getElementById("ewk-aw-rsz").style.display    = this._open ? "" : "none";
-      document.getElementById("ewk-aw-min").textContent      = this._open ? "−" : "+";
+      el.classList.toggle("ewk-w--closed", !this._open);   // 높이·투명도 트랜지션으로 접힘
+      document.getElementById("ewk-aw-rsz").style.display  = this._open ? "" : "none";
+      document.getElementById("ewk-aw-min").textContent    = this._open ? "−" : "+";
     });
 
     document.getElementById("ewk-aw-add")?.addEventListener("click", async () => {
@@ -3723,12 +3759,24 @@ const EWKQuickDock = {
     const roster = this.getRoster();
     const mySpeakerId = localStorage.getItem(`ewk-speaker-${game.userId}`) ?? null;
 
+    // 제거 애니메이션 — 목록에서 빠질 칩을 먼저 페이드아웃한 뒤 재렌더
+    const rosterIds = new Set(roster);
+    const goners = [...body.querySelectorAll(".ewk-qdock-chip")].filter(c => !rosterIds.has(c.dataset.qdockId));
+    if (goners.length && !this._exiting) {
+      this._exiting = true;
+      goners.forEach(c => c.classList.add("ewk-qdock-chip--out"));
+      setTimeout(() => { this._exiting = false; this.render(); }, 200);
+      return;
+    }
+    const prevIds = new Set([...body.querySelectorAll(".ewk-qdock-chip")].map(c => c.dataset.qdockId));
+
     const chips = roster.map(id => {
       const a = game.actors?.get(id);
       if (!a) return "";
       const onStage   = EWKStage.has(id);
       const isSpeaker = id === mySpeakerId;
-      return `<div class="ewk-qdock-chip${onStage ? " ewk-qdock-chip--on" : ""}${isSpeaker ? " ewk-qdock-chip--spk" : ""}" data-qdock-id="${id}">
+      const nw        = prevIds.size > 0 && !prevIds.has(id);
+      return `<div class="ewk-qdock-chip${onStage ? " ewk-qdock-chip--on" : ""}${isSpeaker ? " ewk-qdock-chip--spk" : ""}${nw ? " ewk-qdock-chip--in" : ""}" data-qdock-id="${id}">
   <div class="ewk-qdock-port-wrap">
     <img class="ewk-qdock-port" src="${getTokenImg(a)}" alt="${a.name}">
     ${onStage   ? '<span class="ewk-qdock-badge ewk-qdock-badge--stage">ON</span>'  : ""}
@@ -3746,7 +3794,6 @@ const EWKQuickDock = {
     }).join("");
 
     if (this._open) {
-      body.style.display = "";
       body.innerHTML = roster.length === 0
         ? `<div class="ewk-qdock-empty">액터 패널에서 여기로 드래그</div>`
         : `<div class="ewk-qdock-chips">${chips}</div>`;
@@ -3788,10 +3835,10 @@ const EWKQuickDock = {
     // 최소화 버튼 (build 시 한 번만 연결)
     el.querySelector("#ewk-qdock-min")?.addEventListener("click", () => {
       this._open = !this._open;
-      const body = el.querySelector("#ewk-qdock-body");
-      if (body) body.style.display = this._open ? "" : "none";
+      el.classList.toggle("ewk-w--closed", !this._open);   // 높이·투명도 트랜지션으로 접힘
       const btn = el.querySelector("#ewk-qdock-min");
       if (btn) btn.textContent = this._open ? "−" : "+";
+      if (this._open) this.render();   // 접힌 동안의 변경 반영
     });
 
     // 드롭 영역
@@ -3903,11 +3950,46 @@ const EWKClocks = {
     const clocks = this._get();
     const isGM = game.user?.isGM;
     el.style.display = "";   // 면모 위젯과 동일하게 항상 표시
+
+    // 제거 애니메이션 — 소멸(가득 참)·삭제될 행을 먼저 페이드아웃한 뒤 재렌더
+    const newIds = new Set(clocks.map(c => c.id));
+    const goners = [...body.querySelectorAll(".ewk-stk")].filter(r => !newIds.has(r.dataset.clockId));
+    if (goners.length && !this._exiting) {
+      this._exiting = true;
+      goners.forEach(r => r.classList.add("ewk-aw-asp--done"));
+      setTimeout(() => { this._exiting = false; this.render(); }, 520);
+      return;
+    }
+
+    // 재렌더 전 진행바 폭 보존 (채워지는 애니메이션용)
+    const prevIds = new Set();
+    const prevW   = {};
+    body.querySelectorAll(".ewk-stk").forEach(r => {
+      prevIds.add(r.dataset.clockId);
+      prevW[r.dataset.clockId] = r.querySelector(".ewk-stk-bar-fill")?.style.width ?? null;
+    });
+
     if (!clocks.length) {
       body.innerHTML = `<div class="ewk-aw-empty">${isGM ? "아래 + 버튼으로 상황 면모 추가" : "진행 중인 상황 면모 없음"}</div>`;
       return;
     }
-    body.innerHTML = clocks.map(c => this._stackHtml(c, isGM)).join("");
+    body.innerHTML = clocks.map(c => {
+      const nw = prevIds.size > 0 && !prevIds.has(c.id);
+      return this._stackHtml(c, isGM).replace('class="ewk-aw-asp', `class="${nw ? "ewk-aw-asp--in " : ""}ewk-aw-asp`);
+    }).join("");
+
+    // 진행바 — 이전 폭에서 새 폭으로 트랜지션
+    clocks.forEach(c => {
+      const fill = body.querySelector(`[data-clock-id="${c.id}"] .ewk-stk-bar-fill`);
+      const prev = prevW[c.id];
+      if (!fill || prev == null || prev === fill.style.width) return;
+      const target = fill.style.width;
+      fill.style.transition = "none";
+      fill.style.width = prev;
+      void fill.offsetWidth;
+      fill.style.transition = "";
+      fill.style.width = target;
+    });
     this._wireBody();
   },
 
@@ -3982,8 +4064,7 @@ const EWKClocks = {
     });
     el.querySelector("#ewk-clocks-min")?.addEventListener("click", () => {
       this._open = !this._open;
-      el.querySelector("#ewk-clocks-body").style.display = this._open ? "" : "none";
-      const f = el.querySelector("#ewk-clocks-foot"); if (f) f.style.display = this._open ? "" : "none";
+      el.classList.toggle("ewk-w--closed", !this._open);   // 높이·투명도 트랜지션으로 접힘
       const r = el.querySelector("#ewk-clocks-rsz"); if (r) r.style.display = this._open ? "" : "none";
       el.querySelector("#ewk-clocks-min").textContent = this._open ? "−" : "+";
     });

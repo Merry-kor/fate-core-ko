@@ -1323,14 +1323,16 @@
 
 /* 새 메시지 알림 (자동 스크롤 잠금/위로 스크롤 시) */
 #ewk-newmsg {
-  position: absolute; left: 50%; transform: translateX(-50%);
-  bottom: 96px; z-index: 5; display: none;
+  position: absolute; left: 50%; transform: translateX(-50%) translateY(10px);
+  bottom: 96px; z-index: 5;
+  opacity: 0; pointer-events: none;
   padding: 5px 14px; border-radius: var(--radius-pill);
   background: var(--accent-gold); color: var(--ewk-ink-900);
   border: none; font-family: var(--font-sans); font-size: 0.74rem; font-weight: 700;
   cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,.5);
+  transition: opacity 0.25s ease, transform 0.25s ease;
 }
-#ewk-newmsg.show { display: block; }
+#ewk-newmsg.show { opacity: 1; pointer-events: auto; transform: translateX(-50%); }
 #ewk-newmsg:hover { filter: brightness(1.1); }
 #ewk-panel-chat { position: relative; }
 
@@ -2404,7 +2406,7 @@ li:hover .ewk-msg-acts {
 .ewk-stk-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
 .ewk-stk-prog { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-muted); }
 .ewk-stk-bar { height: 4px; border-radius: 2px; background: var(--surface-well); overflow: hidden; }
-.ewk-stk-bar-fill { height: 100%; transition: width var(--dur-fast); }
+.ewk-stk-bar-fill { height: 100%; transition: width 0.5s cubic-bezier(.22,1,.36,1); }
 .ewk-stk-acts { opacity: 1 !important; align-items: center; padding-top: 1px; }
 
 /* ── Quick Actor Dock (플로팅 드래그 위젯) ── */
@@ -2691,7 +2693,7 @@ li:hover .ewk-msg-acts {
   border-radius: 50%; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   pointer-events: all;
-  opacity: 0;
+  opacity: 0.35;
   transition: opacity 0.2s;
 }
 #fate-vn-box:hover #fate-vn-close { opacity: 1; }
@@ -4497,4 +4499,118 @@ li:hover .ewk-msg-acts {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* ════════════════════ 시스템 전역 폴리싱 (애니메이션·비주얼) ════════════════════ */
+
+/* ── 채팅: 새 메시지 등장 ── */
+@keyframes ewk-msg-in { from { opacity: 0; transform: translateY(10px); } }
+#ewk-chat-log .ewk-msg-in { animation: ewk-msg-in 0.25s cubic-bezier(.16,1,.3,1); }
+
+/* ── 사이드바: 탭 전환 페이드 ── */
+@keyframes ewk-panel-in { from { opacity: 0; } }
+#ewk-panels .ewk-panel.active { animation: ewk-panel-in 0.16s ease; }
+
+/* ── 접속 현황: 온라인 점 은은한 펄스 ── */
+@keyframes ewk-dot-pulse { 50% { box-shadow: 0 0 9px currentColor, 0 0 3px currentColor; } }
+.ewk-pres-user--on .ewk-pres-dot { animation: ewk-dot-pulse 2.6s ease-in-out infinite; }
+
+/* ── 위젯 공통: 행 추가/제거 애니메이션 (현재 면모·스택) ── */
+@keyframes ewk-row-in    { from { opacity: 0; transform: translateY(-7px); } }
+@keyframes ewk-row-flash { 0%, 25% { box-shadow: inset 0 0 0 999px rgba(201,162,39,.14); }
+                           100%    { box-shadow: inset 0 0 0 999px transparent; } }
+.ewk-aw-asp--in  { animation: ewk-row-in 0.28s cubic-bezier(.16,1,.3,1), ewk-row-flash 1.1s ease; }
+@keyframes ewk-row-out { to { opacity: 0; transform: translateX(12px); } }
+.ewk-aw-asp--out { animation: ewk-row-out 0.2s ease forwards; pointer-events: none; }
+
+/* 스택 소멸 — 극복 완료 금색 플래시 후 퇴장 */
+@keyframes ewk-stk-done {
+  0%   { box-shadow: 0 0 0 rgba(201,162,39,0); }
+  30%  { background: rgba(201,162,39,.3); box-shadow: 0 0 20px rgba(201,162,39,.55); opacity: 1; }
+  100% { opacity: 0; transform: translateX(10px); }
+}
+.ewk-aw-asp--done { animation: ewk-stk-done 0.5s ease forwards; pointer-events: none; }
+
+/* ── 출연진 칩 추가/제거 ── */
+@keyframes ewk-chip-in  { from { opacity: 0; transform: scale(.8); } }
+.ewk-qdock-chip--in  { animation: ewk-chip-in 0.25s cubic-bezier(.16,1,.3,1); }
+@keyframes ewk-chip-out { to { opacity: 0; transform: scale(.85); } }
+.ewk-qdock-chip--out { animation: ewk-chip-out 0.18s ease forwards; pointer-events: none; }
+
+/* ── 위젯 최소화: 높이·투명도 트랜지션으로 부드럽게 접힘 ── */
+#ewk-aw-body, #ewk-clocks-body {
+  transition: max-height 0.28s ease, opacity 0.22s ease, padding 0.28s ease;
+}
+#ewk-aw-footer, #ewk-clocks-foot {
+  max-height: 56px; overflow: hidden;
+  transition: max-height 0.28s ease, opacity 0.22s ease, padding 0.28s ease, border-top-width 0.28s ease;
+}
+#ewk-qdock-body {
+  max-height: 40vh; overflow-y: auto;
+  transition: max-height 0.28s ease, opacity 0.22s ease, padding 0.28s ease;
+}
+#ewk-aw.ewk-w--closed #ewk-aw-body,
+#ewk-aw.ewk-w--closed #ewk-aw-footer,
+#ewk-clocks.ewk-w--closed #ewk-clocks-body,
+#ewk-clocks.ewk-w--closed #ewk-clocks-foot,
+#ewk-qdock.ewk-w--closed #ewk-qdock-body {
+  max-height: 0; opacity: 0;
+  padding-top: 0; padding-bottom: 0;
+  border-top-width: 0; overflow: hidden;
+}
+
+/* ── VN 박스: 텍스트박스 슬라이드업 ── */
+#fate-vn-box #fate-vn-textbox { transform: translateY(16px); transition: transform 0.45s cubic-bezier(.16,1,.3,1); }
+#fate-vn-box.visible #fate-vn-textbox { transform: none; }
+
+/* ── 저널: 문서 페이드인(이전/다음 전환 포함) + 편집기·권한창 팝인 ── */
+@keyframes ewk-fade-in { from { opacity: 0; } }
+.jw-doc { animation: ewk-fade-in 0.3s ease; }
+@keyframes ewk-pop-in { from { opacity: 0; transform: scale(.97) translateY(8px); } }
+.jwe, .jwp { animation: ewk-pop-in 0.24s cubic-bezier(.16,1,.3,1); }
+.jw-item { transition: background-color 0.15s ease, border-color 0.15s ease; }
+
+/* ── 이미지 핸드아웃: 등장 팝인 ── */
+@keyframes ewk-img-in { from { opacity: 0; transform: translate(-50%, -50%) scale(.92); } }
+#ewk-img-overlay { animation: ewk-img-in 0.3s cubic-bezier(.16,1,.3,1); }
+
+/* ── 흐름도: 재생 헤드 글로우인 ── */
+@keyframes ewk-head-in {
+  from { box-shadow: 0 0 0 rgba(201,162,39,0); background: rgba(60,55,35,.18); }
+}
+.ewk-fc__node--playhead { animation: ewk-head-in 0.3s ease; }
+
+/* ── 공통: 버튼 눌림 피드백 ── */
+.fate-core-ko button:not(:disabled):active,
+#ewk-aw button:not(:disabled):active { transform: scale(0.95); }
+#ewk-newmsg:active { transform: translateX(-50%) scale(0.95); }
+
+/* ── 공통: 스크롤바 통일 (금색 thin) ── */
+#ewk-chat-log, .ewk-panel-scroll, #ewk-presence,
+.ewk-fc__node-list, .ewk-fc__scene-list, .jw-list, .jw-canvas,
+#ewk-aw-body, #ewk-clocks-body, #ewk-qdock-body {
+  scrollbar-width: thin; scrollbar-color: rgba(201,162,39,.45) transparent;
+}
+#ewk-chat-log::-webkit-scrollbar, .ewk-panel-scroll::-webkit-scrollbar, #ewk-presence::-webkit-scrollbar,
+.ewk-fc__node-list::-webkit-scrollbar, .ewk-fc__scene-list::-webkit-scrollbar,
+.jw-list::-webkit-scrollbar, .jw-canvas::-webkit-scrollbar,
+#ewk-aw-body::-webkit-scrollbar, #ewk-clocks-body::-webkit-scrollbar, #ewk-qdock-body::-webkit-scrollbar {
+  width: 7px; height: 7px;
+}
+#ewk-chat-log::-webkit-scrollbar-track, .ewk-panel-scroll::-webkit-scrollbar-track, #ewk-presence::-webkit-scrollbar-track,
+.ewk-fc__node-list::-webkit-scrollbar-track, .ewk-fc__scene-list::-webkit-scrollbar-track,
+.jw-list::-webkit-scrollbar-track, .jw-canvas::-webkit-scrollbar-track,
+#ewk-aw-body::-webkit-scrollbar-track, #ewk-clocks-body::-webkit-scrollbar-track, #ewk-qdock-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+#ewk-chat-log::-webkit-scrollbar-thumb, .ewk-panel-scroll::-webkit-scrollbar-thumb, #ewk-presence::-webkit-scrollbar-thumb,
+.ewk-fc__node-list::-webkit-scrollbar-thumb, .ewk-fc__scene-list::-webkit-scrollbar-thumb,
+.jw-list::-webkit-scrollbar-thumb, .jw-canvas::-webkit-scrollbar-thumb,
+#ewk-aw-body::-webkit-scrollbar-thumb, #ewk-clocks-body::-webkit-scrollbar-thumb, #ewk-qdock-body::-webkit-scrollbar-thumb {
+  background: rgba(201,162,39,.35); border-radius: 4px;
+}
+#ewk-chat-log::-webkit-scrollbar-thumb:hover, .ewk-panel-scroll::-webkit-scrollbar-thumb:hover,
+.ewk-fc__node-list::-webkit-scrollbar-thumb:hover, .jw-list::-webkit-scrollbar-thumb:hover,
+.jw-canvas::-webkit-scrollbar-thumb:hover {
+  background: rgba(201,162,39,.7);
 }
