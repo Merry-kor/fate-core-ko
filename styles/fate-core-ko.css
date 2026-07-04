@@ -1790,7 +1790,9 @@
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  transform: translateX(-50%);
+  transform: translateX(-50%) scale(1);
+  transform-origin: bottom center;   /* 축소해도 발밑이 바닥에 붙어 있도록 */
+  z-index: 2;
   transition: left 0.55s cubic-bezier(.22,1,.36,1),
               transform 0.55s cubic-bezier(.22,1,.36,1),
               filter 0.45s ease, opacity 0.4s ease;
@@ -1803,9 +1805,16 @@
   display: block;
   filter: drop-shadow(0 4px 48px rgba(0,0,0,.75));
 }
-.fate-vn-actor--c { left: 50%; transform: translateX(-50%) scale(1);    z-index: 3; }
-.fate-vn-actor--l { left: 20%; transform: translateX(-50%) scale(0.85); z-index: 2; filter: brightness(0.42) saturate(0.7); }
-.fate-vn-actor--r { left: 80%; transform: translateX(-50%) scale(0.85); z-index: 2; filter: brightness(0.42) saturate(0.7); }
+/* 자리 (고정) */
+.fate-vn-actor--c { left: 50%; }
+.fate-vn-actor--l { left: 21%; }
+.fate-vn-actor--r { left: 79%; }
+/* 비발화자 음영 — 하단 기준 축소라 잘린 밑단이 뜨지 않음 */
+.fate-vn-actor--dim {
+  transform: translateX(-50%) scale(0.92);
+  filter: brightness(0.45) saturate(0.7);
+  z-index: 1;
+}
 @keyframes fate-vn-actor-in { from { opacity: 0; } }
 .fate-vn-actor--enter { animation: fate-vn-actor-in 0.45s ease; }
 .fate-vn-actor--out {
@@ -1814,9 +1823,10 @@
   pointer-events: none;
 }
 
-/* 텍스트박스: 하단 고정, 블러 + 진한 오버레이 */
+/* 텍스트박스: 하단 고정, 블러 + 진한 오버레이 (초상화보다 위 레이어) */
 #fate-vn-textbox {
   position: absolute;
+  z-index: 4;
   bottom: 0;
   left: 0;
   right: 0;

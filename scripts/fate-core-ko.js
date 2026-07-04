@@ -537,7 +537,8 @@ const FateVNBox = {
     this._speak(actor);
   },
 
-  // 발화 처리: 슬롯 생성/갱신 → 최근 발화순 정렬 → 위치 반영
+  // 발화 처리 — 자리는 고정(sticky), 하이라이트만 발화자를 따라 이동
+  // 배치: 1명=가운데 / 2명=좌·우 마주보기 / 3명=좌·가운데·우
   _speak(actor) {
     let slot = this._slots.find(s => s.actorId === actor.id);
     if (!slot) {
@@ -548,21 +549,40 @@ const FateVNBox = {
       document.getElementById("fate-vn-stage")?.appendChild(div);
       const img = div.querySelector("img");
       this._cropPortrait(actor.img).then(c => { if (div.isConnected) img.src = c; });
-      slot = { actorId: actor.id, el: div, last: 0 };
+      slot = { actorId: actor.id, el: div, last: 0, pos: null };
+
+      // 자리 배정
+      if (this._slots.length === 0) {
+        slot.pos = "c";
+      } else if (this._slots.length === 1) {
+        // 1→2명: 기존 인물은 왼쪽으로, 새 인물은 반대편으로 (마주보기)
+        const other = this._slots[0];
+        if (other.pos === "c") other.pos = "l";
+        slot.pos = other.pos === "l" ? "r" : "l";
+      } else if (this._slots.length === 2) {
+        // 2→3명: 남은 자리(보통 가운데)로 입장
+        const used = new Set(this._slots.map(s => s.pos));
+        slot.pos = ["c", "l", "r"].find(p => !used.has(p)) ?? "c";
+      } else {
+        // 3명 꽉 참: 가장 오래 침묵한 인물이 퇴장하고 그 자리를 승계
+        const oldest = [...this._slots].sort((a, b) => a.last - b.last)[0];
+        slot.pos = oldest.pos;
+        this._removeSlot(oldest);
+      }
       this._slots.push(slot);
     }
     slot.last = Date.now();
-    this._slots.sort((a, b) => b.last - a.last);
-    while (this._slots.length > 3) this._removeSlot(this._slots[this._slots.length - 1]);
     this._applySlots();
   },
 
-  // 정렬 순서 → 화면 위치: [0]=가운데(활성), [1]=왼쪽, [2]=오른쪽 (좌우는 음영 처리)
+  // 자리 반영 + 발화자 하이라이트 (나머지는 음영)
   _applySlots() {
-    const POS = ["c", "l", "r"];
-    this._slots.forEach((s, i) => {
+    if (this._slots.length === 1) this._slots[0].pos = "c";   // 혼자 남으면 가운데로 복귀
+    const active = [...this._slots].sort((a, b) => b.last - a.last)[0];
+    this._slots.forEach(s => {
       s.el.classList.remove("fate-vn-actor--c", "fate-vn-actor--l", "fate-vn-actor--r");
-      s.el.classList.add(`fate-vn-actor--${POS[i] ?? "r"}`);
+      s.el.classList.add(`fate-vn-actor--${s.pos}`);
+      s.el.classList.toggle("fate-vn-actor--dim", s !== active);
     });
   },
 
