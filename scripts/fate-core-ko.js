@@ -3444,6 +3444,34 @@ const FateStageBar = {
       this._el.className = "fate-core-ko";
       document.getElementById("interface")?.appendChild(this._el);
       this._bindDrag();
+      // 마우스 휠로 가로 스크롤 (세로 휠 → 가로 이동, 부드러운 감속)
+      const wheelAnim = () => {
+        const inner = this._el.querySelector(".ewk-hud__inner");
+        if (!inner || this._wheelTarget == null) return;
+        const diff = this._wheelTarget - inner.scrollLeft;
+        if (Math.abs(diff) < 1) { inner.scrollLeft = this._wheelTarget; this._wheelTarget = null; }
+        else { inner.scrollLeft += diff * 0.28; requestAnimationFrame(wheelAnim); }
+      };
+      this._el.addEventListener("wheel", e => {
+        const inner = this._el.querySelector(".ewk-hud__inner");
+        if (!inner || inner.scrollWidth <= inner.clientWidth) return;
+        if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;   // 트랙패드 가로 제스처는 기본 동작 유지
+        e.preventDefault();
+        const max  = inner.scrollWidth - inner.clientWidth;
+        const idle = this._wheelTarget == null;
+        this._wheelTarget = Math.max(0, Math.min(max, (this._wheelTarget ?? inner.scrollLeft) + e.deltaY * 1.4));
+        if (idle) requestAnimationFrame(wheelAnim);
+      }, { passive: false });
+      // 스크롤 위치에 따라 좌우 가장자리 페이드 표시
+      this._updateFades = () => {
+        const inner = this._el.querySelector(".ewk-hud__inner");
+        if (!inner) return;
+        const max = inner.scrollWidth - inner.clientWidth;
+        this._el.classList.toggle("ewk-hud--fade-l", inner.scrollLeft > 4);
+        this._el.classList.toggle("ewk-hud--fade-r", max - inner.scrollLeft > 4);
+      };
+      this._el.addEventListener("scroll", () => this._updateFades(), true);
+      window.addEventListener("resize", () => this._updateFades());
     } else if (!this._el.isConnected) {
       document.getElementById("interface")?.appendChild(this._el);
     }
@@ -3452,6 +3480,27 @@ const FateStageBar = {
 
     const onStage = (game.actors?.contents ?? [])
       .filter(a => EWKStage.has(a.id));
+
+    // 퇴장 애니메이션 — 사라질 카드를 먼저 페이드아웃한 뒤 재렌더
+    const stayIds = new Set(onStage.map(a => a.id));
+    const leaving = [...this._el.querySelectorAll(".ewk-hud__card")]
+      .filter(c => !stayIds.has(c.dataset.actorId));
+    if (leaving.length && !this._exiting) {
+      this._exiting = true;
+      leaving.forEach(c => c.classList.add("ewk-hud__card--exit"));
+      setTimeout(() => { this._exiting = false; this.render(); }, 230);
+      return;
+    }
+
+    // 재렌더 전 상태 보존 — 스크롤 위치·기존 카드 목록·운명점 값
+    const oldInner   = this._el.querySelector(".ewk-hud__inner");
+    const prevScroll = oldInner?.scrollLeft ?? 0;
+    const prevIds    = new Set();
+    const prevFp     = {};
+    this._el.querySelectorAll(".ewk-hud__card").forEach(c => {
+      prevIds.add(c.dataset.actorId);
+      prevFp[c.dataset.actorId] = c.querySelector(".ewk-hud__fp-n")?.textContent ?? null;
+    });
 
     const cardsHtml = onStage.map(a => {
       const items      = a.items?.filter(i => i.type === "aspect") ?? [];
@@ -3462,8 +3511,9 @@ const FateStageBar = {
       const color    = a.getFlag("fate-core-ko", "color") || "var(--accent-gold)";
       const role     = a.getFlag("fate-core-ko", "role")  || "";
       const spk      = a.id === speakerId;
+      const enter    = oldInner && !prevIds.has(a.id);   // 무대에 새로 오른 카드만 등장 애니메이션
       return `
-<div class="ewk-hud__card${spk ? " ewk-hud__card--active" : ""}" data-actor-id="${a.id}" style="--actor-color:${color}">
+<div class="ewk-hud__card${spk ? " ewk-hud__card--active" : ""}${enter ? " ewk-hud__card--enter" : ""}" data-actor-id="${a.id}" style="--actor-color:${color}">
   <div class="ewk-hud__top">
     <div class="ewk-hud__portbox">
       <img class="ewk-hud__port" src="${getTokenImg(a)}" alt="">
@@ -3494,6 +3544,21 @@ const FateStageBar = {
         ? cardsHtml
         : `<div class="ewk-hud__empty">출연진 없음 — 출연진 위젯이나 액터 패널에서 드래그</div>`
     }</div>`;
+
+    // 스크롤 위치 복원 + 운명점 변동 팝 + 가장자리 페이드 갱신
+    this._wheelTarget = null;
+    const inner = this._el.querySelector(".ewk-hud__inner");
+    if (inner) inner.scrollLeft = prevScroll;
+    onStage.forEach(a => {
+      const oldV = prevFp[a.id];
+      const newV = String(a.system?.fatepoints?.current ?? "");
+      if (oldV != null && oldV !== newV) {
+        const n = this._el.querySelector(`.ewk-hud__card[data-actor-id="${a.id}"] .ewk-hud__fp-n`);
+        n?.classList.add(Number(newV) > Number(oldV) ? "ewk-hud__fp-n--up" : "ewk-hud__fp-n--down");
+      }
+    });
+    this._updateFades?.();
+    try { EWKTyping._applyStageCards(); } catch (_) {}   // 재렌더로 사라진 타이핑 표시 복원
 
     this._bindButtons();
   },
@@ -3581,6 +3646,8 @@ const FateStageBar = {
   pulseSpeaker(actorId) {
     const card = this._el?.querySelector(`[data-actor-id="${actorId}"]`);
     if (!card) return;
+    // 발언 카드가 화면 밖이면 부드럽게 스크롤해 보이게
+    card.scrollIntoView({ behavior: "smooth", inline: "nearest", block: "nearest" });
     card.classList.remove("ewk-hud__card--pulse");
     void card.offsetWidth;
     card.classList.add("ewk-hud__card--pulse");
