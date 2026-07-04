@@ -715,6 +715,9 @@ const EWKSidebar = {
     if (!panel) return;
     const isGM = game.user?.isGM;
 
+    this._renderNowPlaying(panel, isGM);
+    this._startMusicTicker();
+
     // 재생 중 사운드에 이퀄라이저 표시
     panel.querySelectorAll(".sound.playing").forEach(li => {
       const name = li.querySelector(".sound-name, h4");
@@ -723,6 +726,20 @@ const EWKSidebar = {
       eq.className = "ewk-eq";
       eq.innerHTML = "<i></i><i></i><i></i>";
       name.prepend(eq);
+    });
+
+    // 재생 중 사운드 하단 진행 바 (1초마다 갱신)
+    panel.querySelectorAll(".sound.playing").forEach(li => {
+      if (li.querySelector(".ewk-prog")) return;
+      const sndId = li.dataset.soundId ?? li.dataset.documentId;
+      const plEl  = li.closest(".playlist, [data-entry-id]");
+      const plId  = plEl?.dataset.entryId ?? plEl?.dataset.documentId;
+      if (!plId || !sndId) return;
+      const prog = document.createElement("div");
+      prog.className = "ewk-prog";
+      prog.dataset.ewkProg = `${plId}:${sndId}`;
+      prog.innerHTML = `<div class="ewk-prog-fill"></div>`;
+      li.appendChild(prog);
     });
 
     // GM: 사운드 수정/삭제 버튼 (우클릭 컨텍스트 메뉴 없이 바로 조작)
@@ -734,6 +751,12 @@ const EWKSidebar = {
         const plId  = plEl?.dataset.entryId ?? plEl?.dataset.documentId;
         const snd   = game.playlists?.get(plId)?.sounds.get(sndId);
         if (!snd) return;
+        const pl = game.playlists.get(plId);
+        // 더블클릭으로 재생/정지 토글
+        li.addEventListener("dblclick", e => {
+          if (e.target.closest("button, a, input")) return;
+          snd.playing ? pl.stopSound(snd) : pl.playSound(snd);
+        });
         const acts = document.createElement("span");
         acts.className = "ewk-snd-acts";
         acts.innerHTML = `<button type="button" class="ewk-snd-btn" data-act="edit" title="트랙 수정">✏</button>
@@ -793,6 +816,81 @@ const EWKSidebar = {
         d.innerHTML = "🎵 표시할 플레이리스트가 없습니다.<br>GM이 재생하는 음악은 자동으로 들립니다.<br>내 음량은 설정 탭 또는 아래 볼륨에서 조절하세요.";
         list.after(d);
       }
+    }
+  },
+
+  // "지금 재생 중" 고정 바 — 음악 탭 상단 (스크롤해도 고정)
+  _renderNowPlaying(panel, isGM) {
+    const host = panel.querySelector("#playlists, .sidebar-tab");
+    if (!host) return;
+    let bar = host.querySelector("#ewk-nowplaying");
+    if (!bar) {
+      bar = document.createElement("div");
+      bar.id = "ewk-nowplaying";
+      host.prepend(bar);
+    }
+    const playing = [];
+    for (const p of (game.playlists ?? [])) for (const s of p.sounds) if (s.playing) playing.push({ p, s });
+    bar.classList.toggle("on", playing.length > 0);
+    const cleanBtn = isGM ? `<button type="button" class="ewk-snd-btn ewk-np-clean" title="흐름도 음악 트랙 정리 (재생 중이 아닌 트랙 일괄 삭제)">🧹</button>` : "";
+    const rows = playing.length
+      ? playing.map(({ p, s }) => `
+        <div class="ewk-np-row">
+          <span class="ewk-eq"><i></i><i></i><i></i></span>
+          <span class="ewk-np-name" title="${s.name}">${s.name}</span>
+          <span class="ewk-np-time" data-np-time="${p.id}:${s.id}">–:– / –:–</span>
+          ${isGM ? `<button type="button" class="ewk-snd-btn ewk-np-stop" data-np-stop="${p.id}:${s.id}" title="정지">⏹</button>` : ""}
+        </div>`).join("")
+      : `<div class="ewk-np-idle">재생 중인 음악 없음</div>`;
+    bar.innerHTML = `<div class="ewk-np-hdr"><span>♪ NOW PLAYING</span>${cleanBtn}</div>${rows}`;
+    bar.querySelectorAll("[data-np-stop]").forEach(b => b.addEventListener("click", () => {
+      const [plId, sndId] = b.dataset.npStop.split(":");
+      const p = game.playlists?.get(plId);
+      const s = p?.sounds.get(sndId);
+      if (p && s) p.stopSound(s);
+    }));
+    bar.querySelector(".ewk-np-clean")?.addEventListener("click", () => this._cleanFlowMusic());
+  },
+
+  // 1초마다 진행 바·경과 시간 갱신
+  _startMusicTicker() {
+    if (this._musicTicker) return;
+    const fmt = t => Number.isFinite(t) && t >= 0 ? `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, "0")}` : "–:–";
+    const grab = key => {
+      const [plId, sndId] = key.split(":");
+      return game.playlists?.get(plId)?.sounds.get(sndId);
+    };
+    this._musicTicker = setInterval(() => {
+      const panel = document.getElementById("ewk-panel-playlists");
+      if (!panel) return;
+      panel.querySelectorAll("[data-ewk-prog]").forEach(el => {
+        const snd  = grab(el.dataset.ewkProg);
+        const cur  = snd?.sound?.currentTime ?? 0;
+        const dur  = snd?.sound?.duration ?? 0;
+        const fill = el.querySelector(".ewk-prog-fill");
+        if (fill) fill.style.width = dur ? `${Math.min(100, cur / dur * 100)}%` : "0%";
+      });
+      panel.querySelectorAll("[data-np-time]").forEach(el => {
+        const snd = grab(el.dataset.npTime);
+        el.textContent = `${fmt(snd?.sound?.currentTime)} / ${fmt(snd?.sound?.duration)}`;
+      });
+    }, 1000);
+  },
+
+  // 흐름도 음악 플레이리스트에서 재생 중이 아닌 트랙 일괄 삭제
+  async _cleanFlowMusic() {
+    const pl = game.playlists?.find(p => p.getFlag("fate-core-ko", "fcMusic"));
+    if (!pl) { ui.notifications?.info("흐름도 음악 플레이리스트가 없습니다."); return; }
+    const ids = pl.sounds.filter(s => !s.playing).map(s => s.id);
+    if (!ids.length) { ui.notifications?.info("정리할 트랙이 없습니다."); return; }
+    const ok = await EWKConfirm.ask({
+      title: "흐름도 음악 정리",
+      message: `재생 중이 아닌 트랙 ${ids.length}개를 목록에서 삭제할까요?<br>(음악 파일 자체는 삭제되지 않습니다)`,
+      yes: "정리", danger: true,
+    });
+    if (ok) {
+      await pl.deleteEmbeddedDocuments("PlaylistSound", ids);
+      ui.notifications?.info(`${ids.length}개 트랙을 정리했습니다.`);
     }
   },
 
@@ -1955,12 +2053,6 @@ const EWKSidebar = {
   </section>
 
   <section class="ewk-set-sec">
-    <h3 class="ewk-set-h">🧹 흐름도 음악 정리</h3>
-    <p class="ewk-set-desc" style="margin:0 0 8px">흐름도로 재생했던 트랙 목록을 비웁니다 (음악 파일은 유지).</p>
-    <button class="ewk-set-action" id="ewk-set-musicclean">🧹 재생 중이 아닌 트랙 정리</button>
-  </section>
-
-  <section class="ewk-set-sec">
     <h3 class="ewk-set-h">📖 사용 안내</h3>
     <p class="ewk-set-desc" style="margin:0 0 8px">UI 안내 저널을 만들어 모든 플레이어에게 공유합니다(저널 탭).</p>
     <button class="ewk-set-action" id="ewk-set-guide">📖 사용 안내 저널 생성/갱신</button>
@@ -2025,21 +2117,6 @@ const EWKSidebar = {
     panel.querySelector("#ewk-set-handout")?.addEventListener("click", () => this._shareHandout());
     panel.querySelector("#ewk-set-handout-close")?.addEventListener("click", () => EWKBroadcast.send("imageClose"));
     panel.querySelector("#ewk-set-quicknpc")?.addEventListener("click", () => this._quickNPC());
-    panel.querySelector("#ewk-set-musicclean")?.addEventListener("click", async () => {
-      const pl = game.playlists?.find(p => p.getFlag("fate-core-ko", "fcMusic"));
-      if (!pl) { ui.notifications?.info("흐름도 음악 플레이리스트가 없습니다."); return; }
-      const ids = pl.sounds.filter(s => !s.playing).map(s => s.id);
-      if (!ids.length) { ui.notifications?.info("정리할 트랙이 없습니다."); return; }
-      const ok = await EWKConfirm.ask({
-        title: "흐름도 음악 정리",
-        message: `재생 중이 아닌 트랙 ${ids.length}개를 목록에서 삭제할까요?<br>(음악 파일 자체는 삭제되지 않습니다)`,
-        yes: "정리", danger: true,
-      });
-      if (ok) {
-        await pl.deleteEmbeddedDocuments("PlaylistSound", ids);
-        ui.notifications?.info(`${ids.length}개 트랙을 정리했습니다.`);
-      }
-    });
     panel.querySelector("#ewk-set-guide")?.addEventListener("click", () => EWKGuide.create());
 
     // Foundry 네이티브 사이드바 일시 표시
@@ -4888,15 +4965,16 @@ const EWKFlowchart = {
     }
     const vol = EWKConfig.musicVolume();
     let snd = pl.sounds.find(s => s.path === src);
+    const fade = loop ? 800 : 0;   // 배경음은 부드럽게 크로스페이드, 효과음은 즉시
     if (!snd) {
       const [created] = await pl.createEmbeddedDocuments("PlaylistSound", [{
-        name: src.split("/").pop(), path: src, repeat: loop, volume: vol,
+        name: src.split("/").pop(), path: src, repeat: loop, volume: vol, fade,
       }]);
       snd = created;
     } else {
       // 재생 중이면 먼저 정지(처음부터 다시 재생되도록) + pausedTime 초기화
       if (snd.playing) await pl.stopSound(snd);
-      await snd.update({ repeat: loop, volume: vol, pausedTime: null });
+      await snd.update({ repeat: loop, volume: vol, pausedTime: null, fade });
     }
     await pl.playSound(snd);
   },
