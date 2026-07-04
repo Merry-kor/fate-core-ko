@@ -387,6 +387,27 @@ const setActorOnStage = async (actor, value) => {
   await EWKStage.set(actor.id, !!value);
 };
 
+// ─── 플로팅 위젯 공통 유틸 ───────────────────────────────────────────────
+const EWK_WIDGET_IDS = ["ewk-aw", "ewk-clocks", "ewk-qdock"];
+
+// 클릭한 위젯을 다른 위젯들 위로
+const ewkBringFront = (el) => {
+  EWK_WIDGET_IDS.forEach(id => { const w = document.getElementById(id); if (w) w.style.zIndex = "62"; });
+  if (el) el.style.zIndex = "63";
+};
+
+// 창 크기 변경 등으로 화면 밖에 남은 위젯을 안으로 끌어옴
+const ewkClampWidgets = () => {
+  [...EWK_WIDGET_IDS, "ewk-fc-panel"].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el || !el.style.left) return;
+    const x = parseInt(el.style.left, 10) || 0;
+    const y = parseInt(el.style.top, 10)  || 0;
+    el.style.left = Math.max(0, Math.min(x, window.innerWidth  - 140)) + "px";
+    el.style.top  = Math.max(0, Math.min(y, window.innerHeight - 50))  + "px";
+  });
+};
+
 // ─── VN Speech Box ─────────────────────────────────────────────────────────
 
 const FateVNBox = {
@@ -3507,8 +3528,9 @@ const EWKAspectWidget = {
 
     const el = document.createElement("div");
     el.id = "ewk-aw";
-    el.style.left = (pos.x ?? 20) + "px";
-    el.style.top  = (pos.y ?? 80) + "px";
+    // 저장 좌표가 화면 밖이면 안으로 클램프 (모니터 변경 대비)
+    el.style.left = Math.max(0, Math.min(pos.x ?? 20, (window.innerWidth  || 1280) - 200)) + "px";
+    el.style.top  = Math.max(0, Math.min(pos.y ?? 80, (window.innerHeight || 720)  - 80))  + "px";
     if (pos.w) el.style.width = pos.w + "px";
     el.innerHTML = `
       <div id="ewk-aw-hdr">
@@ -3630,10 +3652,13 @@ const EWKAspectWidget = {
     const hdr = document.getElementById("ewk-aw-hdr");
     const rsz = document.getElementById("ewk-aw-rsz");
 
+    el.addEventListener("mousedown", () => ewkBringFront(el));   // 클릭 시 맨 앞으로
+
     hdr?.addEventListener("mousedown", e => {
       if (e.target.closest("button")) return;
       const r = el.getBoundingClientRect();
       this._drag = { sx: e.clientX, sy: e.clientY, ox: r.left, oy: r.top };
+      el.classList.add("ewk-w-drag");
       e.preventDefault();
     });
     rsz?.addEventListener("mousedown", e => {
@@ -3658,24 +3683,58 @@ const EWKAspectWidget = {
         if (this._resz) { pos.w = parseInt(el.style.width); }
         localStorage.setItem("ewk-aw-pos", JSON.stringify(pos));
       }
+      el.classList.remove("ewk-w-drag");
       this._drag = null; this._resz = null;
     });
 
+    // 접힘 상태 복원 + 토글 저장
+    const applyOpen = () => {
+      el.classList.toggle("ewk-w--closed", !this._open);   // 높이·투명도 트랜지션으로 접힘
+      const r2 = document.getElementById("ewk-aw-rsz"); if (r2) r2.style.display = this._open ? "" : "none";
+      const b2 = document.getElementById("ewk-aw-min"); if (b2) b2.textContent   = this._open ? "−" : "+";
+    };
+    this._open = localStorage.getItem("ewk-aw-open") !== "0";
+    applyOpen();
     document.getElementById("ewk-aw-min")?.addEventListener("click", () => {
       this._open = !this._open;
-      el.classList.toggle("ewk-w--closed", !this._open);   // 높이·투명도 트랜지션으로 접힘
-      document.getElementById("ewk-aw-rsz").style.display  = this._open ? "" : "none";
-      document.getElementById("ewk-aw-min").textContent    = this._open ? "−" : "+";
+      localStorage.setItem("ewk-aw-open", this._open ? "1" : "0");
+      applyOpen();
     });
 
-    document.getElementById("ewk-aw-add")?.addEventListener("click", async () => {
-      const label = window.prompt("새 면모 이름:");
-      if (!label?.trim()) return;
+    document.getElementById("ewk-aw-add")?.addEventListener("click", () => this._addInline());
+  },
+
+  // 위젯 안 인라인 입력으로 면모 추가 (수정과 동일한 UX)
+  _addInline() {
+    const body = document.getElementById("ewk-aw-body");
+    if (!body) return;
+    const existing = body.querySelector(".ewk-aw-newrow input");
+    if (existing) { existing.focus(); return; }
+    body.querySelector(".ewk-aw-empty")?.remove();
+    const row = document.createElement("div");
+    row.className = "ewk-aw-asp ewk-aw-asp--situation ewk-aw-newrow";
+    row.innerHTML = `<input class="ewk-aw-inp" placeholder="새 면모 이름 (Enter 저장 · Esc 취소)">
+      <button class="ewk-aw-asp-btn" data-aw-ok title="저장">✓</button>
+      <button class="ewk-aw-asp-btn" data-aw-cx title="취소">✕</button>`;
+    body.appendChild(row);
+    const inp = row.querySelector("input");
+    const cancel = () => { row.remove(); this.render(); };
+    const save = async () => {
+      const label = inp.value.trim();
+      if (!label) { cancel(); return; }
       const list = [...this._get()];
-      list.push({ id: foundry.utils.randomID(), label: label.trim(), type: "situation" });
+      list.push({ id: foundry.utils.randomID(), label, type: "situation" });
+      row.remove();
       await this._set(list);
-      ChatMessage.create({ content: `<div class="ewk-scene-change-msg"><span class="ewk-scm-label">면모 추가</span><em>${label.trim()}</em></div>` });
+      ChatMessage.create({ content: `<div class="ewk-scene-change-msg"><span class="ewk-scm-label">면모 추가</span><em>${label}</em></div>` });
+    };
+    row.querySelector("[data-aw-ok]").addEventListener("click", save);
+    row.querySelector("[data-aw-cx]").addEventListener("click", cancel);
+    inp.addEventListener("keydown", e => {
+      if (e.key === "Enter")  save();
+      if (e.key === "Escape") cancel();
     });
+    inp.focus();
   },
 };
 
@@ -4091,18 +4150,22 @@ const EWKQuickDock = {
     const el = this._el;
     if (!el) return;
 
+    el.addEventListener("mousedown", () => ewkBringFront(el));   // 클릭 시 맨 앞으로
+
     // 헤더 드래그
     el.addEventListener("mousedown", e => {
       const hdr = e.target.closest("#ewk-qdock-hdr");
       if (!hdr || e.target.closest("button")) return;
       const r = el.getBoundingClientRect();
       this._drag = { sx: e.clientX, sy: e.clientY, ox: r.left, oy: r.top };
+      el.classList.add("ewk-w-drag");
       e.preventDefault();
     });
     document.addEventListener("mousemove", e => {
       if (!this._drag) return;
-      const x = Math.max(0, this._drag.ox + e.clientX - this._drag.sx);
-      const y = Math.max(0, this._drag.oy + e.clientY - this._drag.sy);
+      // 사방 클램프 — 화면 밖으로 나가지 않도록
+      const x = Math.max(0, Math.min(window.innerWidth  - el.offsetWidth,  this._drag.ox + e.clientX - this._drag.sx));
+      const y = Math.max(0, Math.min(window.innerHeight - el.offsetHeight, this._drag.oy + e.clientY - this._drag.sy));
       el.style.left = x + "px";
       el.style.top  = y + "px";
     });
@@ -4111,14 +4174,21 @@ const EWKQuickDock = {
         this._savePos(parseInt(el.style.left), parseInt(el.style.top));
         this._drag = null;
       }
+      el.classList.remove("ewk-w-drag");
     });
 
-    // 최소화 버튼 (build 시 한 번만 연결)
-    el.querySelector("#ewk-qdock-min")?.addEventListener("click", () => {
-      this._open = !this._open;
+    // 최소화 버튼 (build 시 한 번만 연결) — 접힘 상태 복원 + 저장
+    const applyOpen = () => {
       el.classList.toggle("ewk-w--closed", !this._open);   // 높이·투명도 트랜지션으로 접힘
       const btn = el.querySelector("#ewk-qdock-min");
       if (btn) btn.textContent = this._open ? "−" : "+";
+    };
+    this._open = localStorage.getItem("ewk-qdock-open") !== "0";
+    applyOpen();
+    el.querySelector("#ewk-qdock-min")?.addEventListener("click", () => {
+      this._open = !this._open;
+      localStorage.setItem("ewk-qdock-open", this._open ? "1" : "0");
+      applyOpen();
       if (this._open) this.render();   // 접힌 동안의 변경 반영
     });
 
@@ -4251,7 +4321,8 @@ const EWKClocks = {
     });
 
     if (!clocks.length) {
-      body.innerHTML = `<div class="ewk-aw-empty">${isGM ? "아래 + 버튼으로 상황 면모 추가" : "진행 중인 상황 면모 없음"}</div>`;
+      if (!isGM) { el.style.display = "none"; return; }   // 플레이어는 빈 위젯 자동 숨김 (생기면 자동 표시)
+      body.innerHTML = `<div class="ewk-aw-empty">아래 + 버튼으로 상황 면모 추가</div>`;
       return;
     }
     body.innerHTML = clocks.map(c => {
@@ -4315,10 +4386,12 @@ const EWKClocks = {
     const el = this._el;
     const hdr = el.querySelector("#ewk-clocks-hdr");
     const rsz = el.querySelector("#ewk-clocks-rsz");
+    el.addEventListener("mousedown", () => ewkBringFront(el));   // 클릭 시 맨 앞으로
     hdr?.addEventListener("mousedown", e => {
       if (e.target.closest("button")) return;
       const r = el.getBoundingClientRect();
       this._drag = { sx: e.clientX, sy: e.clientY, ox: r.left, oy: r.top };
+      el.classList.add("ewk-w-drag");
       e.preventDefault();
     });
     rsz?.addEventListener("mousedown", e => {
@@ -4341,13 +4414,21 @@ const EWKClocks = {
         if (this._resz) { pos.w = parseInt(el.style.width); }
         localStorage.setItem("ewk-clocks-pos", JSON.stringify(pos));
       }
+      el.classList.remove("ewk-w-drag");
       this._drag = null; this._resz = null;
     });
+    // 접힘 상태 복원 + 토글 저장
+    const applyOpen = () => {
+      el.classList.toggle("ewk-w--closed", !this._open);   // 높이·투명도 트랜지션으로 접힘
+      const r2 = el.querySelector("#ewk-clocks-rsz"); if (r2) r2.style.display = this._open ? "" : "none";
+      const b2 = el.querySelector("#ewk-clocks-min"); if (b2) b2.textContent   = this._open ? "−" : "+";
+    };
+    this._open = localStorage.getItem("ewk-clocks-open") !== "0";
+    applyOpen();
     el.querySelector("#ewk-clocks-min")?.addEventListener("click", () => {
       this._open = !this._open;
-      el.classList.toggle("ewk-w--closed", !this._open);   // 높이·투명도 트랜지션으로 접힘
-      const r = el.querySelector("#ewk-clocks-rsz"); if (r) r.style.display = this._open ? "" : "none";
-      el.querySelector("#ewk-clocks-min").textContent = this._open ? "−" : "+";
+      localStorage.setItem("ewk-clocks-open", this._open ? "1" : "0");
+      applyOpen();
     });
     el.querySelector("#ewk-clocks-add")?.addEventListener("click", () => this._create());
   },
@@ -4362,7 +4443,8 @@ const EWKClocks = {
     }));
     el.querySelectorAll("[data-clk-del]").forEach(b => b.addEventListener("click", async () => {
       const c = this._get().find(x => x.id === b.dataset.clkDel); if (!c) return;
-      if (!confirm(`"${c.name}" 상황 면모를 삭제할까요?`)) return;
+      const ok = await EWKConfirm.ask({ title: "상황 면모 삭제", message: `"${c.name}" 상황 면모를 삭제할까요?`, yes: "삭제", danger: true });
+      if (!ok) return;
       await this._set(this._get().filter(x => x.id !== c.id));
       this._chatMsg("면모 삭제", c.name, c.filled, c.size);
     }));
@@ -6590,6 +6672,9 @@ Hooks.once("ready", () => {
   safe("EWKAspectWidget.build",() => EWKAspectWidget.build());
   safe("EWKQuickDock.build",   () => EWKQuickDock.build());
   safe("EWKClocks.build",      () => EWKClocks.build());
+
+  // 창 크기 변경 시 화면 밖에 남은 위젯을 안으로 복귀
+  window.addEventListener("resize", foundry.utils.debounce(() => ewkClampWidgets(), 200));
 
   // FVTT 기본 컨트롤 버튼은 CSS로 숨김 (DOM 제거 시 SceneControls.setPosition null 에러 발생)
 

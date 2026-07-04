@@ -4860,3 +4860,12 @@ li:hover .ewk-msg-acts {
 /* 폴더 화살표 회전 (저널·액터·장면 패널 공통) */
 .ewk-fldr-arrow { display: inline-block; transition: transform 0.2s ease; }
 .ewk-fldr-arrow--open { transform: rotate(90deg); }
+
+/* ── 플로팅 위젯 드래그 피드백 ── */
+#ewk-aw-hdr, #ewk-clocks-hdr, #ewk-qdock-hdr, .ewk-fc__bar { cursor: grab; user-select: none; }
+#ewk-aw-hdr:active, #ewk-clocks-hdr:active, #ewk-qdock-hdr:active, .ewk-fc__bar:active { cursor: grabbing; }
+.ewk-w-drag {
+  box-shadow: 0 12px 36px rgba(0,0,0,.55) !important;
+  opacity: 0.96;
+  transition: box-shadow 0.15s ease;
+}
