@@ -413,8 +413,10 @@ const ewkClampWidgets = () => {
 const FateVNBox = {
   _el:           null,
   _timer:        null,
-  _portraitTimer: null,
   _cropCache:    new Map(), // src → cropped data URL
+  _slots:        [],        // 화면 위 초상화 [{actorId, el, last}] — 최근 발화순
+  _expiryTimer:  null,
+  EXPIRE_MS:     30000,     // 마지막 대사 후 30초 지나면 초상화 자동 퇴장
 
   _ensure() {
     if (this._el) return;
@@ -422,17 +424,29 @@ const FateVNBox = {
     this._el.id = "fate-vn-box";
     this._el.innerHTML = `
       <button id="fate-vn-close" title="닫기">✕</button>
-      <div id="fate-vn-portrait-wrap">
-        <img id="fate-vn-portrait" src="" alt="">
-      </div>
+      <div id="fate-vn-stage"></div>
       <div id="fate-vn-textbox">
         <div id="fate-vn-name"></div>
         <div id="fate-vn-text"></div>
       </div>`;
     document.getElementById("interface")?.appendChild(this._el);
-    this._el.querySelector("#fate-vn-close").onclick = () => {
-      this._el.classList.remove("visible");
-    };
+    this._el.querySelector("#fate-vn-close").onclick = () => this.hide();
+    // 30초 무발화 초상화 자동 퇴장 (전원 퇴장 시 박스 닫기)
+    this._expiryTimer ??= setInterval(() => {
+      if (!this._el?.classList.contains("visible") || !this._slots.length) return;
+      const now = Date.now();
+      const expired = this._slots.filter(s => now - s.last > this.EXPIRE_MS);
+      if (!expired.length) return;
+      expired.forEach(s => this._removeSlot(s));
+      this._applySlots();
+      if (!this._slots.length) this.hide();
+    }, 1000);
+  },
+
+  hide() {
+    this._el?.classList.remove("visible");
+    this._slots.forEach(s => s.el.remove());
+    this._slots = [];
   },
 
   // 투명 여백을 Canvas로 분석해 제거한 data URL 반환 (캐시)
@@ -481,9 +495,8 @@ const FateVNBox = {
 
   show(actor, html) {
     this._ensure();
-    const portrait = document.getElementById("fate-vn-portrait");
-    const nameEl   = document.getElementById("fate-vn-name");
-    const textEl   = document.getElementById("fate-vn-text");
+    const nameEl = document.getElementById("fate-vn-name");
+    const textEl = document.getElementById("fate-vn-text");
 
     // 이름 갱신
     nameEl.textContent = actor.name;
@@ -520,43 +533,43 @@ const FateVNBox = {
       }, spd);
     }
 
-    // 초상화 전환
-    const src = actor.img;
-    if (portrait.dataset.src === src) return; // 같은 액터면 텍스트만 교체
+    // 초상화 무대 갱신 — 최근 발화자 가운데, 이전 발화자 좌/우(음영)
+    this._speak(actor);
+  },
 
-    if (this._portraitTimer) { clearTimeout(this._portraitTimer); this._portraitTimer = null; }
-
-    const isFirstShow = !portrait.dataset.src;
-    portrait.dataset.src = src;
-
-    const applyPortrait = (newSrc) => {
-      portrait.src = newSrc;
-      portrait.classList.remove("fate-vn-portrait--out");
-    };
-    const applyCropAsync = () => {
-      this._cropPortrait(src).then(cropped => {
-        if (portrait.dataset.src === src) portrait.src = cropped;
-      });
-    };
-
-    if (isFirstShow) {
-      // 첫 등장: VN 박스 자체 페이드인에 맡김 — 별도 트랜지션 없음
-      portrait.src = src;
-      applyCropAsync();
-      return;
+  // 발화 처리: 슬롯 생성/갱신 → 최근 발화순 정렬 → 위치 반영
+  _speak(actor) {
+    let slot = this._slots.find(s => s.actorId === actor.id);
+    if (!slot) {
+      const div = document.createElement("div");
+      div.className = "fate-vn-actor fate-vn-actor--enter";
+      div.dataset.actorId = actor.id;
+      div.innerHTML = `<img src="${actor.img}" alt="" draggable="false">`;
+      document.getElementById("fate-vn-stage")?.appendChild(div);
+      const img = div.querySelector("img");
+      this._cropPortrait(actor.img).then(c => { if (div.isConnected) img.src = c; });
+      slot = { actorId: actor.id, el: div, last: 0 };
+      this._slots.push(slot);
     }
+    slot.last = Date.now();
+    this._slots.sort((a, b) => b.last - a.last);
+    while (this._slots.length > 3) this._removeSlot(this._slots[this._slots.length - 1]);
+    this._applySlots();
+  },
 
-    // 액터 전환: 페이드아웃 → 이미지 교체 → 페이드인
-    portrait.classList.add("fate-vn-portrait--out");
-    this._portraitTimer = setTimeout(() => {
-      this._portraitTimer = null;
-      if (this._cropCache.has(src)) {
-        applyPortrait(this._cropCache.get(src));
-      } else {
-        applyPortrait(src);
-        applyCropAsync();
-      }
-    }, 210); // CSS transition 200ms 보다 약간 길게
+  // 정렬 순서 → 화면 위치: [0]=가운데(활성), [1]=왼쪽, [2]=오른쪽 (좌우는 음영 처리)
+  _applySlots() {
+    const POS = ["c", "l", "r"];
+    this._slots.forEach((s, i) => {
+      s.el.classList.remove("fate-vn-actor--c", "fate-vn-actor--l", "fate-vn-actor--r");
+      s.el.classList.add(`fate-vn-actor--${POS[i] ?? "r"}`);
+    });
+  },
+
+  _removeSlot(slot) {
+    this._slots = this._slots.filter(s => s !== slot);
+    slot.el.classList.add("fate-vn-actor--out");
+    setTimeout(() => slot.el.remove(), 500);
   },
 };
 
@@ -5965,7 +5978,7 @@ const EWKBroadcast = {
       case "weatherClear": EWKWeather.clear();                       break;
       case "imageShow":    EWKImageOverlay.show(data.src, data.label); break;
       case "imageClose":   document.getElementById("ewk-img-overlay")?.remove(); break;
-      case "vnClose":      document.getElementById("fate-vn-box")?.classList.remove("visible"); break;
+      case "vnClose":      FateVNBox.hide(); break;
       case "journalShow":  EWKJournalViewer._showRemote(data.id); break;
     }
   },
@@ -6839,7 +6852,7 @@ Hooks.once("ready", () => {
 
     // 장면 전환 시 VN 박스 자동 닫기 (모든 클라이언트에서 발생)
     if (changes.active === true) {
-      document.getElementById("fate-vn-box")?.classList.remove("visible");
+      FateVNBox.hide();
     }
 
     if (changes.active === true && game.user?.isGM) {

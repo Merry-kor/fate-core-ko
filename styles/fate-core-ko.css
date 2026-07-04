@@ -1775,24 +1775,44 @@
 }
 #fate-vn-box.visible { opacity: 1; }
 
-/* 초상화: 중앙 배치, 높이 70%, 잘림 없음 */
-#fate-vn-portrait-wrap {
+/* 초상화 무대: 최대 3인 — 가운데(활성) · 왼쪽/오른쪽(음영 대기) */
+#fate-vn-stage {
   position: absolute;
   inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.fate-vn-actor {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  height: 70%;
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  overflow: hidden;
+  transform: translateX(-50%);
+  transition: left 0.55s cubic-bezier(.22,1,.36,1),
+              transform 0.55s cubic-bezier(.22,1,.36,1),
+              filter 0.45s ease, opacity 0.4s ease;
+  will-change: transform, filter;
 }
-#fate-vn-portrait {
-  max-height: 70%;
+.fate-vn-actor img {
+  max-height: 100%;
+  max-width: 30vw;
   width: auto;
-  max-width: 55%;
   display: block;
   filter: drop-shadow(0 4px 48px rgba(0,0,0,.75));
-  transition: opacity 0.2s ease-out;
 }
-.fate-vn-portrait--out { opacity: 0 !important; }
+.fate-vn-actor--c { left: 50%; transform: translateX(-50%) scale(1);    z-index: 3; }
+.fate-vn-actor--l { left: 20%; transform: translateX(-50%) scale(0.85); z-index: 2; filter: brightness(0.42) saturate(0.7); }
+.fate-vn-actor--r { left: 80%; transform: translateX(-50%) scale(0.85); z-index: 2; filter: brightness(0.42) saturate(0.7); }
+@keyframes fate-vn-actor-in { from { opacity: 0; } }
+.fate-vn-actor--enter { animation: fate-vn-actor-in 0.45s ease; }
+.fate-vn-actor--out {
+  opacity: 0 !important;
+  transform: translateX(-50%) translateY(26px) scale(0.9) !important;
+  pointer-events: none;
+}
 
 /* 텍스트박스: 하단 고정, 블러 + 진한 오버레이 */
 #fate-vn-textbox {
