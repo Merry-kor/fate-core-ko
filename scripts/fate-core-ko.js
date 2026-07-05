@@ -377,6 +377,8 @@ const EWKStage = {
     if (actor.isOwner) {
       if (on) await actor.setFlag("fate-core-ko", "onStage", true);
       else    await actor.unsetFlag("fate-core-ko", "onStage");
+    } else if (!game.users?.activeGM) {
+      ui.notifications?.warn("GM이 접속해 있어야 이 인물의 무대 등장/퇴장을 바꿀 수 있습니다.");
     } else {
       game.socket?.emit("system.fate-core-ko", { type: "setOnStage", actorId: id, value: !!on });
     }
@@ -1945,7 +1947,11 @@ const EWKSidebar = {
     });
   },
 
-  // 전체 채팅 메시지를 직접 렌더해 우리 로그를 완전히 재구성 (FVTT는 최근 배치만 렌더하므로)
+  // 채팅 로그 재구성 — 성능을 위해 최근 150개만 렌더, 과거는 "이전 불러오기"로
+  PAGE_INIT: 150,
+  PAGE_MORE: 100,
+  _olderIds: [],   // 아직 렌더하지 않은 과거 메시지 id (시간순)
+
   async _loadAllMessages() {
     const log = document.getElementById("ewk-chat-log");
     if (!log || this._bulkLoading) return;
@@ -1954,17 +1960,65 @@ const EWKSidebar = {
     const msgs = (game.messages?.contents ?? [])
       .filter(m => m.visible)   // 귓속말·블라인드 굴림 등 자기에게 안 보이는 메시지 제외
       .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
-    for (const msg of msgs) {
+    const start = Math.max(0, msgs.length - this.PAGE_INIT);
+    this._olderIds = msgs.slice(0, start).map(m => m.id);
+    for (const msg of msgs.slice(start)) {
       try { await msg.renderHTML(); } catch (_) {}   // renderChatMessageHTML 훅 → addMessage
     }
     this._bulkLoading = false;
+    this._updateMoreBtn();
     this._scrollToLatest();
+  },
+
+  _updateMoreBtn() {
+    const log = document.getElementById("ewk-chat-log");
+    if (!log) return;
+    let btn = log.querySelector("#ewk-more-btn");
+    const n = this._olderIds.length;
+    if (!n) { btn?.remove(); return; }
+    if (!btn) {
+      btn = document.createElement("button");
+      btn.id = "ewk-more-btn";
+      btn.type = "button";
+      btn.addEventListener("click", () => this._loadOlder());
+    }
+    btn.textContent = `↑ 이전 이야기 불러오기 (${n}개)`;
+    log.prepend(btn);
+  },
+
+  // 과거 메시지 배치를 위쪽에 삽입 (화면 위치 유지)
+  async _loadOlder() {
+    const log = document.getElementById("ewk-chat-log");
+    if (!log || this._bulkLoading || !this._olderIds.length) return;
+    this._bulkLoading = true;
+    const take  = this._olderIds.splice(Math.max(0, this._olderIds.length - this.PAGE_MORE));
+    const prevH = log.scrollHeight, prevTop = log.scrollTop;
+    this._pagingCollect = [];
+    for (const id of take) {
+      const m = game.messages?.get(id);
+      if (m) { try { await m.renderHTML(); } catch (_) {} }
+    }
+    const els = this._pagingCollect;
+    this._pagingCollect = null;
+    const btn    = log.querySelector("#ewk-more-btn");
+    const anchor = btn ? btn.nextSibling : log.firstChild;
+    els.forEach(el => log.insertBefore(el, anchor));
+    this._updateMoreBtn();
+    log.scrollTop = prevTop + (log.scrollHeight - prevH);
+    this._bulkLoading = false;
   },
 
   // renderChatMessageHTML 훅에서 호출 — 새 메시지를 우리 로그에 추가
   addMessage(el) {
     const log = document.getElementById("ewk-chat-log");
     const msgId = el.dataset?.messageId;
+
+    // 과거 메시지 페이지 로딩 중: 즉시 추가하지 않고 수집 (위쪽 삽입용)
+    if (this._pagingCollect) {
+      if (msgId && log?.querySelector(`[data-message-id="${msgId}"]`)) return;
+      this._pagingCollect.push(el.cloneNode(true));
+      return;
+    }
 
     // 수정된 메시지: 기존 위치에서 교체
     if (msgId && this._pendingUpdates[msgId]) {
@@ -2534,6 +2588,7 @@ const EWKSidebar = {
     if (!confirmed) return;
     const ids = game.messages.map(m => m.id);
     if (ids.length > 0) await ChatMessage.deleteDocuments(ids);
+    this._olderIds = [];
     const log = document.getElementById("ewk-chat-log");
     if (log) log.innerHTML = "";
   },
@@ -3727,22 +3782,22 @@ const EWKJournalPerms = {
 const EWKGuide = {
   TITLE: "📖 시스템 사용 안내",
 
-  async create() {
+  async create(open = true) {
     if (!game.user?.isGM) { ui.notifications?.warn("GM만 생성할 수 있습니다."); return; }
     const html = this._html();
     let entry = game.journal?.contents.find(e => e.getFlag("fate-core-ko", "guide"));
     if (entry) {
       await entry.setFlag("fate-core-ko", "html", html);
-      ui.notifications?.info("사용 안내 저널을 최신 내용으로 갱신했습니다.");
+      if (open) ui.notifications?.info("사용 안내 저널을 최신 내용으로 갱신했습니다.");
     } else {
       entry = await JournalEntry.create({
         name: this.TITLE,
         ownership: { default: CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER },   // 모든 플레이어 열람
         flags: { "fate-core-ko": { html, surface: "dark", docW: 780, docH: 940, guide: true } },
       });
-      ui.notifications?.info("사용 안내 저널을 생성했습니다 (모든 플레이어 열람 가능).");
+      if (open) ui.notifications?.info("사용 안내 저널을 생성했습니다 (모든 플레이어 열람 가능).");
     }
-    if (entry) EWKJournalViewer.open(entry.id);
+    if (entry && open) EWKJournalViewer.open(entry.id);
   },
 
   _html() {
@@ -5121,8 +5176,37 @@ const EWKFlowchart = {
 
   _key()  { return "ewk-flowcharts"; },
   _uid()  { return `ewk${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`; },
-  getData()   { try { return JSON.parse(localStorage.getItem(this._key()) ?? "[]"); } catch { return []; } },
-  saveData(d) { localStorage.setItem(this._key(), JSON.stringify(d)); },
+
+  // 흐름도 저장소 — 월드 설정(DB). 브라우저를 바꿔도 유지되며 월드 백업에 포함됨.
+  // 저장 시 localStorage에도 사본을 남겨 이중 안전장치로 사용.
+  _cache: null,
+  getData() {
+    if (this._cache) return this._cache;
+    try { this._cache = foundry.utils.deepClone(game.settings.get("fate-core-ko", "flowcharts") ?? []); }
+    catch { this._cache = []; }
+    return this._cache;
+  },
+  saveData(d) {
+    this._cache = d;
+    try { localStorage.setItem(this._key(), JSON.stringify(d)); } catch (_) {}   // 로컬 백업
+    game.settings.set("fate-core-ko", "flowcharts", d).catch(e => {
+      console.error("fate-core-ko | 흐름도 저장 실패:", e);
+      ui.notifications?.error("흐름도 저장에 실패했습니다. (로컬 백업은 유지됨)");
+    });
+  },
+  // 구버전 localStorage 데이터 → 월드 설정 일회성 이전 (원본은 지우지 않음)
+  async migrateFromLocal() {
+    if (!game.user?.isGM) return;
+    try {
+      const world = game.settings.get("fate-core-ko", "flowcharts") ?? [];
+      if (world.length) return;   // 이미 DB에 데이터 있음
+      const local = JSON.parse(localStorage.getItem(this._key()) ?? "[]");
+      if (!Array.isArray(local) || !local.length) return;
+      await game.settings.set("fate-core-ko", "flowcharts", local);
+      this._cache = null;
+      ui.notifications?.info(`대사흐름도 ${local.length}개 장면을 월드 저장소로 이전했습니다. (브라우저가 바뀌어도 유지됩니다)`);
+    } catch (e) { console.error("fate-core-ko | 흐름도 이전 실패:", e); }
+  },
 
   toggle() {
     if (!game.user?.isGM) return;
@@ -6801,6 +6885,37 @@ Hooks.once("init", () => {
     onChange: () => EWKClocks.render(),
   });
 
+  // 대사흐름도 — 월드 공유 (GM 전용 도구지만 데이터는 DB에 보존)
+  game.settings.register("fate-core-ko", "flowcharts", {
+    scope: "world",
+    config: false,
+    type: Array,
+    default: [],
+    onChange: () => {
+      EWKFlowchart._cache = null;   // 다른 GM 클라이언트 동기화
+      if (EWKFlowchart._el?.classList.contains("ewk-fc--open")) {
+        EWKFlowchart.renderSceneList();
+        EWKFlowchart.renderNodeList();
+      }
+    },
+  });
+
+  // 시스템 버전 (마이그레이션 기준)
+  game.settings.register("fate-core-ko", "systemVersion", {
+    scope: "world",
+    config: false,
+    type: String,
+    default: "0.0.0",
+  });
+
+  // 최초 실행 환영 플래그
+  game.settings.register("fate-core-ko", "welcomed", {
+    scope: "world",
+    config: false,
+    type: Boolean,
+    default: false,
+  });
+
   CONFIG.FATE = {
     ladder: {
       8: "FATE.Ladder.8",  7: "FATE.Ladder.7", 6: "FATE.Ladder.6",
@@ -7007,6 +7122,38 @@ Hooks.once("ready", () => {
   // 창 크기 변경 시 화면 밖에 남은 위젯을 안으로 복귀
   window.addEventListener("resize", foundry.utils.debounce(() => ewkClampWidgets(), 200));
 
+  // ── 버전 마이그레이션 + 최초 실행 온보딩 (GM 전용, 월드당 1회) ──
+  if (game.user?.isGM) {
+    (async () => {
+      try {
+        const stored  = game.settings.get("fate-core-ko", "systemVersion") || "0.0.0";
+        const current = game.system?.version ?? "1.0.0";
+        if (foundry.utils.isNewerVersion(current, stored)) {
+          await EWKFlowchart.migrateFromLocal();   // 구버전 localStorage 흐름도 → 월드 DB
+          await game.settings.set("fate-core-ko", "systemVersion", current);
+          console.log(`fate-core-ko | 마이그레이션 완료: ${stored} → ${current}`);
+        }
+        if (!game.settings.get("fate-core-ko", "welcomed")) {
+          await game.settings.set("fate-core-ko", "welcomed", true);
+          await EWKGuide.create(false);   // 사용 안내 저널 자동 생성 (열지는 않음)
+          const open = await EWKConfirm.ask({
+            title: "🎭 페이트 코어 한국어판에 오신 것을 환영합니다!",
+            message: `빠른 시작:<br>
+              ① <b>액터 탭</b>에서 캐릭터를 만들고 하단 <b>무대 바</b>로 드래그<br>
+              ② 무대 카드에서 <b>발언권(💬)</b>을 선택하고 대사 입력<br>
+              ③ 설정 탭의 <b>⚡ 빠른 시작 콘텐츠</b>로 기본 기능·예제 캐릭터 생성<br><br>
+              자세한 내용은 저널 탭의 <b>📖 시스템 사용 안내</b>를 참고하세요.`,
+            yes: "안내 저널 열기", no: "바로 시작",
+          });
+          if (open) {
+            const g = game.journal?.contents.find(e => e.getFlag("fate-core-ko", "guide"));
+            if (g) EWKJournalViewer.open(g.id);
+          }
+        }
+      } catch (e) { console.error("fate-core-ko | 온보딩/마이그레이션 실패:", e); }
+    })();
+  }
+
   // FVTT 기본 컨트롤 버튼은 CSS로 숨김 (DOM 제거 시 SceneControls.setPosition null 에러 발생)
 
   // FVTT가 사이드바 또는 개별 탭을 재렌더할 때 패널 재채택
@@ -7131,7 +7278,7 @@ Hooks.once("ready", () => {
       FateVNBox.hide();
     }
 
-    if (changes.active === true && game.user?.isGM) {
+    if (changes.active === true && game.user?.isGM && game.users?.activeGM === game.user) {   // GM 다중 접속 시 1회만
       const bgSrc = scene.background?.src ?? "";
       await ChatMessage.create({
         content: `<div class="ewk-scene-change-msg" data-bg="${bgSrc}">
