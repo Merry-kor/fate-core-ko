@@ -725,13 +725,13 @@ const EWKExpr = {
       el.querySelector("[data-x-mirror]").onchange = async (e) => {
         await actor.setFlag("fate-core-ko", "vnMirror", e.target.checked);
       };
-      el.querySelector("[data-x-add]").onclick = () => {
-        const name = window.prompt("표정 이름 (예: 웃음, 분노, 슬픔):");
-        if (!name?.trim()) return;
+      el.querySelector("[data-x-add]").onclick = async () => {
+        const name = await EWKPrompt.ask({ title: "표정 추가", label: "표정 이름:", placeholder: "예: 웃음, 분노, 슬픔" });
+        if (!name) return;
         ewkPickImage(async (path) => {
           if (!path) return;
           const list = [...(actor.getFlag("fate-core-ko", "expressions") ?? [])];
-          list.push({ name: name.trim(), img: path });
+          list.push({ name, img: path });
           await actor.setFlag("fate-core-ko", "expressions", list);
           render();
         });
@@ -1275,7 +1275,7 @@ const EWKSidebar = {
     });
 
     panel.querySelector("[data-create-folder]")?.addEventListener("click", async () => {
-      const name = this._promptText("폴더 이름:");
+      const name = await this._promptText("폴더 이름:");
       if (!name) return;
       await Folder.create({ name, type: "Actor", color: "#4f6bc9" });
     });
@@ -1291,7 +1291,7 @@ const EWKSidebar = {
       btn.addEventListener("click", async e => {
         e.stopPropagation();
         const fid = btn.dataset.fldrAdd;
-        const name = this._promptText("캐릭터 이름:");
+        const name = await this._promptText("캐릭터 이름:");
         if (!name) return;
         await Actor.create({ name, type: "character", folder: fid === "__none__" ? null : fid });
       });
@@ -1614,14 +1614,14 @@ const EWKSidebar = {
     });
 
     panel.querySelector("[data-create-scene]")?.addEventListener("click", async () => {
-      const name = window.prompt("새 장면 이름:", "새 장면");
-      if (!name?.trim()) return;
-      await Scene.create({ name: name.trim() });
+      const name = await EWKPrompt.ask({ title: "새 장면", label: "장면 이름:", value: "새 장면" });
+      if (!name) return;
+      await Scene.create({ name });
     });
     panel.querySelector("[data-create-sfldr]")?.addEventListener("click", async () => {
-      const name = window.prompt("폴더 이름:", "새 폴더");
-      if (!name?.trim()) return;
-      await Folder.create({ name: name.trim(), type: "Scene" });
+      const name = await EWKPrompt.ask({ title: "새 폴더", label: "폴더 이름:", value: "새 폴더" });
+      if (!name) return;
+      await Folder.create({ name, type: "Scene" });
     });
   },
 
@@ -1870,7 +1870,7 @@ const EWKSidebar = {
     });
 
     panel.querySelector("#ewk-j-folder")?.addEventListener("click", async () => {
-      const name = this._promptText("폴더 이름:");
+      const name = await this._promptText("폴더 이름:");
       if (!name) return;
       await Folder.create({ name, type: "JournalEntry", color: "#9a7a30" });
     });
@@ -1878,8 +1878,8 @@ const EWKSidebar = {
     panel.querySelector("#ewk-j-new")?.addEventListener("click", () => EWKJournalEditor.createNew());
   },
 
-  _promptText(label, def = "") {
-    return window.prompt(label, def) ?? null;
+  async _promptText(label, def = "") {
+    return EWKPrompt.ask({ title: "입력", label, value: def });
   },
 
   // ── 아이템 패널 ────────────────────────────────────────────
@@ -2418,6 +2418,12 @@ const EWKSidebar = {
   </section>
 
   <section class="ewk-set-sec">
+    <h3 class="ewk-set-h">🚀 빠른 시작 콘텐츠</h3>
+    <p class="ewk-set-desc" style="margin:0 0 8px">기본 기능 18종이 세팅된 예제 캐릭터와 NPC를 생성합니다.</p>
+    <button class="ewk-set-action" id="ewk-set-quickstart">🚀 예제 캐릭터·NPC 생성</button>
+  </section>
+
+  <section class="ewk-set-sec">
     <h3 class="ewk-set-h">📖 사용 안내</h3>
     <p class="ewk-set-desc" style="margin:0 0 8px">UI 안내 저널을 만들어 모든 플레이어에게 공유합니다(저널 탭).</p>
     <button class="ewk-set-action" id="ewk-set-guide">📖 사용 안내 저널 생성/갱신</button>
@@ -2427,6 +2433,12 @@ const EWKSidebar = {
     <h3 class="ewk-set-h">⚙ Foundry 설정</h3>
     <p class="ewk-set-desc" style="margin:0 0 8px">게임 설정·모듈·로그아웃 등을 별도 창으로 엽니다.</p>
     <button class="ewk-set-action" id="ewk-set-foundry">⚙ Foundry 설정 창 열기</button>
+    <div class="ewk-set-row" style="margin-top:8px">
+      <div class="ewk-set-info"><span class="ewk-set-label">디버그 로그</span><span class="ewk-set-desc">문제 진단용 콘솔 로그 (F12)</span></div>
+      <button class="ewk-set-toggle${EWKLog.on() ? " ewk-set-toggle--on" : ""}" data-ewk-debug role="switch" aria-checked="${EWKLog.on()}">
+        <span class="ewk-set-knob"></span>
+      </button>
+    </div>
   </section>
 
   <section class="ewk-set-sec">
@@ -2498,6 +2510,11 @@ const EWKSidebar = {
     panel.querySelector("#ewk-set-handout")?.addEventListener("click", () => this._shareHandout());
     panel.querySelector("#ewk-set-handout-close")?.addEventListener("click", () => EWKBroadcast.send("imageClose"));
     panel.querySelector("#ewk-set-quicknpc")?.addEventListener("click", () => this._quickNPC());
+    panel.querySelector("#ewk-set-quickstart")?.addEventListener("click", () => EWKQuickstart.create());
+    panel.querySelector("[data-ewk-debug]")?.addEventListener("click", () => {
+      localStorage.setItem("ewk-debug", EWKLog.on() ? "0" : "1");
+      this._renderSettingsPanel();
+    });
     panel.querySelector("#ewk-set-guide")?.addEventListener("click", () => EWKGuide.create());
 
     // Foundry 네이티브 사이드바 일시 표시
@@ -3005,6 +3022,94 @@ const EWKConfirm = {
   },
 };
 
+// ─── 빠른 시작 콘텐츠 — 기본 기능 18종이 세팅된 예제 캐릭터·NPC ──────────────
+const EWKQuickstart = {
+  SKILLS: ["격투", "사격", "운동", "신체", "은신", "절도", "조사", "지식", "주의",
+           "공예", "운전", "공감", "친화", "도발", "기만", "인맥", "자원", "의지"],
+
+  async create() {
+    if (!game.user?.isGM) return;
+    if (game.actors?.find(a => a.getFlag("fate-core-ko", "quickstart"))) {
+      ui.notifications?.info("빠른 시작 콘텐츠가 이미 생성되어 있습니다 (액터 탭 확인).");
+      return;
+    }
+    // 예제 PC — 기능 피라미드(+4/+3+3/+2×3/+1×4) 세팅
+    const ranks = { "조사": 4, "지식": 3, "공감": 3, "주의": 2, "의지": 2, "친화": 2, "운동": 1, "은신": 1, "기만": 1, "인맥": 1 };
+    const pcItems = [
+      { name: "컨셉", type: "aspect", system: { label: "진실을 쫓는 기록 보관인", aspectType: "identity" } },
+      { name: "곤경", type: "aspect", system: { label: "호기심은 고양이를 죽인다", aspectType: "trouble" } },
+      { name: "면모", type: "aspect", system: { label: "오래된 도서관의 단골", aspectType: "general" } },
+      ...this.SKILLS.map(n => ({ name: n, type: "skill", system: { rank: ranks[n] ?? 0 } })),
+      { name: "기록 보관인의 직감", type: "stunt", system: { summary: "무언가 숨겨진 장소를 조사할 때, 상황 설명 전에 어떤 단서가 있을지 먼저 질문할 수 있다." } },
+      { name: "신체 스트레스", type: "stress", system: { size: 3, checked: [] } },
+      { name: "정신 스트레스", type: "stress", system: { size: 3, checked: [] } },
+      { name: "가벼운 결과 (2)", type: "consequence", system: {} },
+      { name: "중간 결과 (4)", type: "consequence", system: {} },
+      { name: "심각한 결과 (6)", type: "consequence", system: {} },
+    ];
+    const pc = await Actor.create({
+      name: "예제 캐릭터 — 유나", type: "character",
+      system: { fatepoints: { current: 3, refresh: 3 } },
+      flags: { "fate-core-ko": { quickstart: true } },
+    });
+    await pc.createEmbeddedDocuments("Item", pcItems);
+
+    // 예제 NPC
+    const npc = await Actor.create({
+      name: "예제 NPC — 수상한 정보상", type: "npc",
+      system: { fatepoints: { current: 2, refresh: 2 } },
+      flags: { "fate-core-ko": { quickstart: true } },
+    });
+    await npc.createEmbeddedDocuments("Item", [
+      { name: "컨셉", type: "aspect", system: { label: "뒷골목의 모든 소문을 아는 정보상", aspectType: "identity" } },
+      { name: "곤경", type: "aspect", system: { label: "빚쟁이에게 쫓기는 신세", aspectType: "trouble" } },
+      { name: "기만", type: "skill", system: { rank: 3 } },
+      { name: "인맥", type: "skill", system: { rank: 2 } },
+      { name: "은신", type: "skill", system: { rank: 2 } },
+      { name: "신체 스트레스", type: "stress", system: { size: 2, checked: [] } },
+    ]);
+
+    ui.notifications?.info("빠른 시작 콘텐츠 생성 완료 — 예제 캐릭터 시트를 확인하세요.");
+    pc.sheet?.render(true);
+  },
+};
+
+// ─── Custom Prompt (window.prompt 대체 — 테마 적용 텍스트 입력) ─────────────
+const EWKPrompt = {
+  ask({ title = "입력", label = "", value = "", placeholder = "" } = {}) {
+    return new Promise(resolve => {
+      const el = document.createElement("div");
+      el.className = "ewk-confirm-overlay fate-core-ko";
+      el.innerHTML = `<div class="ewk-confirm">
+  <div class="ewk-confirm__title">${title}</div>
+  ${label ? `<div class="ewk-confirm__msg">${label}</div>` : ""}
+  <input type="text" class="ewk-prompt-input" value="${(value ?? "").replace(/"/g, "&quot;")}" placeholder="${(placeholder ?? "").replace(/"/g, "&quot;")}">
+  <div class="ewk-confirm__btns">
+    <button class="jwe-btn" data-no>취소</button>
+    <button class="jwe-btn jwe-btn--save" data-yes>확인</button>
+  </div>
+</div>`;
+      document.body.appendChild(el);
+      const inp = el.querySelector("input");
+      const done = v => { el.remove(); resolve(v); };
+      el.querySelector("[data-yes]").addEventListener("click", () => done(inp.value.trim() || null));
+      el.querySelector("[data-no]").addEventListener("click", () => done(null));
+      el.addEventListener("click", e => { if (e.target === el) done(null); });
+      inp.addEventListener("keydown", e => {
+        if (e.key === "Enter")  { e.preventDefault(); done(inp.value.trim() || null); }
+        if (e.key === "Escape") done(null);
+      });
+      inp.focus(); inp.select();
+    });
+  },
+};
+
+// ─── 디버그 로그 (설정 탭 토글 — 고객 문제 진단용) ──────────────────────────
+const EWKLog = {
+  on() { return localStorage.getItem("ewk-debug") === "1"; },
+  d(...args) { if (this.on()) console.log("fate-core-ko |", ...args); },
+};
+
 // ─── Journal Templates (디자인 10종 — 런타임 로드) ──────────────────────────
 // 디자인 폴더의 journals-data.js(window.JOURNALS) 를 lazy-load 하여 활용.
 
@@ -3406,8 +3511,8 @@ const EWKJournalEditor = {
 
   async createNew(folderId = null) {
     if (!game.user?.isGM) return;
-    const name = window.prompt("저널 이름:", "새 기록");
-    if (!name?.trim()) return;
+    const name = await EWKPrompt.ask({ title: "새 저널", label: "저널 이름:", value: "새 기록" });
+    if (!name) return;
     await EWKJournalTemplates.load();
     const entry = await JournalEntry.create({
       name: name.trim(),
@@ -5336,7 +5441,8 @@ const EWKFlowchart = {
     };
 
     this._el.querySelector("#ewk-fc-stage-clear").onclick = async () => {
-      if (!confirm("무대의 모든 액터를 퇴장시키겠습니까?")) return;
+      const ok = await EWKConfirm.ask({ title: "전원 퇴장", message: "무대의 모든 액터를 퇴장시키겠습니까?", yes: "퇴장", danger: true });
+      if (!ok) return;
       EWKStage.clear();
       localStorage.removeItem(`ewk-speaker-${game.userId}`);
       FateStageBar.render();
@@ -5365,11 +5471,11 @@ const EWKFlowchart = {
     this._el.querySelector("#ewk-fc-pb-step").onclick    = () => this._pbStep();
     this._el.querySelector("#ewk-fc-pb-auto").onclick    = () => this._pbToggleAuto();
 
-    this._el.querySelector("#ewk-fc-new-scene").onclick = () => {
+    this._el.querySelector("#ewk-fc-new-scene").onclick = async () => {
       const data = this.getData();
-      const title = prompt("장면 이름:", `장면 ${data.length + 1}`);
-      if (!title?.trim()) return;
-      data.push({ id: this._uid(), title: title.trim(), nodes: [] });
+      const title = await EWKPrompt.ask({ title: "장면 추가", label: "장면 이름:", value: `장면 ${data.length + 1}` });
+      if (!title) return;
+      data.push({ id: this._uid(), title, nodes: [] });
       this.saveData(data);
       this.renderSceneList();
     };
@@ -5429,16 +5535,17 @@ const EWKFlowchart = {
       el.querySelector(".ewk-fc__scene-main").onclick = () => this.selectScene(scene.id);
       el.querySelector(`[data-link]`).onclick = e => { e.stopPropagation(); this._linkScene(scene.id); };
       el.querySelector(`[data-dup]`).onclick  = e => { e.stopPropagation(); this._duplicateScene(scene.id); };
-      el.querySelector(`[data-rename]`).onclick = e => {
+      el.querySelector(`[data-rename]`).onclick = async e => {
         e.stopPropagation();
-        const name = prompt("장면 이름:", scene.title);
-        if (!name?.trim()) return;
+        const name = await EWKPrompt.ask({ title: "이름 변경", label: "장면 이름:", value: scene.title });
+        if (!name) return;
         const d = this.getData(); const s = d.find(x => x.id === scene.id);
-        if (s) { s.title = name.trim(); this.saveData(d); this.renderSceneList(); }
+        if (s) { s.title = name; this.saveData(d); this.renderSceneList(); }
       };
-      el.querySelector(`[data-del]`).onclick = e => {
+      el.querySelector(`[data-del]`).onclick = async e => {
         e.stopPropagation();
-        if (!confirm(`"${scene.title}" 장면을 삭제하시겠습니까?`)) return;
+        const ok = await EWKConfirm.ask({ title: "장면 삭제", message: `"${scene.title}" 장면을 삭제하시겠습니까?`, yes: "삭제", danger: true });
+        if (!ok) return;
         const d = this.getData().filter(x => x.id !== scene.id);
         this.saveData(d);
         if (this._activeSceneId === scene.id) { this._activeSceneId = null; this._editingNodeId = null; this._stopAuto(); }
@@ -6330,6 +6437,7 @@ const EWKBroadcast = {
   },
 
   _run(action, data) {
+    EWKLog.d("broadcast:", action, data);
     switch (action) {
       case "screenEffect": EWKScreenEffect.play(data.effect, data.duration ?? 1500); break;
       case "weatherSet":   EWKWeather.set(data.weather);            break;

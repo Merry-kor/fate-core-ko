@@ -5107,3 +5107,43 @@ body.ewk-vn-focusing #ewk-scene-bg { filter: brightness(0.55) saturate(0.85); }
 
 /* ── 장면 레일 활성 씬 글로우 ── */
 .srl__thumb--active { box-shadow: 0 0 10px rgba(201,162,39,.45); }
+
+/* ── 이전 이야기 불러오기 버튼 (채팅 페이지네이션) ── */
+#ewk-more-btn {
+  display: block;
+  width: calc(100% - 20px);
+  margin: 6px auto 10px;
+  padding: 6px 0;
+  background: transparent;
+  border: 1.5px dashed rgba(201,162,39,.35);
+  border-radius: var(--radius-pill);
+  color: var(--text-faint);
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+}
+#ewk-more-btn:hover {
+  border-color: var(--accent-gold);
+  color: var(--accent-gold);
+  background: rgba(201,162,39,.06);
+}
+
+/* ── 테마 프롬프트 입력창 ── */
+.ewk-prompt-input {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 10px 0 4px;
+  padding: 8px 10px;
+  background: var(--surface-well);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-xs);
+  color: var(--text-body);
+  font-family: var(--font-sans);
+  font-size: 13px;
+}
+.ewk-prompt-input:focus {
+  border-color: var(--accent-gold);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(201,162,39,.15);
+}
