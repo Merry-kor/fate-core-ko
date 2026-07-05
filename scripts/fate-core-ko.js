@@ -830,6 +830,7 @@ const EWKSidebar = {
     });
 
     sidebar.appendChild(panels);
+    sidebar.classList.toggle("ewk-sidebar--narrow", savedPx <= 300);
     document.getElementById("interface")?.appendChild(sidebar);
 
     // 이벤트 연결
@@ -863,12 +864,12 @@ const EWKSidebar = {
         <span id="ewk-scene-badge" class="ewk-scene-badge">${sceneName}</span>
         <div class="ewk-hdr-acts">
           <div id="ewk-wpresets">${widthBtns}</div>
-          ${game.user?.isGM ? `<button class="ewk-hdr-btn ewk-hdr-btn--fc" id="ewk-fc-btn">📋 흐름도</button>` : ""}
-          <button class="ewk-hdr-btn" id="ewk-oppose-btn" title="두 인물의 대결 굴림">🤺 대결</button>
-          <button class="ewk-hdr-btn" id="ewk-scroll-lock" title="지난 이야기 확인 (새 채팅에도 자동으로 안 내려감)">📜 지난글</button>
-          <button class="ewk-hdr-btn" id="ewk-dl-btn">⬇ 로그</button>
-          <button class="ewk-hdr-btn" id="ewk-print-btn">📄 인쇄</button>
-          <button class="ewk-hdr-btn ewk-hdr-btn--danger" id="ewk-clear-btn">🗑 삭제</button>
+          ${game.user?.isGM ? `<button class="ewk-hdr-btn ewk-hdr-btn--fc" id="ewk-fc-btn" title="대사흐름도">📋<span class="ewk-hdr-lbl"> 흐름도</span></button>` : ""}
+          <button class="ewk-hdr-btn" id="ewk-oppose-btn" title="두 인물의 대결 굴림">🤺<span class="ewk-hdr-lbl"> 대결</span></button>
+          <button class="ewk-hdr-btn" id="ewk-scroll-lock" title="지난 이야기 확인 (새 채팅에도 자동으로 안 내려감)">📜<span class="ewk-hdr-lbl"> 지난글</span></button>
+          <button class="ewk-hdr-btn" id="ewk-dl-btn" title="로그 다운로드 (.txt)">⬇<span class="ewk-hdr-lbl"> 로그</span></button>
+          <button class="ewk-hdr-btn" id="ewk-print-btn" title="PDF 인쇄">📄<span class="ewk-hdr-lbl"> 인쇄</span></button>
+          <button class="ewk-hdr-btn ewk-hdr-btn--danger" id="ewk-clear-btn" title="채팅 로그 전체 삭제">🗑<span class="ewk-hdr-lbl"> 삭제</span></button>
         </div>
       </div>
       <div id="ewk-presence"></div>
@@ -2539,7 +2540,10 @@ const EWKSidebar = {
 
   _applyWidth(px) {
     const ewk = document.getElementById("ewk-sidebar");
-    if (ewk) ewk.style.width = px + "px";
+    if (ewk) {
+      ewk.style.width = px + "px";
+      ewk.classList.toggle("ewk-sidebar--narrow", px <= 300);   // 좁게: 헤더 버튼 아이콘만
+    }
     // FVTT #sidebar 너비도 맞춰서 캔버스 레이아웃 유지
     const fvtt = document.getElementById("sidebar") ?? document.getElementById("ui-right");
     if (fvtt) fvtt.style.setProperty("width", px + "px", "important");
@@ -6941,10 +6945,12 @@ const EWKTyping = {
         bar.textContent = "";
         bar.hidden = true;
       } else {
-        const names = users.map(u => u.userName);
-        bar.textContent = names.length === 1
-          ? `${names[0]}이(가) 대사를 입력하고 있습니다...`
-          : `${names.join(", ")}이(가) 대사를 입력하고 있습니다...`;
+        const esc = s => (s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        const names = users.map(u => esc(u.userName));
+        const label = names.length === 1
+          ? `${names[0]}이(가) 대사를 입력하고 있습니다`
+          : `${names.join(", ")}이(가) 대사를 입력하고 있습니다`;
+        bar.innerHTML = `${label}<span class="ewk-tydots"><i>.</i><i>.</i><i>.</i></span>`;
         bar.hidden = false;
       }
     }

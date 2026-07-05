@@ -4997,3 +4997,113 @@ body.ewk-vn-focusing #ewk-scene-bg { filter: brightness(0.55) saturate(0.85); }
   font-size: 12px; color: var(--text-muted);
   margin: 8px 0 2px; cursor: pointer;
 }
+
+/* ════════════════════ 전역 디자인 통일 (다이얼로그·알림·빈 상태·포커스) ════════════════════ */
+
+/* ── DialogV2 창 테마 (굴림·대결·빠른NPC·스택·씬연동·가져오기·확인창 전부) ── */
+.application.dialog {
+  background: linear-gradient(160deg, #14161e 0%, #0e1015 100%) !important;
+  border: 1px solid #3a3d4a !important;
+  border-radius: 8px !important;
+  box-shadow: 0 18px 60px rgba(0,0,0,.6) !important;
+  color: #c8c5bc;
+}
+.application.dialog .window-header {
+  background: rgba(255,255,255,.03) !important;
+  border-bottom: 1px solid #c9a227 !important;
+  color: #ece9df !important;
+}
+.application.dialog .window-header .window-title {
+  font-family: var(--font-serif, serif) !important;
+  color: #ece9df !important;
+  text-shadow: none !important;
+}
+.application.dialog .window-content {
+  background: transparent !important;
+  color: #c8c5bc !important;
+}
+.application.dialog .form-footer button,
+.application.dialog .dialog-buttons button {
+  background: #1c1f29 !important;
+  border: 1px solid #3a3d4a !important;
+  color: #c8c5bc !important;
+  border-radius: 4px !important;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.application.dialog .form-footer button:hover,
+.application.dialog .dialog-buttons button:hover {
+  border-color: #c9a227 !important;
+  color: #e3c65f !important;
+  background: rgba(201,162,39,.08) !important;
+  box-shadow: none !important;
+}
+.application.dialog .form-footer button.default,
+.application.dialog .form-footer button[autofocus],
+.application.dialog .dialog-buttons button.default {
+  background: #c9a227 !important;
+  border-color: #c9a227 !important;
+  color: #0a0b0f !important;
+  font-weight: 700 !important;
+}
+.application.dialog .form-footer button.default:hover,
+.application.dialog .form-footer button[autofocus]:hover,
+.application.dialog .dialog-buttons button.default:hover {
+  filter: brightness(1.12);
+  color: #0a0b0f !important;
+}
+
+/* ── FVTT 알림 토스트 테마 ── */
+#notifications .notification {
+  background: linear-gradient(160deg, rgba(20,22,30,.97), rgba(14,16,21,.97)) !important;
+  color: #e8e4d8 !important;
+  border: 1px solid #3a3d4a !important;
+  border-left: 3px solid #c9a227 !important;
+  border-radius: 6px !important;
+  box-shadow: 0 8px 28px rgba(0,0,0,.55) !important;
+  text-shadow: none !important;
+}
+#notifications .notification.info    { border-left-color: #c9a227 !important; }
+#notifications .notification.warning { border-left-color: #c9822b !important; }
+#notifications .notification.error   { border-left-color: #b01f33 !important; }
+
+/* ── 빈 상태 공통 스타일 (점선 카드) ── */
+.ewk-panel-empty, .ewk-aw-empty, .ewk-qdock-empty, .ewk-music-empty {
+  border: 1.5px dashed rgba(201,162,39,.22);
+  border-radius: var(--radius-md, 8px);
+  padding: 14px 16px;
+  margin: 8px 10px;
+  text-align: center;
+  color: var(--text-faint);
+  font-style: italic;
+  font-size: 0.74rem;
+}
+.ewk-panel-empty--sm { padding: 7px 10px; margin: 4px 8px; border-width: 1px; }
+
+/* ── 키보드 포커스 표시 (접근성) ── */
+.fate-core-ko button:focus-visible,
+.fate-core-ko a:focus-visible,
+.fate-core-ko input:focus-visible,
+.fate-core-ko select:focus-visible,
+.fate-core-ko textarea:focus-visible,
+#ewk-aw button:focus-visible,
+#ewk-aw input:focus-visible {
+  outline: 2px solid rgba(201,162,39,.75) !important;
+  outline-offset: 1px;
+}
+
+/* ── 채팅 헤더 반응형 — 좁게(300px)에서는 아이콘만 ── */
+.ewk-sidebar--narrow .ewk-hdr-lbl { display: none; }
+.ewk-sidebar--narrow .ewk-hdr-btn { padding-left: 6px; padding-right: 6px; }
+
+/* ── 타이핑 바 점 애니메이션 ── */
+.ewk-tydots { display: inline-block; margin-left: 1px; }
+.ewk-tydots i { font-style: normal; display: inline-block; animation: ewk-tydot 1.2s ease-in-out infinite; }
+.ewk-tydots i:nth-child(2) { animation-delay: 0.2s; }
+.ewk-tydots i:nth-child(3) { animation-delay: 0.4s; }
+@keyframes ewk-tydot {
+  0%, 60%, 100% { opacity: 0.25; transform: none; }
+  30%           { opacity: 1; transform: translateY(-2px); }
+}
+
+/* ── 장면 레일 활성 씬 글로우 ── */
+.srl__thumb--active { box-shadow: 0 0 10px rgba(201,162,39,.45); }
