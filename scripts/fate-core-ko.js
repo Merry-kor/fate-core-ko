@@ -29,6 +29,7 @@ class FateCharacterSheet extends foundry.applications.api.HandlebarsApplicationM
       toggleStage:      FateCharacterSheet.#onToggleStage,
       pickTokenImg:     FateCharacterSheet.#onPickTokenImg,
       setPrimaryAspect: FateCharacterSheet.#onSetPrimaryAspect,
+      manageExpressions: FateCharacterSheet.#onManageExpressions,
     },
   };
 
@@ -174,6 +175,7 @@ class FateCharacterSheet extends foundry.applications.api.HandlebarsApplicationM
       consequences: items.filter(i => i.type === "consequence"),
       extras:       items.filter(i => i.type === "extra"),
       tokenImg:     actor.getFlag("fate-core-ko", "tokenImg") || "",
+      exprCount:    (actor.getFlag("fate-core-ko", "expressions") ?? []).length,
       ladder,
       aspectTypes,
       aspectTypeMap,
@@ -267,6 +269,10 @@ class FateCharacterSheet extends foundry.applications.api.HandlebarsApplicationM
     const current = this.actor.getFlag("fate-core-ko", "primaryAspectId");
     if (current === itemId) await this.actor.unsetFlag("fate-core-ko", "primaryAspectId");
     else                    await this.actor.setFlag("fate-core-ko", "primaryAspectId", itemId);
+  }
+
+  static #onManageExpressions(event, target) {
+    EWKExpr.manage(this.actor);
   }
 }
 
