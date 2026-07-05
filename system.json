@@ -1,15 +1,19 @@
 {
   "id": "fate-core-ko",
   "title": "페이트 코어 한국어판",
-  "description": "페이트 코어 TTRPG 시스템 - 한국어 지원, 개선된 UI/UX",
-  "version": "0.1.0",
+  "description": "페이트 코어 TTRPG 시스템 — VN 스타일 연출·대사흐름도·커스텀 UI를 갖춘 한국어 시스템",
+  "version": "1.0.0",
   "authors": [
     {
       "name": "lunah"
     }
   ],
-  "esmodules": ["scripts/fate-core-ko.js"],
-  "styles": ["styles/fate-core-ko.css"],
+  "esmodules": [
+    "scripts/fate-core-ko.js"
+  ],
+  "styles": [
+    "styles/fate-core-ko.css"
+  ],
   "languages": [
     {
       "lang": "ko",
@@ -28,6 +32,10 @@
   },
   "socket": true,
   "url": "https://github.com/Merry-kor/fate-core-ko",
-  "manifest": "https://raw.githubusercontent.com/Merry-kor/fate-core-ko/master/system.json",
-  "download": "https://github.com/Merry-kor/fate-core-ko/archive/refs/heads/master.zip"
+  "manifest": "https://github.com/Merry-kor/fate-core-ko/releases/latest/download/system.json",
+  "download": "https://github.com/Merry-kor/fate-core-ko/releases/download/v1.0.0/fate-core-ko.zip",
+  "license": "LICENSE.md",
+  "readme": "README.md",
+  "changelog": "https://github.com/Merry-kor/fate-core-ko/blob/master/CHANGELOG.md",
+  "bugs": "https://github.com/Merry-kor/fate-core-ko/issues"
 }
