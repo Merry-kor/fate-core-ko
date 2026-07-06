@@ -2850,13 +2850,21 @@ const EWKSidebar = {
 </div>`;
       }
 
-      // ② 대화 (actor가 연결된 메시지)
+      // ② 대화 (actor가 연결된 메시지) — 이름 왼쪽에 토큰 이미지
       if (msg.speaker?.actor) {
         const alias = msg.speaker?.alias || tmp.textContent?.trim();
         if (!alias) return null;
+        const actor = game.actors?.get(msg.speaker.actor);
+        const port  = actor ? absUrl(getTokenImg(actor)) : "";
+        const portHtml = port
+          ? `<img class="dlg-port" src="${port}" alt="">`
+          : `<span class="dlg-port dlg-port--ph">${alias.charAt(0)}</span>`;
         return `<div class="dialogue">
-  <span class="dlg-speaker">${alias}</span>
-  <span class="dlg-text">${sanitize(raw)}</span>
+  ${portHtml}
+  <div class="dlg-body">
+    <span class="dlg-speaker">${alias}</span>
+    <span class="dlg-text">${sanitize(raw)}</span>
+  </div>
 </div>`;
       }
 
@@ -2912,17 +2920,28 @@ body{background:#6b6b6b;padding:24px;font-family:'NotoSerif','Nanum Myeongjo',Ge
   margin:7pt 0;
   font-family:'NotoSerif',serif;font-size:10pt;line-height:1.95;
   color:#2a2317;text-indent:1.1em;text-align:justify;
+  orphans:2;widows:2;   /* 페이지 끝에 한 줄만 남는 것 방지 */
 }
 
-/* ── 대화 ── */
-.dialogue{margin:6pt 0 6pt 8pt;display:flex;flex-direction:column;gap:1.5pt;}
+/* ── 대화 (토큰 초상 + 이름 + 대사) ── */
+.dialogue{margin:6pt 0 6pt 2pt;display:flex;flex-direction:row;gap:6pt;align-items:flex-start;}
+.dlg-port{
+  width:22pt;height:22pt;flex-shrink:0;margin-top:1pt;
+  border-radius:50%;object-fit:cover;object-position:center top;
+  border:1pt solid #cbb588;background:#efe5cc;
+}
+.dlg-port--ph{
+  display:inline-flex;align-items:center;justify-content:center;
+  font-family:'NotoSans',sans-serif;font-size:9.5pt;font-weight:700;color:#8a7a5c;
+}
+.dlg-body{display:flex;flex-direction:column;gap:1.5pt;flex:1;min-width:0;}
 .dlg-speaker{
   font-family:'NotoSans',sans-serif;font-size:8pt;font-weight:700;
   color:#5b4e38;letter-spacing:.06em;
 }
 .dlg-text{
   font-family:'NotoSerif',serif;font-size:10pt;
-  line-height:1.85;color:#2a2317;margin-left:1em;
+  line-height:1.85;color:#2a2317;
 }
 
 /* ── 롤 블록 ── */
@@ -2983,7 +3002,7 @@ body{background:#6b6b6b;padding:24px;font-family:'NotoSerif','Nanum Myeongjo',Ge
 .print-img-cap{font-family:'NotoSans',sans-serif;font-size:7.5pt;color:#8a7a5c;margin-top:3pt;letter-spacing:.06em;}
 
 /* ── 장면 전환 ── */
-.scene-break{margin:14pt 0 10pt;break-before:avoid;}
+.scene-break{margin:14pt 0 10pt;break-inside:avoid;page-break-inside:avoid;}
 .scene-break-img{
   width:100%;height:45mm;
   background-size:cover;background-position:center;
@@ -3023,14 +3042,28 @@ body{background:#6b6b6b;padding:24px;font-family:'NotoSerif','Nanum Myeongjo',Ge
   .pdie-p{color:#2e6e44!important;border-color:#2e6e44!important;}
   .pdie-m{color:#8a162a!important;border-color:#8a162a!important;}
 }
-@page{size:A5 portrait;margin:16mm 18mm;}
+.toolbar select{
+  padding:6px 8px;background:#14161e;color:#e8e4d8;
+  border:1px solid #cbb588;border-radius:3px;font-size:12px;cursor:pointer;
+}
 </style>
+<style id="pagestyle">@page{size:A5 portrait;margin:16mm 18mm;}</style>
 </head>
 <body>
 <div class="toolbar">
   <button onclick="window.print()">🖨 PDF로 저장</button>
-  <span>인쇄 대화상자 → 대상: <strong style="color:#cbb588">PDF로 저장</strong> &nbsp;·&nbsp; 용지 A5 &nbsp;·&nbsp; 여백 없음 &nbsp;·&nbsp; 배경 그래픽 ✓</span>
+  <label style="color:#cbb588;font-size:12px">용지
+    <select id="psize"><option value="A5" selected>A5</option><option value="A4">A4</option></select>
+  </label>
+  <span>인쇄 대화상자 → 대상: <strong style="color:#cbb588">PDF로 저장</strong> &nbsp;·&nbsp; 여백 <strong style="color:#cbb588">기본값</strong> &nbsp;·&nbsp; 배경 그래픽 ✓</span>
 </div>
+<script>
+document.getElementById("psize").addEventListener("change", function(e) {
+  var v = e.target.value;
+  document.getElementById("pagestyle").textContent = "@page{size:" + v + " portrait;margin:16mm 18mm;}";
+  document.querySelector(".page").style.width = v === "A4" ? "210mm" : "148mm";
+});
+</script>
 <div class="page">
   <div class="log-header">
     <div class="log-title">${sceneName}</div>
