@@ -367,6 +367,30 @@ Hooks.on("renderTokenHUD", (hud, html, _data) => {
 
 const getTokenImg = actor => actor?.getFlag?.("fate-core-ko", "tokenImg") || actor?.img || "";
 
+// 파동·반짝 효과의 글자별 애니메이션 — 텍스트를 글자 span으로 분할 (표시 전용, 저장 내용 불변)
+function ewkEmoPerChar(root) {
+  root.querySelectorAll(".ewk-emo--wave, .ewk-emo--spark").forEach(span => {
+    if (span.dataset.ewkSplit) return;
+    span.dataset.ewkSplit = "1";
+    const walker = document.createTreeWalker(span, NodeFilter.SHOW_TEXT);
+    const texts = [];
+    while (walker.nextNode()) texts.push(walker.currentNode);
+    let i = 0;
+    texts.forEach(tn => {
+      const frag = document.createDocumentFragment();
+      for (const ch of tn.textContent) {
+        if (!ch.trim()) { frag.appendChild(document.createTextNode(ch)); continue; }
+        const s = document.createElement("span");
+        s.className = "ewk-emo-ch";
+        s.style.setProperty("--i", i++);
+        s.textContent = ch;
+        frag.appendChild(s);
+      }
+      tn.replaceWith(frag);
+    });
+  });
+}
+
 // 무대 등장 상태 — 월드 플래그(actor.onStage)로 모든 클라이언트 공유.
 // 소유하지 않은 액터(예: NPC)는 GM에게 소켓 위임해 GM이 플래그를 설정.
 const EWKStage = {
@@ -2252,7 +2276,8 @@ const EWKSidebar = {
     if (sb) {
       const hidden = this._textStyles.strike || this._textStyles.underline || this._textStyles.small
         || this._textStyles.color || this._narratorMode
-        || ["『』", "()", "《》"].includes(this._currentWrap ?? "");
+        || ["『』", "()", "《》"].includes(this._currentWrap ?? "")
+        || !["normal", "shake", "shout", "wave", "glow"].includes(this._currentEmo ?? "normal");
       sb.classList.toggle("ewk-emo-btn--on", !!hidden);
     }
   },
@@ -2273,7 +2298,7 @@ const EWKSidebar = {
       <div class="ewk-sm-sec">서식 <span class="ewk-sm-hint">(중첩 가능)</span></div>
       <div class="ewk-sm-row">${fmtBtn("bold", "<b>굵게</b>")}${fmtBtn("italic", "<i>기울임</i>")}${fmtBtn("center", "가운데")}${fmtBtn("strike", "<s>취소선</s>")}${fmtBtn("underline", "<u>밑줄</u>")}${fmtBtn("small", "작게")}${fmtBtn("color", '<span style="color:#e3c65f">강조색</span>')}</div>
       <div class="ewk-sm-sec">연출 효과 <span class="ewk-sm-hint">(하나만)</span></div>
-      <div class="ewk-sm-row">${emoBtn("normal", "보통")}${emoBtn("shake", "진동")}${emoBtn("shout", "외침")}${emoBtn("wave", "파동")}${emoBtn("glow", "빛남")}</div>
+      <div class="ewk-sm-row">${emoBtn("normal", "보통")}${emoBtn("shake", "진동")}${emoBtn("shout", "외침")}${emoBtn("wave", "파동")}${emoBtn("glow", "빛남")}${emoBtn("tremble", "떨림")}${emoBtn("heart", "두근")}${emoBtn("whisper", "속삭임")}${emoBtn("burn", "타오름")}${emoBtn("frost", "서리")}${emoBtn("dark", "그늘")}${emoBtn("spark", "반짝")}${emoBtn("rainbow", "무지개")}${emoBtn("float", "둥실")}${emoBtn("dizzy", "어질")}</div>
       <div class="ewk-sm-sec">전송 모드</div>
       <div class="ewk-sm-row"><button type="button" class="ewk-sm-item" data-sm-narr>📖 나레이터로 전송 (발언권 무시)</button></div>
       <div class="ewk-sm-foot"><button type="button" class="ewk-sm-reset" data-sm-reset>모두 초기화</button></div>`;
@@ -4151,7 +4176,7 @@ const EWKGuide = {
         `${b("「」 \" \"")} — 대사 따옴표 감싸기`,
         `${b("굵 / 기 / 중")} — 굵게 / 기울임 / 가운데`,
         `${b("가")} — 채팅 글자 크기 (작게~매우크게 순환)`,
-        `${b("보통·진동·외침·파동·빛남")} — 대사 연출 효과`,
+        `${b("보통·진동·외침·파동·빛남")} 외 10종 — 대사 연출 효과 (✨ 팔레트에서 전체 선택)`,
         `Enter 전송 · Shift+Enter 줄바꿈`,
       ])}`)}
 
@@ -6028,7 +6053,7 @@ const EWKFlowchart = {
           <label class="ewk-fc__chk"><input type="checkbox" name="italic" ${it ? "checked" : ""}><i>기</i></label>
           <label class="ewk-fc__chk"><input type="checkbox" name="center" ${node.center ? "checked" : ""}>중</label>
           <select class="ewk-fc__field ewk-fc__fmt-emo" name="emo">
-            ${eopt("normal","보통")}${eopt("shake","진동")}${eopt("shout","외침")}${eopt("wave","파동")}${eopt("glow","빛남")}
+            ${eopt("normal","보통")}${eopt("shake","진동")}${eopt("shout","외침")}${eopt("wave","파동")}${eopt("glow","빛남")}${eopt("tremble","떨림")}${eopt("heart","두근")}${eopt("whisper","속삭임")}${eopt("burn","타오름")}${eopt("frost","서리")}${eopt("dark","그늘")}${eopt("spark","반짝")}${eopt("rainbow","무지개")}${eopt("float","둥실")}${eopt("dizzy","어질")}
           </select>
         </div>`;
     })();
@@ -7771,6 +7796,7 @@ Hooks.on("renderChatMessageHTML", (message, html) => {
       }
     }
     const msgContent = el.querySelector(".message-content");
+    ewkEmoPerChar(el);   // 파동·반짝 — 글자별 애니메이션 분할
     // VN 표시 — 일괄 로드·귓속말·메시지 수정·사용자 OFF 시에는 억제
     const vnOk = !EWKSidebar._bulkLoading
       && !(message.whisper?.length > 0)
