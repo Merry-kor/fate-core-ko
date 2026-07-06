@@ -766,7 +766,8 @@ const EWKSidebar = {
   _currentExpr: null,   // VN 표정 (액터 플래그 expressions의 이름)
   _pendingImage: null,  // 붙여넣기로 첨부된 이미지 (압축된 data URL)
   _currentWrap: null,
-  _textStyles: { bold: false, italic: false, center: false },
+  _narratorMode: false,   // 발언권 무시하고 나레이터로 전송
+  _textStyles: { bold: false, italic: false, center: false, strike: false, underline: false, small: false, color: false },
   _messageBuffer: [],   // 사이드바 생성 전 수신된 메시지 임시 보관
   _pendingUpdates: {},  // msgId → 교체 대상 DOM 요소 (수정 시 제자리 갱신)
 
@@ -894,6 +895,7 @@ const EWKSidebar = {
         <button class="ewk-emo-btn" data-emo="glow">빛남</button>
         <div class="ewk-tool-sep"></div>
         <button class="ewk-fmt-btn" id="ewk-expr-btn" type="button" title="VN 표정 선택 (발언권 액터)">😊</button>
+        <button class="ewk-fmt-btn" id="ewk-style-btn" type="button" title="스타일 팔레트 — 감싸기·서식·효과·전송 모드 전체">✨</button>
       </div>
       <div id="ewk-chat-form">
         <textarea id="ewk-chat-input" rows="2" placeholder="대사나 행동 입력… (Enter)"></textarea>
@@ -2095,15 +2097,27 @@ const EWKSidebar = {
         content = open + content + close;
       }
       // 서식 적용 (중첩 가능)
-      if (this._textStyles.bold)   content = `<strong>${content}</strong>`;
-      if (this._textStyles.italic)  content = `<em>${content}</em>`;
-      if (this._textStyles.center)  content = `<div style="text-align:center">${content}</div>`;
+      if (this._textStyles.bold)      content = `<strong>${content}</strong>`;
+      if (this._textStyles.italic)    content = `<em>${content}</em>`;
+      if (this._textStyles.strike)    content = `<s>${content}</s>`;
+      if (this._textStyles.underline) content = `<u>${content}</u>`;
+      if (this._textStyles.small)     content = `<span style="font-size:0.85em;opacity:0.88">${content}</span>`;
+      if (this._textStyles.color)     content = `<span style="color:#e3c65f">${content}</span>`;
+      if (this._textStyles.center)    content = `<div style="text-align:center">${content}</div>`;
       // 감정 효과 적용 (normal이 아닌 경우 span으로 감쌈)
       if (this._currentEmo && this._currentEmo !== "normal") {
         content = `<span class="ewk-emo ewk-emo--${this._currentEmo}">${content}</span>`;
       }
       const msgData = { content, speaker: ChatMessage.getSpeaker() };
-      if (this._currentExpr) msgData.flags = { "fate-core-ko": { expression: this._currentExpr } };   // VN 표정
+      const fk = {};
+      if (this._narratorMode) {
+        // 나레이터 모드 — 발언권 무시, 지문/해설로 전송
+        msgData.speaker = { scene: null, actor: null, token: null, alias: "나레이터" };
+        fk.narrator = true;
+      } else if (this._currentExpr) {
+        fk.expression = this._currentExpr;   // VN 표정
+      }
+      if (Object.keys(fk).length) msgData.flags = { "fate-core-ko": fk };
       await ChatMessage.create(msgData);
     };
 
@@ -2219,6 +2233,95 @@ const EWKSidebar = {
 
     // 표정 선택 메뉴
     document.getElementById("ewk-expr-btn")?.addEventListener("click", () => this._toggleExprMenu());
+    // 스타일 팔레트
+    document.getElementById("ewk-style-btn")?.addEventListener("click", () => this._toggleStyleMenu());
+  },
+
+  // 바 버튼 상태를 현재 서식 상태와 동기화 (팔레트와 상태 공유)
+  _refreshToolStates() {
+    const tools = document.getElementById("ewk-chat-tools");
+    if (!tools) return;
+    tools.querySelectorAll(".ewk-tool-btn").forEach(b =>
+      b.classList.toggle("ewk-emo-btn--on", this._currentWrap === b.dataset.emoWrap));
+    tools.querySelectorAll(".ewk-fmt-btn[data-fmt]").forEach(b =>
+      b.classList.toggle("ewk-emo-btn--on", !!this._textStyles[b.dataset.fmt]));
+    tools.querySelectorAll(".ewk-emo-btn[data-emo]").forEach(b =>
+      b.classList.toggle("ewk-emo-btn--on", this._currentEmo === b.dataset.emo));
+    // 팔레트 전용 기능이 켜져 있으면 ✨ 점등 — 숨은 서식이 걸린 채 전송하는 사고 방지
+    const sb = document.getElementById("ewk-style-btn");
+    if (sb) {
+      const hidden = this._textStyles.strike || this._textStyles.underline || this._textStyles.small
+        || this._textStyles.color || this._narratorMode
+        || ["『』", "()", "《》"].includes(this._currentWrap ?? "");
+      sb.classList.toggle("ewk-emo-btn--on", !!hidden);
+    }
+  },
+
+  // ✨ 스타일 팔레트 — 감싸기·서식·효과·전송 모드를 한 패널에서 토글
+  _toggleStyleMenu() {
+    const existing = document.getElementById("ewk-style-menu");
+    if (existing) { existing.remove(); return; }
+    const menu = document.createElement("div");
+    menu.id = "ewk-style-menu";
+    menu.className = "fate-core-ko";
+    const wrapBtn = (w, l) => `<button type="button" class="ewk-sm-item" data-sm-wrap="${w}">${l}</button>`;
+    const fmtBtn  = (k, l) => `<button type="button" class="ewk-sm-item" data-sm-fmt="${k}">${l}</button>`;
+    const emoBtn  = (k, l) => `<button type="button" class="ewk-sm-item" data-sm-emo="${k}">${l}</button>`;
+    menu.innerHTML = `
+      <div class="ewk-sm-sec">감싸기 <span class="ewk-sm-hint">(하나만)</span></div>
+      <div class="ewk-sm-row">${wrapBtn("「」", "「 」")}${wrapBtn('""', '" "')}${wrapBtn("『』", "『 』")}${wrapBtn("()", "( )")}${wrapBtn("《》", "《 》")}</div>
+      <div class="ewk-sm-sec">서식 <span class="ewk-sm-hint">(중첩 가능)</span></div>
+      <div class="ewk-sm-row">${fmtBtn("bold", "<b>굵게</b>")}${fmtBtn("italic", "<i>기울임</i>")}${fmtBtn("center", "가운데")}${fmtBtn("strike", "<s>취소선</s>")}${fmtBtn("underline", "<u>밑줄</u>")}${fmtBtn("small", "작게")}${fmtBtn("color", '<span style="color:#e3c65f">강조색</span>')}</div>
+      <div class="ewk-sm-sec">연출 효과 <span class="ewk-sm-hint">(하나만)</span></div>
+      <div class="ewk-sm-row">${emoBtn("normal", "보통")}${emoBtn("shake", "진동")}${emoBtn("shout", "외침")}${emoBtn("wave", "파동")}${emoBtn("glow", "빛남")}</div>
+      <div class="ewk-sm-sec">전송 모드</div>
+      <div class="ewk-sm-row"><button type="button" class="ewk-sm-item" data-sm-narr>📖 나레이터로 전송 (발언권 무시)</button></div>
+      <div class="ewk-sm-foot"><button type="button" class="ewk-sm-reset" data-sm-reset>모두 초기화</button></div>`;
+    document.getElementById("ewk-panel-chat")?.appendChild(menu);
+
+    const syncOn = () => {
+      menu.querySelectorAll("[data-sm-wrap]").forEach(b => b.classList.toggle("on", this._currentWrap === b.dataset.smWrap));
+      menu.querySelectorAll("[data-sm-fmt]").forEach(b => b.classList.toggle("on", !!this._textStyles[b.dataset.smFmt]));
+      menu.querySelectorAll("[data-sm-emo]").forEach(b => b.classList.toggle("on", this._currentEmo === b.dataset.smEmo));
+      menu.querySelector("[data-sm-narr]")?.classList.toggle("on", !!this._narratorMode);
+      this._refreshToolStates();
+    };
+    menu.querySelectorAll("[data-sm-wrap]").forEach(b => b.addEventListener("click", () => {
+      const w = b.dataset.smWrap;
+      this._currentWrap = this._currentWrap === w ? null : w;
+      syncOn();
+    }));
+    menu.querySelectorAll("[data-sm-fmt]").forEach(b => b.addEventListener("click", () => {
+      const k = b.dataset.smFmt;
+      this._textStyles[k] = !this._textStyles[k];
+      syncOn();
+    }));
+    menu.querySelectorAll("[data-sm-emo]").forEach(b => b.addEventListener("click", () => {
+      this._currentEmo = b.dataset.smEmo;
+      syncOn();
+    }));
+    menu.querySelector("[data-sm-narr]")?.addEventListener("click", () => {
+      this._narratorMode = !this._narratorMode;
+      syncOn();
+    });
+    menu.querySelector("[data-sm-reset]")?.addEventListener("click", () => {
+      this._currentWrap = null;
+      this._currentEmo = "normal";
+      Object.keys(this._textStyles).forEach(k => { this._textStyles[k] = false; });
+      this._narratorMode = false;
+      syncOn();
+    });
+    syncOn();
+
+    setTimeout(() => {
+      const close = ev => {
+        if (!menu.contains(ev.target) && ev.target.id !== "ewk-style-btn") {
+          menu.remove();
+          document.removeEventListener("mousedown", close);
+        }
+      };
+      document.addEventListener("mousedown", close);
+    }, 0);
   },
 
   // VN 표정 선택 팝업 — 발언권 액터의 등록된 표정 목록
