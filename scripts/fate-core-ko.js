@@ -2289,7 +2289,7 @@ const EWKSidebar = {
     const menu = document.createElement("div");
     menu.id = "ewk-style-menu";
     menu.className = "fate-core-ko";
-    const wrapBtn = (w, l) => `<button type="button" class="ewk-sm-item" data-sm-wrap="${w}">${l}</button>`;
+    const wrapBtn = (w, l) => `<button type="button" class="ewk-sm-item" data-sm-wrap="${w.replace(/"/g, "&quot;")}">${l}</button>`;
     const fmtBtn  = (k, l) => `<button type="button" class="ewk-sm-item" data-sm-fmt="${k}">${l}</button>`;
     const emoBtn  = (k, l) => `<button type="button" class="ewk-sm-item" data-sm-emo="${k}">${l}</button>`;
     menu.innerHTML = `
