@@ -5147,3 +5147,9 @@ body.ewk-vn-focusing #ewk-scene-bg { filter: brightness(0.55) saturate(0.85); }
   outline: none;
   box-shadow: 0 0 0 2px rgba(201,162,39,.15);
 }
+
+/* ── 흐름도 장면 목록 드래그 정렬 ── */
+.ewk-fc__scene-item { cursor: grab; }
+.ewk-fc__scene-item:active { cursor: grabbing; }
+.ewk-fc__scene-item--dragging { opacity: 0.45; }
+.ewk-fc__scene-item--dragover { box-shadow: inset 0 2px 0 var(--accent-gold, #c9a227); }

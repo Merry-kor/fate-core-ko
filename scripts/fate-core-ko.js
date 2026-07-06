@@ -4032,9 +4032,10 @@ const EWKAspectWidget = {
     const isGM    = game.user?.isGM;
     const keyOf   = (a, idx) => a.id ?? `i${idx}`;
 
-    // 제거 애니메이션 — 사라질 행을 먼저 페이드아웃한 뒤 재렌더
+    // 제거 애니메이션 — 사라질 행을 먼저 페이드아웃한 뒤 재렌더 (퇴장 중인 행 제외 — 무한 반복 방지)
     const newKeys = new Set(aspects.map(keyOf));
-    const goners  = [...body.querySelectorAll("[data-aw-key]")].filter(r => !newKeys.has(r.dataset.awKey));
+    const goners  = [...body.querySelectorAll("[data-aw-key]")]
+      .filter(r => !newKeys.has(r.dataset.awKey) && !r.classList.contains("ewk-aw-asp--out"));
     if (goners.length && !this._exiting) {
       this._exiting = true;
       goners.forEach(r => r.classList.add("ewk-aw-asp--out"));
@@ -4322,9 +4323,10 @@ const FateStageBar = {
       .filter(a => EWKStage.has(a.id));
 
     // 퇴장 애니메이션 — 사라질 카드를 먼저 페이드아웃한 뒤 재렌더
+    // (이미 퇴장 중인 카드는 제외 — 재렌더가 무한 반복되며 빈 자리가 남는 버그 방지)
     const stayIds = new Set(onStage.map(a => a.id));
     const leaving = [...this._el.querySelectorAll(".ewk-hud__card")]
-      .filter(c => !stayIds.has(c.dataset.actorId));
+      .filter(c => !stayIds.has(c.dataset.actorId) && !c.classList.contains("ewk-hud__card--exit"));
     if (leaving.length && !this._exiting) {
       this._exiting = true;
       leaving.forEach(c => c.classList.add("ewk-hud__card--exit"));
@@ -4563,9 +4565,10 @@ const EWKQuickDock = {
     const roster = this.getRoster();
     const mySpeakerId = localStorage.getItem(`ewk-speaker-${game.userId}`) ?? null;
 
-    // 제거 애니메이션 — 목록에서 빠질 칩을 먼저 페이드아웃한 뒤 재렌더
+    // 제거 애니메이션 — 목록에서 빠질 칩을 먼저 페이드아웃한 뒤 재렌더 (퇴장 중인 칩 제외)
     const rosterIds = new Set(roster);
-    const goners = [...body.querySelectorAll(".ewk-qdock-chip")].filter(c => !rosterIds.has(c.dataset.qdockId));
+    const goners = [...body.querySelectorAll(".ewk-qdock-chip")]
+      .filter(c => !rosterIds.has(c.dataset.qdockId) && !c.classList.contains("ewk-qdock-chip--out"));
     if (goners.length && !this._exiting) {
       this._exiting = true;
       goners.forEach(c => c.classList.add("ewk-qdock-chip--out"));
@@ -4766,9 +4769,10 @@ const EWKClocks = {
     const isGM = game.user?.isGM;
     el.style.display = "";   // 면모 위젯과 동일하게 항상 표시
 
-    // 제거 애니메이션 — 소멸(가득 참)·삭제될 행을 먼저 페이드아웃한 뒤 재렌더
+    // 제거 애니메이션 — 소멸(가득 참)·삭제될 행을 먼저 페이드아웃한 뒤 재렌더 (퇴장 중인 행 제외)
     const newIds = new Set(clocks.map(c => c.id));
-    const goners = [...body.querySelectorAll(".ewk-stk")].filter(r => !newIds.has(r.dataset.clockId));
+    const goners = [...body.querySelectorAll(".ewk-stk")]
+      .filter(r => !newIds.has(r.dataset.clockId) && !r.classList.contains("ewk-aw-asp--done"));
     if (goners.length && !this._exiting) {
       this._exiting = true;
       goners.forEach(r => r.classList.add("ewk-aw-asp--done"));
@@ -5551,8 +5555,47 @@ const EWKFlowchart = {
         if (this._activeSceneId === scene.id) { this._activeSceneId = null; this._editingNodeId = null; this._stopAuto(); }
         this.renderSceneList(); this.renderNodeList();
       };
+      // 드래그앤드롭으로 장면 순서 변경
+      el.draggable = true;
+      el.addEventListener("dragstart", e => {
+        this._sceneDragId = scene.id;
+        el.classList.add("ewk-fc__scene-item--dragging");
+        e.dataTransfer.effectAllowed = "move";
+        try { e.dataTransfer.setData("text/plain", scene.id); } catch (_) {}
+      });
+      el.addEventListener("dragend", () => {
+        el.classList.remove("ewk-fc__scene-item--dragging");
+        list.querySelectorAll(".ewk-fc__scene-item--dragover").forEach(n => n.classList.remove("ewk-fc__scene-item--dragover"));
+        this._sceneDragId = null;
+      });
+      el.addEventListener("dragover", e => {
+        if (!this._sceneDragId || this._sceneDragId === scene.id) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+        el.classList.add("ewk-fc__scene-item--dragover");
+      });
+      el.addEventListener("dragleave", () => el.classList.remove("ewk-fc__scene-item--dragover"));
+      el.addEventListener("drop", e => {
+        e.preventDefault();
+        el.classList.remove("ewk-fc__scene-item--dragover");
+        this._reorderScene(this._sceneDragId, scene.id);
+        this._sceneDragId = null;
+      });
       list.appendChild(el);
     });
+  },
+
+  // 장면 순서 변경 — fromId 장면을 toId 장면 위치로 이동
+  _reorderScene(fromId, toId) {
+    if (!fromId || fromId === toId) return;
+    const d = this.getData();
+    const from = d.findIndex(s => s.id === fromId);
+    const to   = d.findIndex(s => s.id === toId);
+    if (from < 0 || to < 0) return;
+    const [moved] = d.splice(from, 1);
+    d.splice(to, 0, moved);
+    this.saveData(d);
+    this.renderSceneList();
   },
 
   selectScene(id) {
