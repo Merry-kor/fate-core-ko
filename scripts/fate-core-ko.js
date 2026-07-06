@@ -20,6 +20,7 @@ class FateCharacterSheet extends foundry.applications.api.HandlebarsApplicationM
     form: { submitOnChange: true, closeOnSubmit: false },
     actions: {
       rollSkill:        FateCharacterSheet.#onRollSkill,
+      stepSkill:        FateCharacterSheet.#onStepSkill,
       adjustFP:         FateCharacterSheet.#onAdjustFP,
       invokeAspect:     FateCharacterSheet.#onInvokeAspect,
       invokeStunt:      FateCharacterSheet.#onInvokeStunt,
@@ -169,7 +170,17 @@ class FateCharacterSheet extends foundry.applications.api.HandlebarsApplicationM
           },
         };
       }),
-      skills:       items.filter(i => i.type === "skill").sort((a, b) => b.system.rank - a.system.rank),
+      skills: items.filter(i => i.type === "skill")
+        .sort((a, b) => (b.system.rank - a.system.rank) || a.name.localeCompare(b.name, "ko"))
+        .map(s => {
+          const r = s.system.rank ?? 0;
+          const clamped = Math.max(-4, Math.min(8, r));   // 사다리 범위 밖 등급도 라벨 표시
+          return {
+            id: s.id, name: s.name, system: s.system,
+            ladderLabel: game.i18n.localize(CONFIG.FATE.ladder[clamped]),
+            tier: r >= 4 ? "high" : r >= 1 ? "mid" : "low",
+          };
+        }),
       stunts:       items.filter(i => i.type === "stunt"),
       stressTracks: items.filter(i => i.type === "stress"),
       consequences: items.filter(i => i.type === "consequence"),
@@ -189,6 +200,16 @@ class FateCharacterSheet extends foundry.applications.api.HandlebarsApplicationM
     const item = this.actor.items.get(itemId);
     if (!item) return;
     await rollFate(this.actor, item);
+  }
+
+  // 기능 등급 원클릭 조정 (−4 ~ +8 클램프)
+  static async #onStepSkill(event, target) {
+    const itemId = target.closest("[data-item-id]")?.dataset.itemId;
+    const item = this.actor.items.get(itemId);
+    if (!item) return;
+    const delta = parseInt(target.dataset.delta ?? "0", 10);
+    const next  = Math.max(-4, Math.min(8, (item.system.rank ?? 0) + delta));
+    if (next !== item.system.rank) await item.update({ "system.rank": next });
   }
 
   static async #onAdjustFP(event, target) {

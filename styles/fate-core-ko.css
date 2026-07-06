@@ -5346,3 +5346,67 @@ body.ewk-vn-focusing #ewk-scene-bg { filter: brightness(0.55) saturate(0.85); }
 .ewk-sm-foot { margin-top: 9px; display: flex; justify-content: flex-end; border-top: 1px solid var(--border-hairline); padding-top: 6px; }
 .ewk-sm-reset { background: transparent; border: none; color: var(--text-faint); font-size: 11px; cursor: pointer; }
 .ewk-sm-reset:hover { color: var(--accent-crimson-bright); }
+
+/* ════════════════════ 캐릭터 시트 개선 ════════════════════ */
+
+/* 기능 행 — 호버 하이라이트 */
+.fate-skill { transition: background 0.15s ease; border-radius: var(--radius-xs); }
+.fate-skill:hover { background: rgba(201,162,39,.05); }
+
+/* 등급 영역 — 스테퍼 포함 정렬 */
+.fate-skill__rank { display: inline-flex; align-items: center; gap: 3px; }
+
+/* 등급 원클릭 스테퍼 (행 호버 시 표시) */
+.fate-skill__step {
+  width: 16px; height: 16px; padding: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: transparent;
+  border: 1px solid var(--border-hairline);
+  border-radius: 3px;
+  color: var(--text-muted);
+  font-size: 11px; line-height: 1; cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease, color 0.12s ease, border-color 0.12s ease;
+}
+.fate-skill:hover .fate-skill__step { opacity: 1; }
+.fate-skill__step:hover { color: var(--accent-gold); border-color: var(--accent-gold); background: rgba(201,162,39,.1); }
+
+/* 등급 티어 색상 — 피라미드가 한눈에 */
+.fate-skill--high .fate-skill__rank-num { color: var(--accent-gold-bright, #e3c65f); text-shadow: 0 0 8px rgba(201,162,39,.35); }
+.fate-skill--mid  .fate-skill__rank-num { color: var(--text-strong); }
+.fate-skill--low  .fate-skill__rank-num { color: var(--text-faint); }
+
+/* 굴리기 버튼 강조 — 시트의 주 액션 */
+.fate-btn--roll {
+  background: rgba(201,162,39,.12) !important;
+  border: 1px solid rgba(201,162,39,.45) !important;
+  color: var(--accent-gold) !important;
+  font-weight: 700 !important;
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease !important;
+}
+.fate-btn--roll:hover {
+  background: var(--accent-gold) !important;
+  color: #0a0b0f !important;
+  box-shadow: 0 0 10px rgba(201,162,39,.4);
+}
+
+/* 인라인 이름 입력 (기능·스트레스) — 평소엔 텍스트처럼, 호버/포커스 시 입력창 */
+input.fate-skill__name--input,
+input.fate-stress__label--input {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  color: inherit;
+  font: inherit;
+  padding: 1px 5px;
+  min-width: 0;
+  flex: 1;
+}
+input.fate-skill__name--input:hover,
+input.fate-stress__label--input:hover { border-color: var(--border-hairline); }
+input.fate-skill__name--input:focus,
+input.fate-stress__label--input:focus {
+  border-color: var(--accent-gold);
+  background: var(--surface-well);
+  outline: none;
+}

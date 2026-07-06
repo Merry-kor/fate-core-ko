@@ -87,7 +87,7 @@
                 placeholder="면모 내용...">
               <div class="fate-item__actions fate-item__actions--inline">
                 <button class="fate-btn fate-btn--invoke" type="button" data-action="invokeAspect"
-                  title="채팅에 표시">💬</button>
+                  title="면모 발현/역발현 — 운명점을 소모하거나 얻습니다">⚡</button>
                 <button class="fate-btn fate-btn--icon fate-btn--danger" type="button" data-action="deleteItem"
                   title="{{localize 'FATE.Actions.Delete'}}"><i class="fa fa-trash"></i></button>
               </div>
@@ -107,7 +107,9 @@
         {{#each stressTracks as |track|}}
         <div class="fate-stress" data-item-id="{{track.id}}">
           <div class="fate-stress__header">
-            <span class="fate-stress__label">{{track.name}}</span>
+            <input class="fate-stress__label fate-stress__label--input" type="text"
+              data-item-name="true" value="{{track.name}}" placeholder="트랙 이름...">
+
             <div class="fate-item__actions">
               <button class="fate-btn fate-btn--icon" type="button" data-action="editItem"
                 title="{{localize 'FATE.Actions.Edit'}}"><i class="fa fa-cog"></i></button>
@@ -139,7 +141,7 @@
         <ul class="fate-list fate-consequences">
           {{#each consequences as |con|}}
           <li class="fate-list__item fate-consequence" data-item-id="{{con.id}}">
-            <span class="fate-consequence__severity">{{con.system.severity}}</span>
+            <span class="fate-consequence__severity">{{#if con.system.severity}}{{con.system.severity}}{{else}}{{con.name}}{{/if}}</span>
             <input class="fate-consequence__value" type="text"
               data-item-field="system.value"
               value="{{con.system.value}}"
@@ -176,12 +178,16 @@
           </div>
           <ul class="fate-skill-ladder">
             {{#each skills as |skill|}}
-            <li class="fate-skill" data-item-id="{{skill.id}}">
+            <li class="fate-skill fate-skill--{{skill.tier}}" data-item-id="{{skill.id}}">
               <span class="fate-skill__rank">
+                <button class="fate-skill__step" type="button" data-action="stepSkill" data-delta="-1" title="등급 −1">−</button>
                 <span class="fate-skill__rank-num">{{#if (gte skill.system.rank 0)}}+{{/if}}{{skill.system.rank}}</span>
-                <span class="fate-skill__rank-label">{{lookup ../ladder skill.system.rank}}</span>
+                <button class="fate-skill__step" type="button" data-action="stepSkill" data-delta="1" title="등급 +1">+</button>
+                <span class="fate-skill__rank-label">{{skill.ladderLabel}}</span>
               </span>
-              <span class="fate-skill__name">{{skill.name}}</span>
+              <input class="fate-skill__name fate-skill__name--input" type="text"
+                data-item-name="true" value="{{skill.name}}" placeholder="기능 이름...">
+
               <div class="fate-item__actions">
                 <button class="fate-btn fate-btn--roll" type="button" data-action="rollSkill"
                   title="{{localize 'FATE.Actions.Roll'}}">굴리기</button>
