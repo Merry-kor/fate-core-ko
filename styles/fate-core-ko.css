@@ -2195,12 +2195,27 @@
   background-clip: text;
   animation: ewk-wave-bg 2.4s linear infinite;
 }
+/* 글자별 분할 시: transform된 자식에는 부모의 background-clip:text가 적용되지 않아
+   투명 글자가 되므로 → 그라데이션을 끄고 글자별 색상 웨이브로 대체 */
+.ewk-emo--wave[data-ewk-split] {
+  background: none;
+  -webkit-background-clip: initial;
+  background-clip: initial;
+  -webkit-text-fill-color: currentColor;
+  color: var(--text-body);
+  animation: none;
+}
 .ewk-emo--wave .ewk-emo-ch {
   display: inline-block;
-  animation: ewk-ch-bob 1.6s ease-in-out infinite;
-  animation-delay: calc(var(--i, 0) * -0.12s);
+  animation: ewk-ch-bob 1.6s ease-in-out infinite, ewk-ch-hue 2.4s linear infinite;
+  animation-delay: calc(var(--i, 0) * -0.12s), calc(var(--i, 0) * -0.12s);
 }
 @keyframes ewk-ch-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+@keyframes ewk-ch-hue {
+  0%, 100% { color: var(--text-body); }
+  35%      { color: var(--accent-gold-bright, #e3c65f); }
+  60%      { color: #8ecfff; }
+}
 /* 빛남 — 이중 광륜이 천천히 숨쉬듯 */
 .ewk-emo--glow {
   display: inline-block;
