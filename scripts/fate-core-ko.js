@@ -764,6 +764,7 @@ const EWKSidebar = {
   _bulkLoading: false,  // 전체 로그 일괄 로드 중 (VN 박스 등 부작용 억제)
   _currentEmo: "normal",
   _currentExpr: null,   // VN 표정 (액터 플래그 expressions의 이름)
+  _pendingImage: null,  // 붙여넣기로 첨부된 이미지 (압축된 data URL)
   _currentWrap: null,
   _textStyles: { bold: false, italic: false, center: false },
   _messageBuffer: [],   // 사이드바 생성 전 수신된 메시지 임시 보관
@@ -2067,6 +2068,23 @@ const EWKSidebar = {
 
     const send = async () => {
       let content = input?.value?.trim();
+
+      // 붙여넣은 이미지 전송 — 서버 업로드 없이 압축 data URL을 메시지에 내장 (전원 동기화)
+      if (this._pendingImage) {
+        const img = this._pendingImage;
+        const caption = content ?? "";
+        this._pendingImage = null;
+        document.getElementById("ewk-paste-chip")?.remove();
+        input.value = "";
+        EWKTyping._stopLocal();
+        await ChatMessage.create({
+          content: `<div class="ewk-img-msg">${caption ? `<div class="ewk-img-msg-label">${caption.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>` : ""}<img src="${img}" alt=""></div>`,
+          speaker: ChatMessage.getSpeaker(),
+          flags: { "fate-core-ko": { image: true } },
+        });
+        return;
+      }
+
       if (!content) return;
       input.value = "";
       EWKTyping._stopLocal();
@@ -2093,6 +2111,71 @@ const EWKSidebar = {
       if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
     });
     btn?.addEventListener("click", send);
+
+    // 클립보드 이미지 붙여넣기 → 압축 후 첨부 대기 (Enter로 전송)
+    input?.addEventListener("paste", async e => {
+      const item = [...(e.clipboardData?.items ?? [])].find(i => i.type?.startsWith("image/"));
+      if (!item) return;
+      e.preventDefault();
+      const file = item.getAsFile();
+      if (!file) return;
+      const dataUrl = await this._compressImage(file);
+      if (!dataUrl) return;
+      this._pendingImage = dataUrl;
+      this._renderPasteChip();
+      input.focus();
+    });
+  },
+
+  // 클립보드 이미지 압축 — 최대 1280px 리사이즈 + WebP (메시지 DB 비대화 방지)
+  _compressImage(file, maxDim = 1280) {
+    return new Promise(resolve => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        try {
+          const scale = Math.min(1, maxDim / Math.max(img.naturalWidth, img.naturalHeight));
+          const w = Math.max(1, Math.round(img.naturalWidth * scale));
+          const h = Math.max(1, Math.round(img.naturalHeight * scale));
+          const c = document.createElement("canvas");
+          c.width = w; c.height = h;
+          c.getContext("2d").drawImage(img, 0, 0, w, h);
+          let out = c.toDataURL("image/webp", 0.82);
+          if (out.length > 900_000) out = c.toDataURL("image/webp", 0.55);   // 재압축
+          if (out.length > 900_000) {
+            ui.notifications?.warn("이미지가 너무 큽니다 — 압축 후에도 900KB를 초과합니다.");
+            resolve(null); return;
+          }
+          resolve(out);
+        } catch (err) {
+          console.error("fate-core-ko | 이미지 압축 실패:", err);
+          ui.notifications?.warn("이미지 처리에 실패했습니다.");
+          resolve(null);
+        }
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); ui.notifications?.warn("이미지를 읽을 수 없습니다."); resolve(null); };
+      img.src = url;
+    });
+  },
+
+  // 첨부 대기 칩 — 입력창 위에 미리보기 + 취소
+  _renderPasteChip() {
+    document.getElementById("ewk-paste-chip")?.remove();
+    if (!this._pendingImage) return;
+    const form = document.getElementById("ewk-chat-form");
+    if (!form) return;
+    const kb = Math.round(this._pendingImage.length * 0.75 / 1024);   // base64 → 대략 바이트
+    const chip = document.createElement("div");
+    chip.id = "ewk-paste-chip";
+    chip.innerHTML = `<img src="${this._pendingImage}" alt="">
+      <span>이미지 첨부됨 (약 ${kb}KB) — 설명을 입력하거나 바로 Enter</span>
+      <button type="button" title="첨부 취소">✕</button>`;
+    chip.querySelector("button").addEventListener("click", () => {
+      this._pendingImage = null;
+      chip.remove();
+    });
+    form.before(chip);
   },
 
   _wireChatTools() {
@@ -2982,7 +3065,8 @@ body{background:#6b6b6b;padding:24px;font-family:'NotoSerif','Nanum Myeongjo',Ge
       // 이미지 메시지는 파일명으로 기록
       const imgEl = tmp.querySelector(".ewk-img-msg img");
       if (imgEl) {
-        const fn = (imgEl.getAttribute("src") ?? "").split("/").pop() ?? "";
+        const src = imgEl.getAttribute("src") ?? "";
+        const fn  = src.startsWith("data:") ? "붙여넣은 이미지" : (src.split("/").pop() ?? "");
         content = content ? `[이미지: ${fn}] ${content}` : `[이미지: ${fn}]`;
       }
       if (content) lines.push(`[${ts}] ${sender}: ${content}`);
@@ -7562,11 +7646,12 @@ Hooks.on("renderChatMessageHTML", (message, html) => {
     el.classList.add("ewk-chat--narration");
   }
 
-  // 수정/삭제 버튼 (GM 또는 작성자)
+  // 수정/삭제 버튼 (GM 또는 작성자) — 이미지 메시지는 삭제만 (텍스트 수정 시 이미지 소실 방지)
   if (game.user?.isGM || message.isAuthor) {
+    const canEdit = !el.querySelector(".ewk-img-msg");
     const acts = document.createElement("div");
     acts.className = "ewk-msg-acts";
-    acts.innerHTML = `<button class="ewk-mact" data-msg-edit="${message.id}" title="수정">✏</button>
+    acts.innerHTML = `${canEdit ? `<button class="ewk-mact" data-msg-edit="${message.id}" title="수정">✏</button>` : ""}
       <button class="ewk-mact ewk-mact--del" data-msg-del="${message.id}" title="삭제">×</button>`;
     el.appendChild(acts);
   }
