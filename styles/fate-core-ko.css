@@ -5826,3 +5826,13 @@ input.fate-stress__label--input:focus {
 #ewk-scene-bg.ewk-bgf--sepia { filter: sepia(0.7) brightness(0.85) contrast(0.95); }
 #ewk-scene-bg.ewk-bgf--gray  { filter: grayscale(1) brightness(0.9); }
 #ewk-scene-bg.ewk-bgf--dream { filter: blur(3px) saturate(1.3) brightness(1.05); }
+
+/* 판정 요청 — 사용된 기능 등급 태그 */
+.ewk-rc-rank {
+  flex-shrink: 0;
+  font-size: 10px;
+  color: var(--text-muted);
+  border: 1px solid var(--border-hairline);
+  border-radius: 10px;
+  padding: 1px 7px;
+}

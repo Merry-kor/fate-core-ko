@@ -5582,15 +5582,23 @@ const EWKChoice = {
 
 // ─── 판정 요청 — GM 제시 → 플레이어 원클릭 굴림 → 결과 집계 ─────────────────
 const EWKRollCall = {
+  // 이름 정규화 — 공백·대소문자 차이 무시하고 시트 기능과 매칭
+  _norm(s) { return (s ?? "").replace(/\s+/g, "").toLowerCase(); },
+
   async open() {
     if (!game.user?.isGM) return;
-    const SK = EWKQuickstart.SKILLS;
+    // 실제 액터 시트에 존재하는 기능 이름들로 자동완성 구성 (없으면 기본 18종)
+    const names = new Set();
+    for (const a of (game.actors?.contents ?? [])) {
+      for (const it of (a.items ?? [])) if (it.type === "skill" && it.name?.trim()) names.add(it.name.trim());
+    }
+    const SK = names.size ? [...names].sort((a, b) => a.localeCompare(b, "ko")) : EWKQuickstart.SKILLS;
     const res = await foundry.applications.api.DialogV2.wait({
       window: { title: "판정 요청", icon: "fas fa-dice" },
       content: `<div class="fate-roll-dialog">
-        <div class="frd-field"><label>기능</label>
+        <div class="frd-field"><label>기능 <span class="frd-sub">(액터 시트의 기능 목록)</span></label>
           <input list="ewk-rc-skills" name="skill" class="frd-input" placeholder="예: 주의">
-          <datalist id="ewk-rc-skills">${SK.map(s => `<option value="${s}">`).join("")}</datalist></div>
+          <datalist id="ewk-rc-skills">${SK.map(s => `<option value="${s.replace(/"/g, "&quot;")}">`).join("")}</datalist></div>
         <div class="frd-field"><label>난이도 <span class="frd-sub">(비우면 목표 없음)</span></label>
           <input type="number" name="difficulty" class="frd-input" placeholder="예: 2"></div>
         <div class="frd-field"><label>설명 <span class="frd-sub">(선택)</span></label>
@@ -5624,7 +5632,11 @@ const EWKRollCall = {
     const OUT = { SucceedWithStyle: ["멋지게 성공", "style"], Succeed: ["성공", "succeed"], Tie: ["비김", "tie"], Fail: ["실패", "fail"] };
     const rows = Object.values(rc.results ?? {}).map(r => {
       const o = r.outcome ? (OUT[r.outcome] ?? [r.outcome, ""]) : null;
+      const rankTag = r.rank != null
+        ? `<span class="ewk-rc-rank" title="${r.hasSkill === false ? "시트에 기능 없음 — 무기능 +0" : "시트 기능 등급"}">${r.hasSkill === false ? "무기능" : `기능 ${sign(r.rank)}`}</span>`
+        : "";
       return `<div class="ewk-rc-row"><span class="ewk-rc-name">${r.actorName}</span>
+        ${rankTag}
         <b class="ewk-rc-total">${sign(r.total)}</b>
         ${o ? `<span class="ewk-rc-out ewk-rc-out--${o[1]}">${o[0]}</span>` : ""}</div>`;
     }).join("");
@@ -5646,11 +5658,17 @@ const EWKRollCall = {
     const actor = (spkId ? game.actors?.get(spkId) : null) ?? game.user?.character ?? null;
     if (!actor) { ui.notifications?.warn("굴릴 캐릭터가 없습니다 — 무대/출연진에서 발언권을 선택하세요."); return; }
     if (!game.user?.isGM && !actor.isOwner) { ui.notifications?.warn("이 캐릭터의 소유자가 아닙니다."); return; }
-    const skillItem = actor.items?.find(i => i.type === "skill" && i.name === rc.skill)
-      ?? { name: rc.skill, system: { rank: 0 } };   // 기능이 없으면 +0으로
+    // 시트의 기능과 매칭 (공백·대소문자 무시) — 있으면 그 등급으로 굴림
+    const found = actor.items?.find(i => i.type === "skill" && this._norm(i.name) === this._norm(rc.skill));
+    if (!found) ui.notifications?.warn(`${actor.name}의 시트에 "${rc.skill}" 기능이 없어 +0으로 굴립니다.`);
+    const skillItem = found ?? { name: rc.skill, system: { rank: 0 } };
     const out = await EWKRoll.post(actor, skillItem, { difficulty: rc.difficulty, bonus: 0 });
     if (!out) return;
-    const payload = { msgId, userId: game.userId, actorName: actor.name, total: out.c.total, outcome: out.c.outcome };
+    const payload = {
+      msgId, userId: game.userId, actorName: actor.name,
+      total: out.c.total, outcome: out.c.outcome,
+      rank: skillItem.system?.rank ?? 0, hasSkill: !!found,
+    };
     if (game.user?.isGM) this._applyResult(payload);
     else if (game.users?.activeGM) game.socket?.emit("system.fate-core-ko", { type: "rollcallResult", ...payload });
     else ui.notifications?.warn("GM이 접속해 있지 않아 결과 집계가 카드에 반영되지 않습니다.");
@@ -5662,7 +5680,7 @@ const EWKRollCall = {
     const rc = foundry.utils.deepClone(msg?.getFlag("fate-core-ko", "rollcall"));
     if (!rc) return;
     rc.results = rc.results ?? {};
-    rc.results[p.userId] = { actorName: p.actorName, total: p.total, outcome: p.outcome };
+    rc.results[p.userId] = { actorName: p.actorName, total: p.total, outcome: p.outcome, rank: p.rank, hasSkill: p.hasSkill };
     await msg.update({ content: this.html(rc), flags: { "fate-core-ko": { rollcall: rc } } });
   },
 };
