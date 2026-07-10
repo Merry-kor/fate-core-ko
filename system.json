@@ -37,5 +37,15 @@
   "license": "LICENSE.md",
   "readme": "README.md",
   "changelog": "https://github.com/Merry-kor/fate-core-ko/blob/master/CHANGELOG.md",
-  "bugs": "https://github.com/Merry-kor/fate-core-ko/issues"
+  "bugs": "https://github.com/Merry-kor/fate-core-ko/issues",
+  "media": [
+    {
+      "type": "cover",
+      "url": "https://raw.githubusercontent.com/Merry-kor/fate-core-ko/master/assets/ui/cover-main.png"
+    },
+    {
+      "type": "icon",
+      "url": "https://raw.githubusercontent.com/Merry-kor/fate-core-ko/master/assets/ui/logo-256.png"
+    }
+  ]
 }

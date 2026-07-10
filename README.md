@@ -1,5 +1,7 @@
 # 페이트 코어 한국어판 (fate-core-ko)
 
+![cover](assets/ui/cover-main.png)
+
 Foundry VTT v13용 페이트 코어 시스템 — 비주얼노벨 스타일 연출에 특화된
 한국어 TTRPG 시스템입니다.
 

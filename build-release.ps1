@@ -25,9 +25,12 @@ foreach ($item in $include) {
   if (Test-Path "$root\$item") { Copy-Item "$root\$item" "$stage\$item" -Recurse }
 }
 
+# 생성 원본(대용량)은 배포 제외 — 가공본(assets/ui)만 동봉
+Remove-Item "$stage\assets\generated" -Recurse -Force -ErrorAction SilentlyContinue
+
 # ── 디자인 에셋: 런타임이 참조하는 것만 ──────────────────
 $ds = "design\End-War Knight Design System"
-New-Item -ItemType Directory -Path "$stage\$ds\assets\fonts", "$stage\$ds\assets\portraits", "$stage\$ds\assets\scenes", "$stage\$ds\journal" -Force | Out-Null
+New-Item -ItemType Directory -Path "$stage\$ds\assets\fonts", "$stage\$ds\journal" -Force | Out-Null
 
 # 코드가 사용하는 폰트 8종만 (전체 128MB → 필요분만)
 $fonts = @(
@@ -38,10 +41,8 @@ $fonts = @(
 )
 foreach ($f in $fonts) { Copy-Item "$root\$ds\assets\fonts\$f" "$stage\$ds\assets\fonts\" }
 
-# 저널 템플릿 데이터 + 템플릿이 참조하는 샘플 이미지 3장
+# 저널 템플릿 데이터 (샘플 삽화는 assets/ui의 자체 생성본을 참조)
 Copy-Item "$root\$ds\journal\journals-data.js" "$stage\$ds\journal\"
-Copy-Item "$root\$ds\assets\portraits\anya.png" "$stage\$ds\assets\portraits\"
-Copy-Item "$root\$ds\assets\scenes\c2_blackiron.png", "$root\$ds\assets\scenes\cover.png" "$stage\$ds\assets\scenes\"
 
 # ── 압축 및 매니페스트 산출 ──────────────────────────────
 $zip = "$dist\fate-core-ko.zip"

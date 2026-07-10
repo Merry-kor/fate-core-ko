@@ -5,9 +5,9 @@ design/End-War Knight Design System/uploads/
 design/End-War Knight Design System/templates/play-log/
 design/End-War Knight Design System/assets/scenes/*
 design/End-War Knight Design System/assets/portraits/*
-# 저널 템플릿이 참조하는 샘플 3장은 유지
-!design/End-War Knight Design System/assets/scenes/c2_blackiron.png
-!design/End-War Knight Design System/assets/scenes/cover.png
-!design/End-War Knight Design System/assets/portraits/anya.png
 # 릴리스 빌드 산출물
 dist/
+
+# 생성 원본(대용량)은 로컬 보관 — 배포는 assets/ui 가공본만
+assets/generated/*
+!assets/generated/.gitkeep

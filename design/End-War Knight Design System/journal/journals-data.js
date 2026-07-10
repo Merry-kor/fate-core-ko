@@ -65,7 +65,7 @@ window.JOURNALS = [
   <div class="jr jr-dark">
     <div class="jr-npc">
       <div class="jr-npc__portrait">
-        <img src="../assets/portraits/anya.png" alt="안야 슈탈">
+        <img src="systems/fate-core-ko/assets/ui/sample-portrait.png" alt="안야 슈탈">
         <div class="jr-npc__id">
           <div class="jr-eyebrow" style="color:var(--ewk-gold-300);">소위 · 스피어헤드</div>
           <div class="jr-title md" style="margin-top:6px;">안야 슈탈</div>
@@ -109,7 +109,7 @@ window.JOURNALS = [
   html: `
   <div class="jr jr-dark">
     <div class="jr-gaz__hero">
-      <img src="../assets/scenes/c2_blackiron.png" alt="흑철상회">
+      <img src="systems/fate-core-ko/assets/ui/sample-scene.png" alt="흑철상회">
       <div class="jr-gaz__overlay">
         <div class="jr-eyebrow" style="color:var(--ewk-gold-300);">제국 관보 · 지명 사전</div>
         <h1 class="jr-title xl" style="margin-top:8px;">흑철상회</h1>
@@ -312,7 +312,7 @@ window.JOURNALS = [
   html: `
   <div class="jr jr-dark">
     <div class="jr-cover__hero">
-      <img src="../assets/scenes/cover.png" alt="종전의 기사">
+      <img src="systems/fate-core-ko/assets/ui/sample-cover.png" alt="종전의 기사">
     </div>
 
     <div class="jr-toc">

@@ -5526,14 +5526,16 @@ input.fate-stress__label--input:focus {
   text-shadow: 0 2px 30px rgba(0,0,0,.85);
 }
 .ewk-tc-rule {
-  width: 0; height: 2px;
-  background: var(--accent-gold);
-  margin: 16px auto 0;
-  box-shadow: 0 0 12px rgba(201,162,39,.6);
-  animation: ewk-tc-rule 1.4s 0.3s cubic-bezier(.22,1,.36,1) forwards;
+  width: 340px; height: 40px;
+  background: url("../assets/ui/divider-gold.png") center / contain no-repeat;
+  margin: 10px auto 0;
+  opacity: 0;
+  transform: scaleX(0.25);
+  filter: drop-shadow(0 0 8px rgba(201,162,39,.45));
+  animation: ewk-tc-rule 1.3s 0.3s cubic-bezier(.22,1,.36,1) forwards;
 }
 @keyframes ewk-tc-rise { from { opacity: 0; transform: translateY(24px); } }
-@keyframes ewk-tc-rule { to { width: 180px; } }
+@keyframes ewk-tc-rule { to { opacity: 1; transform: scaleX(1); } }
 
 /* ── 세션 구분선 + 요약 (채팅) ── */
 .ewk-session-msg {
@@ -5835,4 +5837,38 @@ input.fate-stress__label--input:focus {
   border: 1px solid var(--border-hairline);
   border-radius: 10px;
   padding: 1px 7px;
+}
+
+/* ════════════════════ 생성 디자인 에셋 통합 ════════════════════ */
+
+/* 인라인 UI 아이콘 (금장 라인 아이콘 세트) */
+.ewk-ico {
+  width: 15px; height: 15px;
+  display: inline-block;
+  vertical-align: -2px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 3px rgba(201,162,39,.25));
+}
+
+/* 사이드바·저널 뷰어에 다크 스틸 텍스처 (은은하게) */
+#ewk-sidebar {
+  background-image: url("../assets/ui/texture-dark.png");
+  background-size: 512px;
+  background-blend-mode: soft-light;
+}
+.jw {
+  background-image: url("../assets/ui/texture-dark.png");
+  background-size: 512px;
+  background-blend-mode: soft-light;
+}
+
+/* 무대 빈 상태 — 🎭 이모지 대신 무대 아이콘 */
+.ewk-hud__empty::before {
+  content: "";
+  width: 18px; height: 18px;
+  display: inline-block;
+  vertical-align: -4px;
+  margin-right: 8px;
+  background: url("../assets/ui/icons/stage.png") center / contain no-repeat;
+  opacity: 0.9;
 }

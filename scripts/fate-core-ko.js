@@ -386,7 +386,16 @@ Hooks.on("renderTokenHUD", (hud, html, _data) => {
   });
 });
 
-const getTokenImg = actor => actor?.getFlag?.("fate-core-ko", "tokenImg") || actor?.img || "";
+// 시스템 UI 아이콘 경로 + 인라인 아이콘 헬퍼
+const EWK_UI = "systems/fate-core-ko/assets/ui";
+const ewkIco = (name, cls = "") => `<img class="ewk-ico${cls ? " " + cls : ""}" src="${EWK_UI}/icons/${name}.png" alt="">`;
+
+const getTokenImg = actor => {
+  const img = actor?.getFlag?.("fate-core-ko", "tokenImg") || actor?.img || "";
+  // 기본(mystery-man) 이미지는 시스템 실루엣으로 대체
+  if (!img || img === "icons/svg/mystery-man.svg") return `${EWK_UI}/ph-hooded.png`;
+  return img;
+};
 
 // 파동·반짝 효과의 글자별 애니메이션 — 텍스트를 글자 span으로 분할 (표시 전용, 저장 내용 불변)
 function ewkEmoPerChar(root) {
@@ -3150,7 +3159,10 @@ body{background:#6b6b6b;padding:24px;font-family:'NotoSerif','Nanum Myeongjo',Ge
 /* ── 화면 미리보기 카드 ── */
 .page{
   width:148mm;min-height:210mm;
-  background:#f6efdd;margin:0 auto 28px;
+  background:#f6efdd url('${absUrl("systems/fate-core-ko/assets/ui/texture-parchment.png")}') repeat;
+  background-size:420px;
+  background-blend-mode:multiply;
+  margin:0 auto 28px;
   padding:16mm 18mm 14mm;
   color:#2a2317;box-shadow:0 6px 28px rgba(0,0,0,.4);
   font-size:10pt;line-height:1.9;
@@ -3702,7 +3714,7 @@ const EWKJournalViewer = {
 <div class="jw fate-core-ko">
   <div class="jw-title">
     <div class="jw-title__txt">
-      <span class="jw-title__name">전역 일지</span>
+      <span class="jw-title__name">${ewkIco("journal")} 전역 일지</span>
       <span class="jw-title__sub">END-WAR KNIGHT · FIELD RECORDS</span>
     </div>
     <div class="jw-title__spacer"></div>
@@ -4294,6 +4306,7 @@ const EWKGuide = {
     const b = t => `<strong style="color:var(--accent-gold)">${t}</strong>`;
 
     return `<div class="jr jr-dark jr-pad">
+      <img src="${EWK_UI}/logo-256.png" alt="" style="width:88px;display:block;margin:0 auto 10px;filter:drop-shadow(0 2px 10px rgba(0,0,0,.5))">
       <div class="jr-eyebrow">END-WAR KNIGHT · FATE CORE</div>
       <div class="jr-title xl" style="margin-top:8px">시스템 사용 안내</div>
       <div class="jr-subtitle">화면 구성과 기능을 한눈에 — 플레이어·GM 공용 안내서</div>
@@ -5441,7 +5454,7 @@ const EWKCompel = {
          </div>`
       : `<div class="ewk-compel-result ewk-compel-result--${c.status}">${c.status === "accepted" ? "✓ 수락 — 운명점 +1" : "✕ 거절 — 운명점 −1"}</div>`;
     return `<div class="ewk-compel-card">
-      <div class="ewk-compel-hdr">⚖ 강제 제안 — ${c.actorName}</div>
+      <div class="ewk-compel-hdr">${ewkIco("compel")} 강제 제안 — ${c.actorName}</div>
       ${c.aspect ? `<div class="ewk-compel-aspect">"${c.aspect}"</div>` : ""}
       <div class="ewk-compel-reason">${c.reason}</div>
       ${body}
@@ -5641,7 +5654,7 @@ const EWKRollCall = {
         ${o ? `<span class="ewk-rc-out ewk-rc-out--${o[1]}">${o[0]}</span>` : ""}</div>`;
     }).join("");
     return `<div class="ewk-rc-card">
-      <div class="ewk-rc-hdr">🎲 판정 요청 — <b>${rc.skill}</b>${rc.difficulty != null ? ` <span class="ewk-rc-diff">난이도 ${sign(rc.difficulty)}</span>` : ""}</div>
+      <div class="ewk-rc-hdr">${ewkIco("dice")} 판정 요청 — <b>${rc.skill}</b>${rc.difficulty != null ? ` <span class="ewk-rc-diff">난이도 ${sign(rc.difficulty)}</span>` : ""}</div>
       ${rc.note ? `<div class="ewk-rc-note">${rc.note}</div>` : ""}
       <button type="button" class="ewk-rc-roll" data-rollcall>🎲 이 판정 굴리기</button>
       ${rows ? `<div class="ewk-rc-results">${rows}</div>` : ""}
@@ -5843,7 +5856,7 @@ const EWKTurns = {
     el.style.top  = Math.max(0, Math.min(pos.y ?? 460, (window.innerHeight || 720) - 100)) + "px";
     el.innerHTML = `
       <div id="ewk-turns-hdr">
-        <span class="ewk-aw-title">⚔ 턴 순서</span>
+        <span class="ewk-aw-title">${ewkIco("turn")} 턴 순서</span>
         <span class="ewk-turns-round" id="ewk-turns-round"></span>
         <button class="ewk-aw-btn" id="ewk-turns-min" title="최소화">−</button>
       </div>
@@ -6022,7 +6035,7 @@ const EWKSoundboard = {
     el.style.top  = Math.max(0, Math.min(pos.y ?? 460, (window.innerHeight || 720) - 100)) + "px";
     el.innerHTML = `
       <div id="ewk-sb-hdr">
-        <span class="ewk-aw-title">🔊 사운드보드</span>
+        <span class="ewk-aw-title">${ewkIco("sound")} 사운드보드</span>
         <button class="ewk-aw-btn" id="ewk-sb-min" title="최소화">−</button>
       </div>
       <div id="ewk-sb-body"></div>
@@ -6589,7 +6602,7 @@ const EWKFlowchart = {
     this._el.className = "fate-core-ko ewk-fc--open";
     this._el.innerHTML = `
       <div class="ewk-fc__bar" id="ewk-fc-bar">
-        <span class="ewk-fc__title">대사흐름도</span>
+        <span class="ewk-fc__title">${ewkIco("flow")} 대사흐름도</span>
         <div class="ewk-fc__bar-acts">
           <button class="ewk-fc__util" id="ewk-fc-stage-clear" title="무대 전원 퇴장">전원 퇴장</button>
           <button class="ewk-fc__util" id="ewk-fc-vn-clear" title="VN 박스 닫기">VN 닫기</button>
