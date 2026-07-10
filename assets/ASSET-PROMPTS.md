@@ -132,3 +132,47 @@ No facial features visible, elegant and somber, no text.
 
 - [ ] 1차: cover-main, logo-emblem, icon 8종
 - [ ] 2차: divider, texture 2종, ph 4종, sample 3종
+
+---
+
+## 🥉 3차 — 아이콘 확장 팩 (이모지 완전 교체)
+
+**공통**: 1024×1024 · **투명 배경** · 1차 아이콘과 **같은 대화에서** 생성하면 스타일이 가장 잘 맞습니다.
+(새 대화라면 기존 아이콘 하나를 첨부하고 "이 스타일과 동일하게"라고 덧붙이세요)
+
+아이콘 공통 프롬프트 뼈대 (1차와 동일):
+```
+A single minimalist game UI icon: [SUBJECT]. Engraved line-art style, uniform stroke
+weight, muted gold #c9a227 lines with faint inner glow, on a fully transparent
+background. Centered, fits a circle, flat (no 3D), elegant dark-fantasy filigree
+detail kept minimal. No text, PNG with transparency.
+```
+
+### 핵심 10종 (채팅 헤더 · 위젯 독 · 도구줄)
+
+| 파일명 | 용도 | [SUBJECT] |
+|---|---|---|
+| `icon-oppose.png` | 🤺 대결 | two crossed fencing sabers with a small clash spark at the crossing point |
+| `icon-choice.png` | ❓ 선택지 | an old wooden signpost with two arrow signs pointing opposite directions |
+| `icon-history.png` | 📜 지난글 | an unrolled scroll with a small counter-clockwise rewind arrow above it |
+| `icon-aspect.png` | 🏷 현재 면모 | an ornate hanging label tag with a short ribbon and a small gem |
+| `icon-stack.png` | ⏱ 스택 면모 | a circular progress dial divided into six segments, three of them filled |
+| `icon-cast.png` | 👥 출연진 | two overlapping elegant bust silhouettes, one slightly behind the other |
+| `icon-expr.png` | 😊 표정 | a single smiling half theater-mask held by a thin ribbon |
+| `icon-style.png` | ✨ 팔레트 | a writing quill crossed with a slim paintbrush, one four-pointed sparkle above |
+| `icon-search.png` | 🔍 로그 검색 | a magnifying glass hovering over a partially unrolled scroll |
+| `icon-bookmark.png` | ⭐ 북마크 | a five-pointed star with a ribbon bookmark hanging from its lower point |
+
+### 선택 5종 (⋯ 메뉴 마감용 — 여유 있을 때)
+
+| 파일명 | 용도 | [SUBJECT] |
+|---|---|---|
+| `icon-gallery.png` | 🖼 갤러리 | an ornate picture frame containing a tiny mountain landscape |
+| `icon-download.png` | ⬇ 다운로드 | a downward arrow sinking into an open treasure chest |
+| `icon-print.png` | 📄 인쇄 | a single sheet of parchment with a wax seal at its corner |
+| `icon-break.png` | ⏳ 휴식 | an hourglass with sand mid-flow, small filigree at the frame |
+| `icon-trash.png` | 🗑 삭제 | a small brazier with a burning piece of paper |
+
+### 진행 상태
+- [ ] 3차 핵심 10종
+- [ ] 3차 선택 5종
