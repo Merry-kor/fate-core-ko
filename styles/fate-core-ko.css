@@ -5846,11 +5846,11 @@ input.fate-stress__label--input:focus {
 
 /* 인라인 UI 아이콘 (금장 라인 아이콘 세트) */
 .ewk-ico {
-  width: 15px; height: 15px;
+  width: 18px; height: 18px;
   display: inline-block;
-  vertical-align: -2px;
+  vertical-align: -4px;
   object-fit: contain;
-  filter: drop-shadow(0 0 3px rgba(201,162,39,.25));
+  filter: drop-shadow(0 0 3px rgba(201,162,39,.3));
 }
 
 /* 사이드바·저널 뷰어에 다크 스틸 텍스처 (은은하게) */
@@ -5878,12 +5878,23 @@ input.fate-stress__label--input:focus {
 
 /* ── 위젯 독·메뉴 아이콘 ── */
 .ewk-dock-ico {
-  width: 16px; height: 16px;
+  width: 20px; height: 20px;
   display: block;
   object-fit: contain;
 }
-.ewk-hm-item .ewk-ico { width: 14px; height: 14px; }
-.ewk-hdr-btn .ewk-ico { width: 13px; height: 13px; vertical-align: -2px; }
+.ewk-hm-item .ewk-ico { width: 18px; height: 18px; vertical-align: -4px; }
+.ewk-hdr-btn .ewk-ico { width: 16px; height: 16px; vertical-align: -4px; }
+
+/* 작은 라벨 타이틀(11~14px 폰트) 옆 아이콘 — 18px 기본값은 비율 과다라 축소 */
+.ewk-aw-title .ewk-ico,
+.ewk-qdock-title .ewk-ico,
+.ewk-fc__title .ewk-ico,
+.ewk-compel-hdr .ewk-ico,
+.ewk-choice-hdr .ewk-ico,
+.ewk-rc-hdr .ewk-ico {
+  width: 16px; height: 16px;
+  vertical-align: -3px;
+}
 
 /* ════════════════════ 비주얼 2차 (스플래시·워터마크·텍스처·글로우·브랜드) ════════════════════ */
 
