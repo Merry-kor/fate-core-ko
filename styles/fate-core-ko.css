@@ -5872,3 +5872,12 @@ input.fate-stress__label--input:focus {
   background: url("../assets/ui/icons/stage.png") center / contain no-repeat;
   opacity: 0.9;
 }
+
+/* ── 위젯 독·메뉴 아이콘 ── */
+.ewk-dock-ico {
+  width: 16px; height: 16px;
+  display: block;
+  object-fit: contain;
+}
+.ewk-hm-item .ewk-ico { width: 14px; height: 14px; }
+.ewk-hdr-btn .ewk-ico { width: 13px; height: 13px; vertical-align: -2px; }

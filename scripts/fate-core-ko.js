@@ -465,11 +465,11 @@ const ewkUserVis = id => localStorage.getItem(ewkVisKey(id)) !== "0";
 // ─── 위젯 독 — 좌하단 런처, 위젯별 표시/숨김 토글 ────────────────────────────
 const EWKDock = {
   ITEMS: [
-    { id: "ewk-aw",       icon: "🏷", label: "현재 면모" },
-    { id: "ewk-clocks",   icon: "⏱", label: "스택 상황 면모" },
-    { id: "ewk-qdock",    icon: "👥", label: "출연진" },
-    { id: "ewk-turns",    icon: "⚔", label: "턴 순서" },
-    { id: "ewk-sndboard", icon: "🔊", label: "사운드보드", gmOnly: true },
+    { id: "ewk-aw",       icon: "aspect", label: "현재 면모" },
+    { id: "ewk-clocks",   icon: "stack", label: "스택 상황 면모" },
+    { id: "ewk-qdock",    icon: "cast", label: "출연진" },
+    { id: "ewk-turns",    icon: "turn", label: "턴 순서" },
+    { id: "ewk-sndboard", icon: "sound", label: "사운드보드", gmOnly: true },
   ],
 
   build() {
@@ -478,7 +478,7 @@ const EWKDock = {
     el.id = "ewk-dock";
     el.className = "fate-core-ko";
     el.innerHTML = this.ITEMS.filter(i => !i.gmOnly || game.user?.isGM).map(i =>
-      `<button type="button" class="ewk-dock-btn${ewkUserVis(i.id) ? " on" : ""}" data-dock="${i.id}" title="${i.label} 표시/숨김">${i.icon}</button>`
+      `<button type="button" class="ewk-dock-btn${ewkUserVis(i.id) ? " on" : ""}" data-dock="${i.id}" title="${i.label} 표시/숨김"><img class="ewk-dock-ico" src="${EWK_UI}/icons/${i.icon}.png" alt=""></button>`
     ).join("");
     document.getElementById("interface")?.appendChild(el);
     el.querySelectorAll("[data-dock]").forEach(b => b.addEventListener("click", () => {
@@ -962,11 +962,11 @@ const EWKSidebar = {
         <span id="ewk-scene-badge" class="ewk-scene-badge">${sceneName}</span>
         <div class="ewk-hdr-acts">
           <div id="ewk-wpresets">${widthBtns}</div>
-          ${game.user?.isGM ? `<button class="ewk-hdr-btn ewk-hdr-btn--fc" id="ewk-fc-btn" title="대사흐름도">📋<span class="ewk-hdr-lbl"> 흐름도</span></button>` : ""}
-          <button class="ewk-hdr-btn" id="ewk-oppose-btn" title="두 인물의 대결 굴림">🤺<span class="ewk-hdr-lbl"> 대결</span></button>
-          ${game.user?.isGM ? `<button class="ewk-hdr-btn" id="ewk-choice-btn" title="선택지 투표 제시">❓<span class="ewk-hdr-lbl"> 선택지</span></button>` : ""}
-          ${game.user?.isGM ? `<button class="ewk-hdr-btn" id="ewk-rollcall-btn" title="판정 요청 — 전원 원클릭 굴림">🎲<span class="ewk-hdr-lbl"> 판정</span></button>` : ""}
-          <button class="ewk-hdr-btn" id="ewk-scroll-lock" title="지난 이야기 확인 (새 채팅에도 자동으로 안 내려감)">📜<span class="ewk-hdr-lbl"> 지난글</span></button>
+          ${game.user?.isGM ? `<button class="ewk-hdr-btn ewk-hdr-btn--fc" id="ewk-fc-btn" title="대사흐름도">${ewkIco("flow")}<span class="ewk-hdr-lbl"> 흐름도</span></button>` : ""}
+          <button class="ewk-hdr-btn" id="ewk-oppose-btn" title="두 인물의 대결 굴림">${ewkIco("oppose")}<span class="ewk-hdr-lbl"> 대결</span></button>
+          ${game.user?.isGM ? `<button class="ewk-hdr-btn" id="ewk-choice-btn" title="선택지 투표 제시">${ewkIco("choice")}<span class="ewk-hdr-lbl"> 선택지</span></button>` : ""}
+          ${game.user?.isGM ? `<button class="ewk-hdr-btn" id="ewk-rollcall-btn" title="판정 요청 — 전원 원클릭 굴림">${ewkIco("dice")}<span class="ewk-hdr-lbl"> 판정</span></button>` : ""}
+          <button class="ewk-hdr-btn" id="ewk-scroll-lock" title="지난 이야기 확인 (새 채팅에도 자동으로 안 내려감)">${ewkIco("history")}<span class="ewk-hdr-lbl"> 지난글</span></button>
           <button class="ewk-hdr-btn" id="ewk-more-menu-btn" title="기록 도구 (북마크·갤러리·다운로드·인쇄·삭제)">⋯</button>
         </div>
       </div>
@@ -988,8 +988,8 @@ const EWKSidebar = {
         <button class="ewk-emo-btn" data-emo="wave">파동</button>
         <button class="ewk-emo-btn" data-emo="glow">빛남</button>
         <div class="ewk-tool-sep"></div>
-        <button class="ewk-fmt-btn" id="ewk-expr-btn" type="button" title="VN 표정 선택 (발언권 액터)">😊</button>
-        <button class="ewk-fmt-btn" id="ewk-style-btn" type="button" title="스타일 팔레트 — 감싸기·서식·효과·전송 모드 전체">✨</button>
+        <button class="ewk-fmt-btn" id="ewk-expr-btn" type="button" title="VN 표정 선택 (발언권 액터)">${ewkIco("expr")}</button>
+        <button class="ewk-fmt-btn" id="ewk-style-btn" type="button" title="스타일 팔레트 — 감싸기·서식·효과·전송 모드 전체">${ewkIco("style")}</button>
       </div>
       <div id="ewk-chat-form">
         <textarea id="ewk-chat-input" rows="2" placeholder="대사나 행동 입력… (Enter)"></textarea>
@@ -2536,13 +2536,13 @@ const EWKSidebar = {
     const item = (act, icon, label, danger = false) =>
       `<button type="button" class="ewk-hm-item${danger ? " ewk-hm-item--danger" : ""}" data-hm="${act}">${icon}<span>${label}</span></button>`;
     menu.innerHTML = `
-      ${item("search", "🔍", "로그 검색")}
-      ${item("bm", "⭐", "북마크 모아보기")}
-      ${item("gal", "🖼", "이미지 갤러리")}
-      ${item("dl", "⬇", "로그 다운로드 (.txt)")}
-      ${item("print", "📄", "PDF 인쇄")}
-      ${game.user?.isGM ? item("break", "⏳", "휴식 타이머") : ""}
-      ${game.user?.isGM ? item("clear", "🗑", "채팅 전체 삭제", true) : ""}`;
+      ${item("search", ewkIco("search"), "로그 검색")}
+      ${item("bm", ewkIco("bookmark"), "북마크 모아보기")}
+      ${item("gal", ewkIco("gallery"), "이미지 갤러리")}
+      ${item("dl", ewkIco("download"), "로그 다운로드 (.txt)")}
+      ${item("print", ewkIco("print"), "PDF 인쇄")}
+      ${game.user?.isGM ? item("break", ewkIco("break"), "휴식 타이머") : ""}
+      ${game.user?.isGM ? item("clear", ewkIco("trash"), "채팅 전체 삭제", true) : ""}`;
     document.getElementById("ewk-panel-chat")?.appendChild(menu);
     menu.querySelectorAll("[data-hm]").forEach(b => b.addEventListener("click", () => {
       menu.remove();
@@ -4408,7 +4408,7 @@ const EWKAspectWidget = {
     if (pos.w) el.style.width = pos.w + "px";
     el.innerHTML = `
       <div id="ewk-aw-hdr">
-        <span class="ewk-aw-title">현재 면모</span>
+        <span class="ewk-aw-title">${ewkIco("aspect")} 현재 면모</span>
         <button class="ewk-aw-btn" id="ewk-aw-min" title="최소화">−</button>
       </div>
       <div id="ewk-aw-body"></div>
@@ -4972,7 +4972,7 @@ const EWKQuickDock = {
     // 초기 구조 설정
     el.innerHTML = `
 <div id="ewk-qdock-hdr">
-  <span class="ewk-qdock-title">출연진</span>
+  <span class="ewk-qdock-title">${ewkIco("cast")} 출연진</span>
   <button class="ewk-qdock-hdr-btn" id="ewk-qdock-min" title="최소화">−</button>
 </div>
 <div id="ewk-qdock-body"></div>`;
@@ -5175,7 +5175,7 @@ const EWKClocks = {
     // 현재 면모 위젯과 동일한 구조·클래스
     el.innerHTML = `
       <div id="ewk-clocks-hdr">
-        <span class="ewk-aw-title">스택 상황 면모</span>
+        <span class="ewk-aw-title">${ewkIco("stack")} 스택 상황 면모</span>
         <button class="ewk-aw-btn" id="ewk-clocks-min" title="최소화">−</button>
       </div>
       <div id="ewk-clocks-body"></div>
@@ -5536,7 +5536,7 @@ const EWKChoice = {
     const who = i => Object.entries(c.votes ?? {}).filter(([, v]) => v === i)
       .map(([u]) => game.users?.get(u)?.name ?? "?").join(", ");
     return `<div class="ewk-choice-card">
-      <div class="ewk-choice-hdr">❓ 선택지${c.q ? ` — ${c.q}` : ""}</div>
+      <div class="ewk-choice-hdr">${ewkIco("choice")} 선택지${c.q ? ` — ${c.q}` : ""}</div>
       <div class="ewk-choice-opts">
         ${c.options.map((o, i) => `
         <button type="button" class="ewk-choice-opt${winner === i ? " win" : ""}" data-choice-vote="${i}" ${c.status === "closed" ? "disabled" : ""}>
@@ -5706,7 +5706,7 @@ const EWKLogSearch = {
     el.id = "ewk-search-view";
     el.className = "ewk-confirm-overlay fate-core-ko";
     el.innerHTML = `<div class="ewk-confirm ewk-bm-panel">
-      <div class="ewk-confirm__title">🔍 로그 검색</div>
+      <div class="ewk-confirm__title">${ewkIco("search")} 로그 검색</div>
       <input type="text" class="ewk-prompt-input" id="ewk-ls-q" placeholder="검색어 (2자 이상)…">
       <div class="ewk-bm-list" id="ewk-ls-res"><div class="ewk-aw-empty">검색어를 입력하세요.</div></div>
       <div class="ewk-confirm__btns"><button class="jwe-btn jwe-btn--save" data-ls-close>닫기</button></div>
@@ -6189,7 +6189,7 @@ const EWKBookmarks = {
     el.id = "ewk-bm-view";
     el.className = "ewk-confirm-overlay fate-core-ko";
     el.innerHTML = `<div class="ewk-confirm ewk-bm-panel">
-      <div class="ewk-confirm__title">⭐ 북마크한 메시지 (${items.length})</div>
+      <div class="ewk-confirm__title">${ewkIco("bookmark")} 북마크한 메시지 (${items.length})</div>
       <div class="ewk-bm-list">${items.length ? items.map(m => {
         const tmp = document.createElement("div"); tmp.innerHTML = m.content ?? "";
         const text = (tmp.textContent ?? "").trim().slice(0, 200);
@@ -6235,7 +6235,7 @@ const EWKGallery = {
     el.id = "ewk-gallery";
     el.className = "ewk-confirm-overlay fate-core-ko";
     el.innerHTML = `<div class="ewk-confirm ewk-gal-panel">
-      <div class="ewk-confirm__title">🖼 이미지 갤러리 (${imgs.length})</div>
+      <div class="ewk-confirm__title">${ewkIco("gallery")} 이미지 갤러리 (${imgs.length})</div>
       <div class="ewk-gal-grid">${imgs.length ? imgs.map((x, i) => `
         <div class="ewk-gal-cell" data-gal="${i}">
           <img src="${x.src}" loading="lazy" alt="">
@@ -8159,7 +8159,7 @@ const EWKOppose = {
         ${s.skill ? `<div class="fate-opp-skill">${s.skill}</div>` : ""}
       </div>`;
     const content = `<div class="fate-roll-card fate-oppose-card">
-      <div class="fate-roll-card__header"><span class="fate-roll-card__actor">🤺 대결 판정</span></div>
+      <div class="fate-roll-card__header"><span class="fate-roll-card__actor">${ewkIco("oppose")} 대결 판정</span></div>
       <div class="fate-opp-grid">
         ${side(s1, w1)}
         <div class="fate-opp-vs"><div class="fate-opp-verdict">${verdict}</div><div class="fate-opp-margin">${marginTxt}</div></div>
