@@ -529,6 +529,10 @@ const FateVNBox = {
       <button id="fate-vn-close" title="닫기">✕</button>
       <div id="fate-vn-stage"></div>
       <div id="fate-vn-textbox">
+        <img class="fate-vn-corner fate-vn-corner--tl" src="${EWK_UI}/frame-corner.png" alt="">
+        <img class="fate-vn-corner fate-vn-corner--tr" src="${EWK_UI}/frame-corner.png" alt="">
+        <img class="fate-vn-corner fate-vn-corner--bl" src="${EWK_UI}/frame-corner.png" alt="">
+        <img class="fate-vn-corner fate-vn-corner--br" src="${EWK_UI}/frame-corner.png" alt="">
         <div id="fate-vn-name"></div>
         <div id="fate-vn-text"></div>
       </div>`;
@@ -4804,7 +4808,7 @@ const FateStageBar = {
 </div>`;
     }).join("");
 
-    this._el.innerHTML = `<div class="ewk-hud__inner">${
+    this._el.innerHTML = `<div class="ewk-hud__curtain ewk-hud__curtain--l"></div><div class="ewk-hud__curtain ewk-hud__curtain--r"></div><div class="ewk-hud__inner">${
       onStage.length
         ? cardsHtml
         : `<div class="ewk-hud__empty">출연진 없음 — 출연진 위젯이나 액터 패널에서 드래그</div>`
@@ -6002,28 +6006,6 @@ const EWKTurns = {
     const cur = t.active ? (t.list ?? [])[t.idx ?? 0] : null;
     document.querySelectorAll(".ewk-hud__card").forEach(c =>
       c.classList.toggle("ewk-hud__card--turn", !!cur && c.dataset.actorId === cur));
-  },
-};
-
-// ─── 접속 스플래시 — 월드 입장 시 커버+엠블럼 인트로 (연출 토글 존중) ────────
-const EWKSplash = {
-  show() {
-    if (!EWKConfig.fx("screen")) return;
-    if (document.getElementById("ewk-splash")) return;
-    const el = document.createElement("div");
-    el.id = "ewk-splash";
-    el.className = "fate-core-ko";
-    el.innerHTML = `
-      <div class="ewk-splash-bg" style="background-image:url('${EWK_UI}/cover-main.png')"></div>
-      <div class="ewk-splash-inner">
-        <img class="ewk-splash-logo" src="${EWK_UI}/logo-256.png" alt="">
-        <div class="ewk-splash-title">페이트 코어</div>
-        <div class="ewk-splash-sub">END-WAR KNIGHT EDITION</div>
-      </div>`;
-    document.body.appendChild(el);
-    el.addEventListener("click", () => el.remove());   // 클릭으로 즉시 스킵
-    setTimeout(() => el.classList.add("out"), 2300);
-    setTimeout(() => el.remove(), 3200);
   },
 };
 
@@ -8616,7 +8598,6 @@ Hooks.once("ready", () => {
   // 각 초기화를 격리 — 하나가 실패해도 나머지(특히 위젯 빌드)는 계속 실행
   const safe = (label, fn) => { try { fn(); } catch (e) { console.error(`fate-core-ko | ${label} 실패:`, e); } };
 
-  safe("EWKSplash.show",    () => EWKSplash.show());   // 입장 인트로 (클릭 스킵)
   // 우리 커스텀 사이드바 빌드 (FVTT #sidebar는 CSS에서 숨김)
   safe("EWKSidebar.build",  () => EWKSidebar.build());
   safe("EWKTyping.init",    () => EWKTyping.init());
