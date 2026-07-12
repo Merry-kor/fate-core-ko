@@ -2656,6 +2656,14 @@ const EWKSidebar = {
 
     panel.innerHTML = `
 <div class="ewk-panel-scroll ewk-settings">
+  <div class="ewk-set-brand">
+    <img src="${EWK_UI}/logo-256.png" alt="">
+    <div class="ewk-set-brand__txt">
+      <b>페이트 코어 한국어판</b>
+      <span>END-WAR KNIGHT · v${game.system?.version ?? ""}</span>
+    </div>
+  </div>
+
   <section class="ewk-set-sec">
     <h3 class="ewk-set-h">🔊 음악 볼륨</h3>
     <p class="ewk-set-desc" style="margin:0 0 8px">이 기기에서 들리는 음악 볼륨입니다.</p>
@@ -5997,6 +6005,28 @@ const EWKTurns = {
   },
 };
 
+// ─── 접속 스플래시 — 월드 입장 시 커버+엠블럼 인트로 (연출 토글 존중) ────────
+const EWKSplash = {
+  show() {
+    if (!EWKConfig.fx("screen")) return;
+    if (document.getElementById("ewk-splash")) return;
+    const el = document.createElement("div");
+    el.id = "ewk-splash";
+    el.className = "fate-core-ko";
+    el.innerHTML = `
+      <div class="ewk-splash-bg" style="background-image:url('${EWK_UI}/cover-main.png')"></div>
+      <div class="ewk-splash-inner">
+        <img class="ewk-splash-logo" src="${EWK_UI}/logo-256.png" alt="">
+        <div class="ewk-splash-title">페이트 코어</div>
+        <div class="ewk-splash-sub">END-WAR KNIGHT EDITION</div>
+      </div>`;
+    document.body.appendChild(el);
+    el.addEventListener("click", () => el.remove());   // 클릭으로 즉시 스킵
+    setTimeout(() => el.classList.add("out"), 2300);
+    setTimeout(() => el.remove(), 3200);
+  },
+};
+
 // ─── 장면 타이틀 카드 — 시네마틱 챕터 연출 ──────────────────────────────────
 const EWKTitleCard = {
   show(title, sub = "") {
@@ -8586,6 +8616,7 @@ Hooks.once("ready", () => {
   // 각 초기화를 격리 — 하나가 실패해도 나머지(특히 위젯 빌드)는 계속 실행
   const safe = (label, fn) => { try { fn(); } catch (e) { console.error(`fate-core-ko | ${label} 실패:`, e); } };
 
+  safe("EWKSplash.show",    () => EWKSplash.show());   // 입장 인트로 (클릭 스킵)
   // 우리 커스텀 사이드바 빌드 (FVTT #sidebar는 CSS에서 숨김)
   safe("EWKSidebar.build",  () => EWKSidebar.build());
   safe("EWKTyping.init",    () => EWKTyping.init());

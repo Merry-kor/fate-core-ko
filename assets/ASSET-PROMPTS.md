@@ -176,3 +176,53 @@ detail kept minimal. No text, PNG with transparency.
 ### 진행 상태
 - [ ] 3차 핵심 10종
 - [ ] 3차 선택 5종
+
+---
+
+## 🏅 4차 — 프레임·배너·커튼 (비주얼 마감)
+
+**저장 위치·사용법은 동일합니다.**
+
+### 21. VN 대사창 코너 장식
+**파일명**: `frame-corner.png` · 1024×1024 · **투명 배경** (좌상단 코너 1개만 — 나머지는 회전 재사용)
+
+```
+A single ornamental corner decoration for a dialogue box frame, positioned as a
+top-left corner: elegant engraved gold filigree forming an L-shape along the top and
+left edges, thin refined lines with one small leaf flourish curling inward, muted
+gold #c9a227 with faint inner glow. The ornament occupies only the top-left quadrant,
+the rest fully transparent. Flat engraving style, no text, PNG with transparency.
+```
+
+### 22. VN 이름표 장식
+**파일명**: `frame-nameplate.png` · 가로형 · **투명 배경**
+
+```
+A small horizontal ornamental flourish for a nameplate: engraved gold filigree that
+starts dense on the left with a tiny diamond gem and tapers to a thin elegant line
+fading out toward the right. Very wide and short composition, muted gold #c9a227,
+on a fully transparent background. Flat engraving style, no text, PNG with transparency.
+```
+
+### 23. 캐릭터 시트 헤더 배너
+**파일명**: `banner-sheet.png` · 가로형(1536×1024) · 불투명
+
+```
+A very wide dark banner texture for a character sheet header: deep blue-black fabric
+with a subtle imperial damask pattern, faint worn gold threads along the bottom edge,
+soft light falling from the upper left. Extremely low contrast, near-black #14161e
+overall, elegant and somber, landscape composition, no text, no objects, no people.
+```
+
+### 24. 무대 커튼 자락 (좌측)
+**파일명**: `curtain-side.png` · 세로형(1024×1536) · **투명 배경(오른쪽으로 갈수록)**
+
+```
+The left edge of a heavy theater curtain: near-black fabric with a deep crimson tint,
+tall vertical folds catching a faint warm light, occupying only the left 40% of the
+image and fading smoothly to fully transparent toward the right side. Portrait
+composition, dark and cinematic, no text, PNG with transparency.
+```
+
+### 진행 상태
+- [ ] 4차: frame-corner, frame-nameplate, banner-sheet, curtain-side

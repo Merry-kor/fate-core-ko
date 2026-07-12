@@ -47,5 +47,6 @@
       "type": "icon",
       "url": "https://raw.githubusercontent.com/Merry-kor/fate-core-ko/master/assets/ui/logo-256.png"
     }
-  ]
+  ],
+  "background": "assets/ui/cover-main.png"
 }
