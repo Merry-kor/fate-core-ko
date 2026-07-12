@@ -1583,6 +1583,8 @@
   background: transparent;
 }
 .ewk-hud__inner {
+  position: relative;
+  z-index: 1;
   height: 160px;
   display: flex;
   align-items: center;
@@ -5947,25 +5949,25 @@ input.fate-stress__label--input:focus {
 #fate-vn-textbox { overflow: visible; }
 .fate-vn-corner {
   position: absolute;
-  width: 62px; height: 62px;
+  width: 40px; height: 40px;
   object-fit: contain;
-  opacity: 0.9;
+  opacity: 0.85;
   pointer-events: none;
   filter: drop-shadow(0 1px 4px rgba(0,0,0,.6));
 }
-.fate-vn-corner--tl { top: 6px; left: 8px; }
-.fate-vn-corner--tr { top: 6px; right: 8px; transform: scaleX(-1); }
-.fate-vn-corner--bl { bottom: 6px; left: 8px; transform: scaleY(-1); }
-.fate-vn-corner--br { bottom: 6px; right: 8px; transform: scale(-1, -1); }
+.fate-vn-corner--tl { top: -8px; left: -8px; }
+.fate-vn-corner--tr { top: -8px; right: -8px; transform: scaleX(-1); }
+.fate-vn-corner--bl { bottom: -8px; left: -8px; transform: scaleY(-1); }
+.fate-vn-corner--br { bottom: -8px; right: -8px; transform: scale(-1, -1); }
 
 /* ── VN 이름표 아래 금장 문양 ── */
 #fate-vn-name { position: relative; }
 #fate-vn-name::after {
   content: "";
-  position: absolute; left: 0; bottom: -10px;
-  width: 250px; height: 16px;
+  position: absolute; left: 0; bottom: -7px;
+  width: 200px; height: 8px;
   background: url("../assets/ui/frame-nameplate.png") left center / contain no-repeat;
-  opacity: 0.9;
+  opacity: 0.85;
   pointer-events: none;
 }
 
@@ -5985,12 +5987,12 @@ input.fate-stress__label--input:focus {
   pointer-events: none;
 }
 
-/* ── 무대바 커튼 자락 ── */
+/* ── 무대바 커튼 자락 (카드 컨테이너보다 뒤에 깔리는 배경 장식) ── */
 .ewk-hud__curtain {
   position: absolute; top: 0; bottom: 0;
-  width: 110px;
+  width: 90px;
   pointer-events: none;
-  z-index: 3;
+  z-index: 0;
   opacity: 0.8;
 }
 .ewk-hud__curtain--l {
