@@ -7025,11 +7025,13 @@ const EWKFlowchart = {
                   <div class="ewk-fc__node-prev">🎵 ${modeLbl}${fn}</div>`;
     } else if (node.type === "aspect") {
       const aLbl = { add: "추가", edit: "수정", remove: "제거" }[node.aspectAction || "add"] ?? "추가";
+      const stk  = node.aspectKind === "stack";
       const txt  = (node.aspectAction === "edit")
-        ? `${node.text ?? ""} → ${node.text2 ?? ""}`
+        ? `${node.text ?? ""} → ${(node.text2 || (stk ? node.text : "")) ?? ""}`
         : (node.text ?? "");
-      bodyHtml = `<div class="ewk-fc__node-lbl">면모 ${aLbl}</div>
-                  <div class="ewk-fc__node-prev">${txt.trim() || "(미설정)"}</div>`;
+      const szTag = stk && (node.aspectAction || "add") !== "remove" ? ` (${Math.max(1, Math.min(12, node.stackSize || 3))}칸)` : "";
+      bodyHtml = `<div class="ewk-fc__node-lbl">${stk ? "스택 면모" : "면모"} ${aLbl}</div>
+                  <div class="ewk-fc__node-prev">${txt.trim() || "(미설정)"}${szTag}</div>`;
     } else {
       bodyHtml = `
         ${node.label ? `<div class="ewk-fc__node-lbl">${node.label}</div>` : ""}
@@ -7241,7 +7243,16 @@ const EWKFlowchart = {
       const T = node.aspectType || "situation";
       const topt = (v, l) => `<option value="${v}"${T === v ? " selected" : ""}>${l}</option>`;
       const esc = s => (s ?? "").replace(/"/g, "&quot;");
+      const K = node.aspectKind || "current";
+      const kopt = (v, l) => `<option value="${v}"${K === v ? " selected" : ""}>${l}</option>`;
+      const colOpts = EWKClocks.COLORS.map((c, i) =>
+        `<option value="${c}"${(node.stackColor || "#c9a227") === c ? " selected" : ""}>${["적","금","녹","청","보라","주황"][i]}</option>`).join("");
       fields = `
+        <label>대상 위젯
+          <select class="ewk-fc__field" name="aspectKind">
+            ${kopt("current", "현재 면모")}${kopt("stack", "스택 상황 면모")}
+          </select>
+        </label>
         <label>동작
           <select class="ewk-fc__field" name="aspectAction">
             ${aopt("add", "추가 (생성)")}${aopt("edit", "수정")}${aopt("remove", "제거")}
@@ -7253,12 +7264,18 @@ const EWKFlowchart = {
         <label>수정 후 텍스트 <span class="ewk-fc__hint-inline">(수정 동작에서만 사용)</span>
           <input class="ewk-fc__field" type="text" name="text2" value="${esc(node.text2)}" placeholder="수정할 새 면모">
         </label>
-        <label>유형
+        <label class="ewk-fc__asp-cur">유형
           <select class="ewk-fc__field" name="aspectType">
             ${topt("situation", "상황")}${topt("general", "일반")}${topt("trouble", "곤경")}${topt("identity", "컨셉")}
           </select>
         </label>
-        <p class="ewk-fc__hint-inline">실행 시 '현재 면모' 위젯의 면모를 추가/수정/제거합니다.</p>`;
+        <label class="ewk-fc__asp-stk">칸 수 <span class="ewk-fc__hint-inline">(극복 횟수 — 추가·수정 시 적용)</span>
+          <select class="ewk-fc__field" name="stackSize">${EWKClocks._sizeOpts(node.stackSize || 3)}</select>
+        </label>
+        <label class="ewk-fc__asp-stk">색상
+          <select class="ewk-fc__field" name="stackColor">${colOpts}</select>
+        </label>
+        <p class="ewk-fc__hint-inline">실행 시 선택한 위젯('현재 면모' 또는 '스택 상황 면모')의 면모를 추가/수정/제거합니다. 스택 수정 시 새 텍스트를 비우면 이름은 그대로 두고 칸 수·색상만 바꿉니다.</p>`;
     } else {
       const rows = node.type === "memo" ? 2 : 3;
       fields = `<label>내용<textarea class="ewk-fc__field ewk-fc__ta" name="text" rows="${rows}">${node.text ?? ""}</textarea></label>`;
@@ -7282,6 +7299,17 @@ const EWKFlowchart = {
         const sel = div.querySelector("[name='expr']");
         if (sel && this._exprOpts) sel.innerHTML = this._exprOpts(e.target.value, null);
       });
+    }
+
+    if (node.type === "aspect") {
+      // 대상 위젯에 따라 유형(현재 면모) ↔ 칸 수·색상(스택) 필드 전환
+      const syncKind = () => {
+        const stk = div.querySelector("[name='aspectKind']")?.value === "stack";
+        div.querySelectorAll(".ewk-fc__asp-cur").forEach(x => { x.style.display = stk ? "none" : ""; });
+        div.querySelectorAll(".ewk-fc__asp-stk").forEach(x => { x.style.display = stk ? "" : "none"; });
+      };
+      div.querySelector("[name='aspectKind']")?.addEventListener("change", syncKind);
+      syncKind();
     }
 
     if (node.type === "image" || node.type === "music") {
@@ -7340,6 +7368,9 @@ const EWKFlowchart = {
         n.text         = div.querySelector("[name='text']")?.value.trim() ?? "";
         n.text2        = div.querySelector("[name='text2']")?.value.trim() ?? "";
         n.aspectType   = div.querySelector("[name='aspectType']")?.value ?? "situation";
+        n.aspectKind   = div.querySelector("[name='aspectKind']")?.value ?? "current";
+        n.stackSize    = parseInt(div.querySelector("[name='stackSize']")?.value || "3", 10);
+        n.stackColor   = div.querySelector("[name='stackColor']")?.value ?? "#c9a227";
       } else if (node.type === "title") {
         n.text  = div.querySelector("[name='text']")?.value.trim() ?? "";
         n.text2 = div.querySelector("[name='text2']")?.value.trim() ?? "";
@@ -7372,7 +7403,7 @@ const EWKFlowchart = {
     const d = this.getData();
     const s = d.find(x => x.id === this._activeSceneId);
     if (!s) return;
-    const node = { id: this._uid(), type, label: "", text: "", text2: "", src: "", actorId: "", expr: "", effect: "", duration: 1500, weather: "", aspectAction: "add", aspectType: "situation", bold: false, italic: false, center: false, emo: "normal", musicMode: "bgm", choiceMode: "vote", options: [], filterType: "sepia" };
+    const node = { id: this._uid(), type, label: "", text: "", text2: "", src: "", actorId: "", expr: "", effect: "", duration: 1500, weather: "", aspectAction: "add", aspectType: "situation", aspectKind: "current", stackSize: 3, stackColor: "#c9a227", bold: false, italic: false, center: false, emo: "normal", musicMode: "bgm", choiceMode: "vote", options: [], filterType: "sepia" };
     // 재생 커서(여기서부터 재생이 활성화된 노드) 다음에 삽입, 커서 없으면 맨 끝
     const at = (this._cursor >= 0 && this._cursor < s.nodes.length) ? this._cursor + 1 : s.nodes.length;
     s.nodes.splice(at, 0, node);
@@ -7779,24 +7810,48 @@ const EWKFlowchart = {
       const action = node.aspectAction || "add";
       const label  = (node.text || "").trim();
       if (!label) { ui.notifications?.warn("면모 텍스트를 입력해주세요."); return; }
-      const list = [...EWKAspectWidget._get()];
-      if (action === "add") {
-        list.push({ id: foundry.utils.randomID(), label, type: node.aspectType || "situation" });
-        await EWKAspectWidget._set(list);
-        this._aspectMsg("면모 추가", label);
-      } else if (action === "edit") {
-        const nl = (node.text2 || "").trim();
-        if (!nl) { ui.notifications?.warn("수정 후 면모 텍스트를 입력해주세요."); return; }
-        const i = list.findIndex(a => a.label === label);
-        if (i < 0) { ui.notifications?.warn(`"${label}" 면모를 찾을 수 없습니다.`); return; }
-        list[i] = { ...list[i], label: nl, type: node.aspectType || list[i].type || "situation" };
-        await EWKAspectWidget._set(list);
-        this._aspectMsg("면모 수정", nl);
-      } else { // remove
-        const next = list.filter(a => a.label !== label);
-        if (next.length === list.length) { ui.notifications?.warn(`"${label}" 면모를 찾을 수 없습니다.`); return; }
-        await EWKAspectWidget._set(next);
-        this._aspectMsg("면모 제거", label);
+      if (node.aspectKind === "stack") {
+        // 스택 상황 면모 위젯 조작 (위젯의 +추가와 동일한 데이터·채팅 알림)
+        const size  = Math.max(1, Math.min(12, node.stackSize || 3));
+        const color = node.stackColor || "#c9a227";
+        const list  = [...EWKClocks._get()];
+        if (action === "add") {
+          await EWKClocks._set([...list, { id: EWKClocks._uid(), name: label, size, filled: 0, color }]);
+          EWKClocks._chatMsg("면모 추가", label, 0, size);
+        } else if (action === "edit") {
+          const i = list.findIndex(c => c.name === label);
+          if (i < 0) { ui.notifications?.warn(`"${label}" 상황 면모를 찾을 수 없습니다.`); return; }
+          const name   = (node.text2 || "").trim() || label;   // 새 텍스트 비우면 이름 유지
+          const filled = Math.min(list[i].filled, size);
+          list[i] = { ...list[i], name, size, color, filled };
+          await EWKClocks._set(list);
+          EWKClocks._chatMsg("면모 수정", name, filled, size);
+        } else { // remove
+          const c = list.find(x => x.name === label);
+          if (!c) { ui.notifications?.warn(`"${label}" 상황 면모를 찾을 수 없습니다.`); return; }
+          await EWKClocks._set(list.filter(x => x.id !== c.id));
+          EWKClocks._chatMsg("면모 삭제", c.name, c.filled, c.size);
+        }
+      } else {
+        const list = [...EWKAspectWidget._get()];
+        if (action === "add") {
+          list.push({ id: foundry.utils.randomID(), label, type: node.aspectType || "situation" });
+          await EWKAspectWidget._set(list);
+          this._aspectMsg("면모 추가", label);
+        } else if (action === "edit") {
+          const nl = (node.text2 || "").trim();
+          if (!nl) { ui.notifications?.warn("수정 후 면모 텍스트를 입력해주세요."); return; }
+          const i = list.findIndex(a => a.label === label);
+          if (i < 0) { ui.notifications?.warn(`"${label}" 면모를 찾을 수 없습니다.`); return; }
+          list[i] = { ...list[i], label: nl, type: node.aspectType || list[i].type || "situation" };
+          await EWKAspectWidget._set(list);
+          this._aspectMsg("면모 수정", nl);
+        } else { // remove
+          const next = list.filter(a => a.label !== label);
+          if (next.length === list.length) { ui.notifications?.warn(`"${label}" 면모를 찾을 수 없습니다.`); return; }
+          await EWKAspectWidget._set(next);
+          this._aspectMsg("면모 제거", label);
+        }
       }
     } else if (node.type === "music") {
       if (node.musicMode === "stop") { await this.stopMusic(); return; }   // 모든 음악 정지 (페이드)
