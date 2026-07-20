@@ -4519,18 +4519,35 @@ const EWKAspectWidget = {
     }
 
     body.innerHTML = aspects.map((a, idx) => {
-      const t  = a.type ?? "situation";
-      const nw = prevKeys.size > 0 && !prevKeys.has(keyOf(a, idx));   // 새로 추가된 행만 슬라이드인
+      const t    = a.type ?? "situation";
+      const nw   = prevKeys.size > 0 && !prevKeys.has(keyOf(a, idx));   // 새로 추가된 행만 슬라이드인
+      const free = a.free ?? 0;
       return `<div class="ewk-aw-asp ewk-aw-asp--${t}${nw ? " ewk-aw-asp--in" : ""}" data-aw-idx="${idx}" data-aw-key="${keyOf(a, idx)}">
         <span class="ewk-aw-asp-txt">${a.label ?? ""}</span>
+        ${free > 0 ? `<button class="ewk-aw-free" data-aw-free-use="${idx}" title="공짜 발현 사용 (남음 ${free}회)">⚡${free}</button>` : ""}
         ${isGM ? `<span class="ewk-aw-asp-acts">
+          <button class="ewk-aw-asp-btn" data-aw-freeadd="${idx}" title="공짜 발현 +1 · Shift+클릭 −1 (기회 만들기 성공 1회·대성공 2회)">⚡</button>
           <button class="ewk-aw-asp-btn" data-aw-edit="${idx}" title="수정">✏</button>
           <button class="ewk-aw-asp-btn ewk-aw-asp-del" data-aw-del="${idx}" title="삭제">×</button>
         </span>` : ""}
       </div>`;
     }).join("");
 
+    // 공짜 발현 사용 — 전원 가능 (플레이어는 activeGM에 위임)
+    body.querySelectorAll("[data-aw-free-use]").forEach(btn => {
+      btn.addEventListener("click", async e => {
+        e.stopPropagation();
+        const a = this._get()[Number(btn.dataset.awFreeUse)];
+        if (!a || (a.free ?? 0) <= 0) return;
+        const ok = await EWKConfirm.ask({ title: "공짜 발현", message: `"${a.label}"의 공짜 발현을 1회 사용할까요? (남음 ${a.free}회)`, yes: "사용" });
+        if (ok) this.useFree(a.id ?? a.label);
+      });
+    });
+
     if (isGM) {
+      body.querySelectorAll("[data-aw-freeadd]").forEach(btn => {
+        btn.addEventListener("click", e => { e.stopPropagation(); this._bumpFree(Number(btn.dataset.awFreeadd), e.shiftKey ? -1 : 1); });
+      });
       body.querySelectorAll("[data-aw-edit]").forEach(btn => {
         btn.addEventListener("click", e => { e.stopPropagation(); this._editAspect(Number(btn.dataset.awEdit)); });
       });
@@ -4546,6 +4563,37 @@ const EWKAspectWidget = {
         });
       });
     }
+  },
+
+  // ── 공짜 발현 (기회 만들기 성공/대성공 보상) ──────────────────────────────
+  // GM: 행의 ⚡ 버튼으로 횟수 증감. 사용은 ⚡n 배지 클릭 또는 굴림 카드 발현에서 자동 소모.
+  async _bumpFree(idx, delta) {
+    const list = [...this._get()];
+    const a = list[idx];
+    if (!a) return;
+    const nf = Math.max(0, (a.free ?? 0) + delta);
+    if (nf === (a.free ?? 0)) return;
+    list[idx] = { ...a, free: nf };
+    await this._set(list);
+    if (delta > 0) ChatMessage.create({ content: `<div class="ewk-scene-change-msg"><span class="ewk-scm-label">공짜 발현 +1</span><em>${a.label} (⚡${nf})</em></div>` });
+  },
+
+  // 사용 — GM은 직접 차감, 플레이어는 activeGM 클라이언트에 위임 (world 설정은 GM만 쓸 수 있음)
+  useFree(key, { silent = false } = {}) {
+    if (game.user?.isGM) { this.applyFreeUse(key, game.user.name, silent); return; }
+    if (!game.users?.activeGM) { ui.notifications?.warn("GM이 접속해 있어야 공짜 발현을 사용할 수 있습니다."); return; }
+    game.socket?.emit("system.fate-core-ko", { type: "aspectFreeUse", key, by: game.user?.name ?? "", silent });
+  },
+
+  // activeGM 클라이언트에서 실제 차감 + 채팅 알림
+  async applyFreeUse(key, by = "", silent = false) {
+    if (!game.user?.isGM) return;
+    const list = [...this._get()];
+    const i = list.findIndex(a => (a.id ?? a.label) === key || a.label === key);
+    if (i < 0 || (list[i].free ?? 0) <= 0) return;
+    list[i] = { ...list[i], free: list[i].free - 1 };
+    await this._set(list);
+    if (!silent) ChatMessage.create({ content: `<div class="ewk-scene-change-msg"><span class="ewk-scm-label">공짜 발현</span><em>${list[i].label} (남음 ${list[i].free}회)${by ? ` — ${by}` : ""}</em></div>` });
   },
 
   _editAspect(idx) {
@@ -8044,7 +8092,7 @@ const EWKRoll = {
     const outClass = c.outcome ? c.outcome.toLowerCase() : "";
     const invokeLog = (s.invokes || []).length
       ? `<div class="fate-roll-card__invokes">${s.invokes.map(i =>
-          `<div class="fate-inv-line">⚡ <em>${i.aspect || "면모"}</em> · ${i.type === "reroll" ? "주사위 다시 굴림" : "+2"} <span class="fate-inv-fp">운명점 −1</span></div>`).join("")}</div>`
+          `<div class="fate-inv-line">⚡ <em>${i.aspect || "면모"}</em> · ${i.type === "reroll" ? "주사위 다시 굴림" : "+2"} <span class="fate-inv-fp${i.free ? " fate-inv-fp--free" : ""}">${i.free ? "공짜 발현" : "운명점 −1"}</span></div>`).join("")}</div>`
       : "";
     return `
 <div class="fate-roll-card${outClass ? " fate-roll-card--anim fate-roll-anim--" + outClass : ""}">
@@ -8100,15 +8148,23 @@ const EWKRoll = {
     const actor = state.actorId ? game.actors?.get(state.actorId) : null;
     if (!game.user?.isGM && !actor?.isOwner) { ui.notifications?.warn("이 굴림에 발현할 권한이 없습니다."); return; }
     const cur = actor?.system?.fatepoints?.current ?? 0;
-    if (actor && cur <= 0) { ui.notifications?.warn("운명점이 부족합니다."); return; }
 
     const aspect = await this._pickAspect(actor);
     if (aspect === null) return;   // 취소
 
+    // 선택한 면모에 공짜 발현(⚡)이 남아 있으면 운명점 대신 소모 (카드에 표시되므로 위젯 알림은 생략)
+    const freeAsp = (EWKAspectWidget._get?.() ?? []).find(a => (a.free ?? 0) > 0 && a.label === aspect);
+    if (freeAsp) {
+      if (!game.user?.isGM && !game.users?.activeGM) { ui.notifications?.warn("GM이 접속해 있어야 공짜 발현을 사용할 수 있습니다."); return; }
+      EWKAspectWidget.useFree(freeAsp.id ?? freeAsp.label, { silent: true });
+    } else {
+      if (actor && cur <= 0) { ui.notifications?.warn("운명점이 부족합니다."); return; }
+      if (actor) await actor.update({ "system.fatepoints.current": Math.max(0, cur - 1) });
+    }
+
     const before = this._compute(state).outcome;
-    if (actor) await actor.update({ "system.fatepoints.current": Math.max(0, cur - 1) });
     if (type === "reroll") { state.dice = (await this._newDice()).vals; }
-    (state.invokes ||= []).push({ type, aspect });
+    (state.invokes ||= []).push({ type, aspect, free: !!freeAsp });
 
     const c = this._compute(state);
     await msg.update({
@@ -8133,14 +8189,17 @@ const EWKRoll = {
     (actor?.items?.filter(i => i.type === "aspect") ?? []).forEach(i => opts.push(i.system?.label || i.name));
     (EWKAspectWidget._get?.() ?? []).forEach(a => opts.push(a.label));
     const uniq = [...new Set(opts.filter(Boolean))];
+    // 공짜 발현이 남은 면모는 자동완성에 ⚡ 표시
+    const freeMap = {};
+    (EWKAspectWidget._get?.() ?? []).forEach(a => { if ((a.free ?? 0) > 0 && a.label) freeMap[a.label] = a.free; });
     const res = await foundry.applications.api.DialogV2.wait({
       window: { title: "면모 발현", icon: "fas fa-bolt" },
       content: `<div class="fate-roll-dialog">
         <div class="frd-field"><label>발현할 면모 <span class="frd-sub">(선택)</span></label>
           <input list="ewk-inv-aspects" name="aspect" class="frd-input" placeholder="면모 이름">
-          <datalist id="ewk-inv-aspects">${uniq.map(a => `<option value="${a.replace(/"/g, "&quot;")}">`).join("")}</datalist>
+          <datalist id="ewk-inv-aspects">${uniq.map(a => `<option value="${a.replace(/"/g, "&quot;")}">${freeMap[a] ? `⚡ 공짜 발현 ${freeMap[a]}회` : ""}</option>`).join("")}</datalist>
         </div>
-        <p class="frd-ladder">운명점 1점을 소모합니다.</p></div>`,
+        <p class="frd-ladder">운명점 1점을 소모합니다. ⚡ 공짜 발현이 남은 면모는 운명점 없이 발현됩니다.</p></div>`,
       rejectClose: false,
       buttons: [
         { action: "ok", label: "발현", default: true, callback: (e, b) => ({ aspect: (b.form.elements.aspect?.value || "").trim() || "면모" }) },
@@ -8715,6 +8774,11 @@ Hooks.once("ready", () => {
     // 선택지 투표 — GM 클라이언트에서 집계
     if (data?.type === "choiceVote" && game.user?.isGM && game.users?.activeGM === game.user) {
       EWKChoice._applyVote(data.msgId, data.userId, data.idx);
+      return;
+    }
+    // 공짜 발현 사용 — GM 클라이언트에서 차감 (world 설정 쓰기 위임)
+    if (data?.type === "aspectFreeUse" && game.user?.isGM && game.users?.activeGM === game.user) {
+      EWKAspectWidget.applyFreeUse(data.key, data.by, data.silent);
       return;
     }
     // 판정 요청 결과 — GM 클라이언트에서 집계
