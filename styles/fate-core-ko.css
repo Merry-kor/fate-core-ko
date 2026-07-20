@@ -2734,6 +2734,7 @@ li:hover .ewk-msg-acts {
 
 /* ── 장면 패널 카드 ── */
 .ewk-scard {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -2803,6 +2804,19 @@ li:hover .ewk-msg-acts {
 .ewk-scard-btn--act:hover { background: rgba(55,120,55,.9); color:#fff; }
 .ewk-scard-btn--del:hover { background: rgba(120,40,40,.7); color:#f87; border-color:rgba(200,60,60,.4); }
 .ewk-scard--dragging { opacity: 0.4; }
+/* 드래그 정렬 삽입선 — 카드 상/하단에 금색 라인으로 놓일 위치 표시 */
+.ewk-scard--drop-before::before,
+.ewk-scard--drop-after::after {
+  content: "";
+  position: absolute; left: 4px; right: 4px;
+  height: 3px; border-radius: 2px;
+  background: var(--accent-gold);
+  box-shadow: 0 0 8px rgba(201,162,39,.7);
+  pointer-events: none;
+  z-index: 2;
+}
+.ewk-scard--drop-before::before { top: -3px; }
+.ewk-scard--drop-after::after  { bottom: -3px; }
 .ewk-scard-ord {
   display: flex; flex-direction: column; gap: 1px;
   flex-shrink: 0;

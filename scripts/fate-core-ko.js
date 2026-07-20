@@ -1595,7 +1595,10 @@ const EWKSidebar = {
       });
     });
 
-    // ── 드래그앤드롭: 장면 → 폴더 이동 ──────────────────
+    // ── 드래그앤드롭: 장면 → 폴더 이동 + 카드 위 드롭으로 순서 변경 ──
+    const clearDropMarks = () => panel.querySelectorAll(".ewk-scard--drop-before, .ewk-scard--drop-after")
+      .forEach(c => c.classList.remove("ewk-scard--drop-before", "ewk-scard--drop-after"));
+
     panel.querySelectorAll(".ewk-scard[draggable='true']").forEach(card => {
       card.addEventListener("dragstart", e => {
         e.stopPropagation();
@@ -1603,7 +1606,48 @@ const EWKSidebar = {
         e.dataTransfer.effectAllowed = "move";
         card.classList.add("ewk-scard--dragging");
       });
-      card.addEventListener("dragend", () => card.classList.remove("ewk-scard--dragging"));
+      card.addEventListener("dragend", () => { card.classList.remove("ewk-scard--dragging"); clearDropMarks(); });
+    });
+
+    // 카드 위 드롭 — 마우스가 카드 상반이면 앞, 하반이면 뒤에 삽입 (GM 전용)
+    if (isGM) panel.querySelectorAll(".ewk-scard").forEach(card => {
+      card.addEventListener("dragover", e => {
+        if (!e.dataTransfer.types.includes("ewk-scene-id")) return;
+        if (card.classList.contains("ewk-scard--dragging")) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+        const r = e.currentTarget.getBoundingClientRect();
+        const before = e.clientY < r.top + r.height / 2;
+        clearDropMarks();
+        card.classList.add(before ? "ewk-scard--drop-before" : "ewk-scard--drop-after");
+      });
+      card.addEventListener("dragleave", e => {
+        if (card.contains(e.relatedTarget)) return;
+        card.classList.remove("ewk-scard--drop-before", "ewk-scard--drop-after");
+      });
+      card.addEventListener("drop", async e => {
+        if (!e.dataTransfer.types.includes("ewk-scene-id")) return;
+        e.preventDefault();
+        e.stopPropagation();
+        const before = card.classList.contains("ewk-scard--drop-before");
+        clearDropMarks();
+        const scene  = game.scenes?.get(e.dataTransfer.getData("ewk-scene-id"));
+        const target = game.scenes?.get(card.dataset.sceneId);
+        if (!scene || !target || scene.id === target.id) return;
+        // 대상 카드가 속한 폴더의 정렬 목록에서 드래그 장면을 빼고 대상 앞/뒤에 삽입
+        const tFid = target.folder?.id ?? "__none__";
+        const arr  = sortGroup(byFolder[tFid] ?? []).filter(s => s.id !== scene.id);
+        let i = arr.findIndex(s => s.id === target.id);
+        if (i < 0) return;
+        if (!before) i += 1;
+        arr.splice(i, 0, scene);
+        const newFolder    = tFid === "__none__" ? null : tFid;
+        const movingFolder = (scene.folder?.id ?? null) !== newFolder;
+        await Scene.updateDocuments(arr.map((s, j) => ({
+          _id: s.id, sort: (j + 1) * 100000,
+          ...(movingFolder && s.id === scene.id ? { folder: newFolder } : {}),
+        })));
+      });
     });
 
     panel.querySelectorAll("[data-sfldr-drop]").forEach(hdr => {
@@ -1623,7 +1667,9 @@ const EWKSidebar = {
         const targetFid = hdr.dataset.sfldrDrop;
         const newFolder = targetFid === "__none__" ? null : targetFid;
         if ((scene.folder?.id ?? null) === newFolder) return;
-        await scene.update({ folder: newFolder });
+        // 폴더 헤더에 떨어뜨리면 그 폴더의 맨 끝에 배치
+        const endSort = Math.max(0, ...(byFolder[targetFid] ?? []).map(s => s.sort ?? 0)) + 100000;
+        await scene.update({ folder: newFolder, sort: endSort });
       });
     });
 
